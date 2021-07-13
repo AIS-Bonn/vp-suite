@@ -1,0 +1,5 @@
+BATCH_SIZE = 32
+IMG_SIZE = (64, 64)
+TRANSFORM = True
+SMP_ENCODER = 'efficientnet-b0'
+SMP_ENCODER_WEIGHTS = 'imagenet'
