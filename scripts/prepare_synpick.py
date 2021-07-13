@@ -3,6 +3,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 import numpy as np
+import cv2
 
 def prepare_synpick(path, seed):
 
@@ -28,7 +29,7 @@ def prepare_synpick(path, seed):
     np.random.seed(seed)
     test_segs = np.random.permutation(list(test_path.glob("*/class_index_masks/*.png")))
 
-    all_fps = [test_rgbs, test_segs]
+    all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
 
     # prepare file copying
     out_path = Path("out").absolute() / "data" / "synpick_{}".format(int(time.time()))
@@ -44,9 +45,11 @@ def prepare_synpick(path, seed):
     for fps, op in zip(all_fps, all_out_paths):
         for fp in tqdm(fps):
             fp = Path(fp)
+            img = cv2.imread(str(fp.absolute()), cv2.IMREAD_COLOR if "jpg" in fp.suffix else cv2.IMREAD_GRAYSCALE)
+            resized_img = cv2.resize(img, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
             ep_number = ''.join(filter(str.isdigit, fp.parent.parent.stem)).zfill(6)
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
-            shutil.copyfile(fp, op / out_fp)
+            cv2.imwrite(str((op / out_fp).absolute()), resized_img)
 
 if __name__ == '__main__':
     synpick_path = Path(sys.argv[1])
