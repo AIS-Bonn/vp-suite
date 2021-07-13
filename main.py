@@ -13,8 +13,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def main(args):
 
     # MODEL
-    seg_model = smp.DeepLabV3Plus(encoder_name=SMP_ENCODER, encoder_weights=SMP_ENCODER_WEIGHTS,
-                                  in_channels=3, classes=2)
+    seg_model = smp.DeepLabV3Plus(encoder_name=SMP_ENCODER, encoder_weights=SMP_ENCODER_WEIGHTS, in_channels=3, classes=21)
     preprocessing_fn = smp.encoders.get_preprocessing_fn(SMP_ENCODER, SMP_ENCODER_WEIGHTS)
 
     # DATA
