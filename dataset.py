@@ -11,8 +11,8 @@ class MyDataset(Dataset):
     CLASSES = ['object_{}'.format(i) for i in range(1, 22)]
 
     def __init__(self, images_dir, masks_dir, classes=None, augmentation=None, preprocessing=None):
-        self.image_ids = os.listdir(images_dir)
-        self.mask_ids = os.listdir(masks_dir)
+        self.image_ids = sorted(os.listdir(images_dir))
+        self.mask_ids = sorted(os.listdir(masks_dir))
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
         self.masks_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
 
@@ -30,7 +30,7 @@ class MyDataset(Dataset):
         mask = cv2.imread(self.masks_fps[i], 0)  # 0 = grayscale
 
         # extract certain classes from mask (e.g. cars)
-        masks = [(mask == v) for v in self.class_values]
+        masks = [(mask == v+1) for v in self.class_values]
         mask = np.stack(masks, axis=-1).astype('float')
 
         # apply augmentations

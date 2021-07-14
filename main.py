@@ -1,4 +1,5 @@
-import sys, os, random
+import sys, os, random, time
+from pathlib import Path
 
 import segmentation_models_pytorch as smp
 import torch
@@ -32,7 +33,9 @@ def main(args):
     val_data = MyDataset(images_dir=val_img_dir, masks_dir=val_msk_dir, augmentation=get_validation_augmentation(),
                          preprocessing=get_preprocessing(preprocessing_fn), classes=SYNPICK_CLASSES)
 
-    train_loader = DataLoader(train_data, batch_size=8, shuffle=True, num_workers=12)
+    train_b = 8 if len(args) <= 1 else int(args[1])
+
+    train_loader = DataLoader(train_data, batch_size=train_b, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     loss = smp.utils.losses.DiceLoss()
@@ -61,6 +64,9 @@ def main(args):
     )
 
     max_score = 0
+    timestamp = int(1000000 * time.time())
+    out_dir = Path("out/run_{}".format(timestamp))
+    out_dir.mkdir(parents=True)
 
     for i in range(0, 40):
 
@@ -72,7 +78,7 @@ def main(args):
         # do something (save model, change lr, etc.)
         if max_score < valid_logs['iou_score']:
             max_score = valid_logs['iou_score']
-            torch.save(seg_model, './best_model.pth')
+            torch.save(seg_model, str((out_dir / 'best_model.pth').resolve()))
             print('Model saved!')
 
         if i == 25:
@@ -80,7 +86,7 @@ def main(args):
             print('Decrease decoder learning rate to 1e-5!')
 
     print("Training done, testing...")
-    best_model = torch.load('./best_model.pth')
+    best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
 
     test_data = MyDataset(images_dir=test_img_dir, masks_dir=test_msk_dir, augmentation=get_validation_augmentation(),
                           preprocessing=get_preprocessing(preprocessing_fn), classes=SYNPICK_CLASSES)
