@@ -1,4 +1,7 @@
 import numpy as np
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
 import math, sys
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -35,18 +38,54 @@ def save_vis(out_fp, **images):
     plt.savefig(out_fp)
 
 
-def colorize_semseg(input):
-    assert input.ndim == 3  # input: [h, w, num_object_classes]
-    h, w, num_obj_classes = input.shape
-    input = (input * np.arange(1, num_obj_classes+1)).sum(axis=-1).astype('uint8')
+def colorize_semseg(input : np.ndarray, num_classes : int):
+    # num_classes also counts the background
+    assert input.ndim == 2  # input: [h, w]
+    assert input.dtype == np.uint8
+    h, w = input.shape
 
-    colors = np.zeros((num_obj_classes+1, 3)).astype('uint8')
+    colors = np.zeros((num_classes, 3)).astype('uint8')
     colors[0] = [255, 255, 255]
-    for i in range(num_obj_classes):
-        hue = i * 360.0 / num_obj_classes
+    for i in range(1, num_classes):
+        hue = (i-1) * 360.0 / (num_classes-1)
         rgb = hsluv.hsluv_to_rgb([hue, 100, 40])
-        colors[i+1] = (np.array(rgb) * 255.0).astype('uint8')
+        colors[i] = (np.array(rgb) * 255.0).astype('uint8')
 
-    flattened = input.reshape(-1)  # N
-    colorized = colors[flattened]  # N x 3
+    flattened = input.astype('uint8').reshape(-1)  # [h*w]
+    colorized = colors[flattened]  # [h*w, 3]
     return colorized.reshape(h, w, 3)
+
+
+class CrossEntropyLoss():
+    '''
+    b means batch_size.
+    n means num_classes, including background.
+    '''
+    def __init__(self):
+        self.loss = nn.CrossEntropyLoss(reduction='mean')
+
+    def get_loss(self, output: torch.Tensor, target: torch.tensor):
+
+        # assumed shapes [b, n, h, w] for output, [b, 1, h, w] for target
+        batch_size, num_classes, h, w = output.shape
+        output = output.permute((0, 2, 3, 1)).reshape(-1, num_classes)  # shape: [b*h*w, n+1]
+        target = target.view(-1).long()  # [b*h*w]
+
+        return self.loss(output, target)  # scalar, reduced along b*h*w
+
+
+def get_accuracy(loader, seg_model, device):
+    num_correct = 0
+    num_pixels = 0
+    seg_model.eval()
+
+    with torch.no_grad():
+        for x, y in loader:
+            x, y = x.to(device), y.to(device)  # shapes: [1, 3, h, w] for x and [1, h, w] for y
+            preds = torch.argmax(seg_model(x), dim=1)   #  [1, h, w]
+            num_correct += (preds == y).sum()
+            num_pixels += torch.numel(preds)
+
+    seg_model.train()
+
+    return 100.0 * num_correct / num_pixels
