@@ -67,17 +67,23 @@ def main(args):
             print('Model saved!')
 
         # visualize model predictions using eval mode and validation data
-        visualize(val_data, seg_model)
+        visualize(val_data, seg_model, out_dir)
 
         if i == 25:
             optimizer.param_groups[0]['lr'] *= 0.1
             print('Decrease decoder learning rate!')
 
     # TESTING
-    print("Training done, testing best model...")
+    print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
     test_data = SynpickDataset(data_dir=test_dir, augmentation=get_validation_augmentation())
-    visualize(test_data, best_model)
+    test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
+
+    accuracy = get_accuracy(test_loader, best_model, DEVICE)
+    print("Accuracy = {}".format(accuracy))
+
+    visualize(test_data, best_model, out_dir)
+    print("Testing done, bye bye!")
 
 
 if __name__ == '__main__':
