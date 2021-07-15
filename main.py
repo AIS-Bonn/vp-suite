@@ -1,4 +1,4 @@
-import sys, os, random, time
+import sys, os, time
 from pathlib import Path
 
 import torch
@@ -16,25 +16,20 @@ def main(args):
 
     # DATA
     data_dir = args[0]
-    train_img_dir = os.path.join(data_dir, 'train', 'rgb')
-    train_msk_dir = os.path.join(data_dir, 'train', 'masks')
-    val_img_dir = os.path.join(data_dir, 'val', 'rgb')
-    val_msk_dir = os.path.join(data_dir, 'val', 'masks')
-    test_img_dir = os.path.join(data_dir, 'test', 'rgb')
-    test_msk_dir = os.path.join(data_dir, 'test', 'masks')
+    train_dir = os.path.join(data_dir, 'train')
+    val_dir = os.path.join(data_dir, 'val')
+    test_dir = os.path.join(data_dir, 'test')
 
-    seg_model = UNet(in_channels=3, out_channels=len(SYNPICK_CLASSES)+1).to(DEVICE)
-
-    train_data = SynpickDataset(images_dir=train_img_dir, masks_dir=train_msk_dir,
-                                augmentation=get_training_augmentation(),
-                                classes=SYNPICK_CLASSES)
-    val_data = SynpickDataset(images_dir=val_img_dir, masks_dir=val_msk_dir,
-                              augmentation=get_validation_augmentation(),
-                              classes=SYNPICK_CLASSES)
+    train_data = SynpickDataset(data_dir=train_dir, augmentation=get_training_augmentation())
+    val_data = SynpickDataset(data_dir=val_dir, augmentation=get_validation_augmentation())
 
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
+    # MODEL
+    seg_model = UNet(in_channels=3, out_channels=train_data.NUM_CLASSES).to(DEVICE)
+
+    # ETC
     loss_fn = CrossEntropyLoss()
     optimizer = torch.optim.Adam(params=seg_model.parameters(), lr=LEARNING_RATE)
 
@@ -43,12 +38,11 @@ def main(args):
     out_dir = Path("out/run_{}".format(timestamp))
     out_dir.mkdir(parents=True)
 
+    # TRAINING
     for i in range(0, NUM_EPOCHS):
-
         print('\nEpoch: {}'.format(i))
 
         loop = tqdm(train_loader)
-
         for batch_idx, (data, targets) in enumerate(loop):
             data = data.to(DEVICE)
             targets = targets.to(DEVICE)
@@ -66,25 +60,23 @@ def main(args):
         accuracy = get_accuracy(valid_loader, seg_model, DEVICE)
         print("Accuracy = {}".format(accuracy))
 
-        # do something (save seg_model, change lr, etc.)
+        # save model if last epoch improved acc.
         if max_accuracy < accuracy:
             max_accuracy = accuracy
             torch.save(seg_model, str((out_dir / 'best_model.pth').resolve()))
             print('Model saved!')
 
+        # visualize model predictions using eval mode and validation data
         visualize(val_data, seg_model)
 
         if i == 25:
             optimizer.param_groups[0]['lr'] *= 0.1
             print('Decrease decoder learning rate!')
 
+    # TESTING
     print("Training done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-
-    test_data = SynpickDataset(images_dir=test_img_dir, masks_dir=test_msk_dir,
-                               augmentation=get_validation_augmentation(),
-                               classes=SYNPICK_CLASSES)
-
+    test_data = SynpickDataset(data_dir=test_dir, augmentation=get_validation_augmentation())
     visualize(test_data, best_model)
 
 

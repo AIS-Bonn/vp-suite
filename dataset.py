@@ -9,20 +9,18 @@ from torch.utils.data import Dataset
 
 class SynpickDataset(Dataset):
 
-    NUM_CLASSES = 22  # 21 objects ans the background
+    NUM_CLASSES = 22  # 21 objects and the background
     CLASSES = ['object_{}'.format(i) for i in range(1, NUM_CLASSES)]
 
-    def __init__(self, images_dir, masks_dir, classes=None, augmentation=None, preprocessing=None):
+    def __init__(self, data_dir, augmentation=None):
+        images_dir = os.path.join(data_dir, 'rgb')
+        masks_dir = os.path.join(data_dir, 'masks')
         self.image_ids = sorted(os.listdir(images_dir))
         self.mask_ids = sorted(os.listdir(masks_dir))
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
         self.masks_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
 
-        # convert str names to class values on masks
-        self.class_values = [self.CLASSES.index(cls.lower())+1 for cls in classes]
-
         self.augmentation = augmentation
-        self.preprocessing = preprocessing
 
     def __getitem__(self, i):
 
