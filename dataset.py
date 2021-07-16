@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 
 class SynpickDataset(Dataset):
 
-    NUM_CLASSES = 22  # 21 objects and the background
+    NUM_CLASSES = 22  # 21 YCB-Video objects and the background
     CLASSES = ['object_{}'.format(i) for i in range(1, NUM_CLASSES)]
 
     def __init__(self, data_dir, augmentation=None):
@@ -17,14 +17,17 @@ class SynpickDataset(Dataset):
         masks_dir = os.path.join(data_dir, 'masks')
         self.image_ids = sorted(os.listdir(images_dir))
         self.mask_ids = sorted(os.listdir(masks_dir))
+        for a, b in zip(self.image_ids, self.mask_ids):
+            if a != b: raise ValueError("A!=B")
+        print("COMPLETE")
+        exit(0)
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
         self.masks_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
 
         self.augmentation = augmentation
+        self.is_val_dataset = is_val_dataset
 
     def __getitem__(self, i):
-
-        # read data
         image = cv2.imread(self.images_fps[i])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = np.expand_dims(cv2.imread(self.masks_fps[i], 0), axis=-1)  # imread() mode 0 -> grayscale
@@ -84,7 +87,7 @@ def get_training_augmentation():
 def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
-        albu.PadIfNeeded(384, 480),
+        albu.PadIfNeeded(270, 480),
     ]
     return albu.Compose(test_transform)
 
