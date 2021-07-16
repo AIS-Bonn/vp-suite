@@ -5,9 +5,9 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from config import *
-from dataset import SynpickDataset, get_training_augmentation, get_validation_augmentation
+from dataset import SynpickSegmentationDataset
 from models.segmentation.seg_model import UNet
-from utils import CrossEntropyLoss, get_accuracy
+from utils import CrossEntropyLoss, get_accuracy, synpick_seg_train_augmentation, synpick_seg_val_augmentation
 from visualize import visualize
 
 def main(args):
@@ -18,8 +18,8 @@ def main(args):
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
 
-    train_data = SynpickDataset(data_dir=train_dir, augmentation=get_training_augmentation())
-    val_data = SynpickDataset(data_dir=val_dir, augmentation=get_validation_augmentation())
+    train_data = SynpickSegmentationDataset(data_dir=train_dir, augmentation=synpick_seg_train_augmentation())
+    val_data = SynpickSegmentationDataset(data_dir=val_dir, augmentation=synpick_seg_val_augmentation())
 
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
@@ -74,7 +74,7 @@ def main(args):
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickDataset(data_dir=test_dir, augmentation=get_validation_augmentation())
+    test_data = SynpickSegmentationDataset(data_dir=test_dir, augmentation=synpick_seg_val_augmentation())
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
     accuracy = get_accuracy(test_loader, best_model, DEVICE)
