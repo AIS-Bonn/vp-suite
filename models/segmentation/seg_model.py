@@ -1,9 +1,13 @@
+import sys
+sys.path.append(".")
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
 # inspired by https://www.youtube.com/watch?v=IHq1t7NxS8k
+from models.model_blocks import DoubleConv2d
+
 
 class UNet(nn.Module):
 
@@ -14,14 +18,14 @@ class UNet(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
         for feature in features:
-            self.downs.append(DoubleConv(in_channels=in_channels, out_channels=feature))
+            self.downs.append(DoubleConv2d(in_c=in_channels, out_c=feature))
             in_channels = feature
 
         for feature in reversed(features):
             self.ups.append(nn.ConvTranspose2d(in_channels=feature*2, out_channels=feature, kernel_size=2, stride=2))
-            self.ups.append(DoubleConv(in_channels=feature * 2, out_channels=feature))
+            self.ups.append(DoubleConv2d(in_c=feature * 2, out_c=feature))
 
-        self.bottleneck = DoubleConv(in_channels=features[-1], out_channels=features[-1] * 2)
+        self.bottleneck = DoubleConv2d(in_c=features[-1], out_c=features[-1] * 2)
         self.final_conv = nn.Conv2d(in_channels=features[0], out_channels=out_channels, kernel_size=1)
 
 
@@ -52,20 +56,6 @@ class UNet(nn.Module):
         # FINAL
         return self.final_conv(x)
 
-class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DoubleConv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-        )
-
-    def forward(self, x):
-        return self.conv(x)
 
 def test():
     x = torch.randn((8, 3, 256, 256))
