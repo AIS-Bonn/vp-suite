@@ -1,5 +1,6 @@
 import albumentations as albu
 import numpy as np
+from tqdm import tqdm
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -7,6 +8,7 @@ import math, sys
 from PIL import Image
 import matplotlib.pyplot as plt
 import hsluv
+import cv2
 
 def get_grid_vis(input, mode='RGB'):
 
@@ -38,6 +40,38 @@ def save_vis(out_fp, **images):
         plt.imshow(image)
     plt.savefig(out_fp)
 
+
+def save_video_vis(out_fp, video_in_length, **trajs):
+
+    # put green bars next to GT trajectory
+    gt_traj = trajs["true_trajectory"]
+    T, _, h, w = gt_traj.shape
+    green = np.array([0, 200, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    gt_traj_bar = np.tile(green, (T, 1, h, 20))  # [T, 3, h, 20]
+    out_barred = np.concatenate([gt_traj_bar, gt_traj, gt_traj_bar], axis=-1)  # add bars in the width dim
+
+    # put mixed bars next to predicted trajectories and concat the 4D arrays depth-wise
+    if len(trajs) > 1:
+        red = np.array([0, 0, 150], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+        black = np.array([0, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+        black_bar = np.tile(black, (T, 1, h, 10))  # [T, 3, h, 10]
+        green_and_red = [np.tile(green, (video_in_length, 1, h, 20)), np.tile(red, (T-video_in_length, 1, h, 20))]
+        pr_traj_bar = np.concatenate(green_and_red, axis=0)   # [T, 3, h, 20]
+
+        for _, (name, pr_traj) in enumerate(trajs.items()):
+            if name == "true_trajectory": continue
+            pr_traj_barred = np.concatenate([black_bar, pr_traj_bar, pr_traj, pr_traj_bar], axis=-1)  # add bars in the width dim
+            out_barred = np.concatenate([out_barred, pr_traj_barred], axis=-1)  # add bars in the width dim
+
+    out_frames, _, out_h, out_w = out_barred.shape
+    out_barred = np.transpose(out_barred, (0, 2, 3, 1))  # [T, h, w, 3]
+
+    # use cv2 VideoWriter to write assembled trajectories frame by frame
+    out_FPS = 4
+    out = cv2.VideoWriter(out_fp, cv2.VideoWriter_fourcc(*'mp4v'), out_FPS, (out_w, out_h))
+    for i in range(out_frames):
+        out.write(out_barred[i])
+    out.release()
 
 def colorize_semseg(input : np.ndarray, num_classes : int):
     # num_classes also counts the background
@@ -92,6 +126,22 @@ def get_accuracy(loader, seg_model, device):
     return 100.0 * num_correct / num_pixels
 
 
+def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, loss_fn):
+
+    pred_model.eval()
+    with torch.no_grad():
+        loop = tqdm(loader)
+        val_total_loss = []
+        for batch_idx, data in enumerate(loop):
+            data = data.to(device)  # [b, T, h, w], with T = in_length + pred_length
+            input, targets = data[:, :video_in_length], data[:, video_in_length:]
+            predictions = pred_model.pred_n(input, pred_length=video_pred_length)
+            val_total_loss.append(loss_fn(predictions, targets).item())
+    pred_model.train()
+
+    mean_loss = sum(val_total_loss) / len(val_total_loss)
+    return mean_loss
+
 def synpick_seg_train_augmentation():
     train_transform = [
 
@@ -136,3 +186,11 @@ def synpick_seg_val_augmentation():
         albu.PadIfNeeded(270, 480),
     ]
     return albu.Compose(test_transform)
+
+
+def test():
+    a, b, c = [np.random.randint(low=0, high=256, size=(12, 3, 270, 480)).astype('uint8')] * 3
+    save_video_vis("out/test_video.mp4", 8, true_trajectory=a, pred1=b, pred2=c)
+
+if __name__ == '__main__':
+    test()

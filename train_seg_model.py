@@ -33,7 +33,7 @@ def main(args):
 
     max_accuracy = 0
     timestamp = int(1000000 * time.time())
-    out_dir = Path("out/run_{}".format(timestamp))
+    out_dir = Path("out/{}_seg_model".format(timestamp))
     out_dir.mkdir(parents=True)
 
     # TRAINING

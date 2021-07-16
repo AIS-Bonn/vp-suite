@@ -5,7 +5,7 @@ import torch
 
 from config import *
 from dataset import SynpickSegmentationDataset
-from utils import save_vis, colorize_semseg, synpick_seg_val_augmentation
+from utils import save_vis, save_video_vis, colorize_semseg, synpick_seg_val_augmentation
 
 
 def visualize(dataset, seg_model=None, out_dir="."):
@@ -37,6 +37,40 @@ def visualize(dataset, seg_model=None, out_dir="."):
                 image=image_vis,
                 ground_truth_mask=colorize_semseg(gt_mask_vis, num_classes=dataset.NUM_CLASSES)
             )
+
+
+def visualize_video(dataset, video_in_length, video_pred_length, pred_model=None, out_dir="."):
+
+    for i in range(5):
+        n = np.random.choice(len(dataset))
+
+        gt_traj = dataset[n] # [in_l + pred_l, c, h, w]
+        gt_traj_vis = gt_traj.cpu().numpy().astype('uint8')
+
+        if pred_model is not None:
+            pred_model.eval()
+            with torch.no_grad():
+                in_traj = gt_traj[:video_in_length].unsqueeze(dim=0)  # [1, in_l, c, h, w]
+                pr_traj = pred_model.pred_n(in_traj, video_pred_length)  # [1, pred_l, c, h, w]
+                pr_traj = torch.cat([in_traj, pr_traj], dim=1)  # [1, in_l + pred_l, c, h, w]
+                pr_traj_vis = pr_traj.squeeze(dim=0).cpu().numpy().astype('uint8')  # [in_l + pred_l, c, h, w]
+
+                save_video_vis(
+                    out_fp=os.path.join(out_dir, "{}.mp4".format(str(i))),
+                    video_in_length=video_in_length,
+                    true_trajectory=gt_traj_vis,
+                    pred_trajectory=pr_traj_vis
+                )
+
+            pred_model.train()
+
+        else:
+            save_video_vis(
+                out_fp=os.path.join(out_dir, "{}.mp4".format(str(i))),
+                video_in_length=video_in_length,
+                true_trajectory=gt_traj_vis,
+            )
+
 
 if __name__ == '__main__':
 

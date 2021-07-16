@@ -51,7 +51,7 @@ class SynpickVideoDataset(Dataset):
     def __init__(self, data_dir, sequence_length=8):
         super(SynpickVideoDataset, self).__init__()
 
-        self.sequence_length = sequence_length
+        self.sequence_length = sequence_length  # sequence length shall also include prediction horizon
         self.image_ids = sorted(os.listdir(data_dir))
         self.total_len = len(self.image_ids)
 
