@@ -1,14 +1,12 @@
 import sys, os, time
 from pathlib import Path
 
-import torch
-import torch.nn as nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickDataset, get_training_augmentation, get_validation_augmentation
-from models.seg_model import UNet
+from models.segmentation.seg_model import UNet
 from utils import CrossEntropyLoss, get_accuracy
 from visualize import visualize
 
