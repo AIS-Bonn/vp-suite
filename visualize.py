@@ -4,8 +4,9 @@ import numpy as np
 import torch
 
 from config import *
-from dataset import SynpickDataset, get_validation_augmentation
-from utils import save_vis, colorize_semseg
+from dataset import SynpickSegmentationDataset
+from utils import save_vis, colorize_semseg, synpick_seg_val_augmentation
+
 
 def visualize(dataset, seg_model=None, out_dir="."):
 
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     data_dir = sys.argv[1]
     test_img_dir = os.path.join(data_dir, 'test', 'rgb')
     test_msk_dir = os.path.join(data_dir, 'test', 'masks')
-    test_dataset = SynpickDataset(data_dir=os.path.join(data_dir, 'test'), augmentation=get_validation_augmentation())
+    test_dataset = SynpickSegmentationDataset(data_dir=os.path.join(data_dir, 'test'), augmentation=synpick_seg_val_augmentation())
     if len(sys.argv) > 2:
         seg_model = torch.load(sys.argv[2])
         visualize(test_dataset, seg_model)

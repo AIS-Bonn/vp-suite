@@ -1,3 +1,4 @@
+import albumentations as albu
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -89,3 +90,49 @@ def get_accuracy(loader, seg_model, device):
     seg_model.train()
 
     return 100.0 * num_correct / num_pixels
+
+
+def synpick_seg_train_augmentation():
+    train_transform = [
+
+        albu.HorizontalFlip(p=0.5),
+        albu.ShiftScaleRotate(scale_limit=0.3, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+        albu.PadIfNeeded(min_height=270, min_width=270, always_apply=True, border_mode=0),
+        albu.RandomCrop(height=256, width=256, always_apply=True),
+        albu.IAAAdditiveGaussianNoise(p=0.2),
+        albu.IAAPerspective(p=0.5),
+        albu.OneOf(
+            [
+                albu.CLAHE(p=1),
+                albu.RandomBrightness(p=1),
+                albu.RandomGamma(p=1),
+            ],
+            p=0.9,
+        ),
+
+        albu.OneOf(
+            [
+                albu.IAASharpen(p=1),
+                albu.Blur(blur_limit=3, p=1),
+                albu.MotionBlur(blur_limit=3, p=1),
+            ],
+            p=0.9,
+        ),
+
+        albu.OneOf(
+            [
+                albu.RandomContrast(p=1),
+                albu.HueSaturationValue(p=1),
+            ],
+            p=0.9,
+        ),
+    ]
+    return albu.Compose(train_transform)
+
+
+def synpick_seg_val_augmentation():
+    """Add paddings to make image shape divisible by 32"""
+    test_transform = [
+        albu.PadIfNeeded(270, 480),
+    ]
+    return albu.Compose(test_transform)
