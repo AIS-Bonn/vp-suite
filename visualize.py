@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from config import *
-from dataset import SynpickSegmentationDataset
+from dataset import SynpickSegmentationDataset, postprocess_img, postprocess_mask
 from utils import save_vis, save_video_vis, colorize_semseg, synpick_seg_val_augmentation
 
 
@@ -14,14 +14,14 @@ def visualize(dataset, seg_model=None, out_dir="."):
         n = np.random.choice(len(dataset))
 
         image, gt_mask = dataset[n]
-        image_vis = image.permute((1, 2, 0)).cpu().numpy().astype('uint8')
-        gt_mask_vis = gt_mask.squeeze().cpu().numpy().astype('uint8')
+        image_vis = postprocess_img(image.permute((1, 2, 0)))
+        gt_mask_vis = postprocess_mask(gt_mask.squeeze())
 
         if seg_model is not None:
             seg_model.eval()
             with torch.no_grad():
                 pr_mask = seg_model(image.to(DEVICE).unsqueeze(0))
-                pr_mask_vis = pr_mask.argmax(dim=1).squeeze().cpu().numpy().astype('uint8')
+                pr_mask_vis = postprocess_mask(pr_mask.argmax(dim=1).squeeze())
 
                 save_vis(
                     out_fp=os.path.join(out_dir, "{}.png".format(str(i))),
@@ -45,18 +45,18 @@ def visualize_video(dataset, video_in_length, video_pred_length, pred_model=None
         n = np.random.choice(len(dataset))
 
         gt_traj = dataset[n] # [in_l + pred_l, c, h, w]
-        gt_traj_vis = gt_traj.cpu().numpy().astype('uint8')
+        gt_traj_vis = postprocess_img(gt_traj)
 
         if pred_model is not None:
             pred_model.eval()
             with torch.no_grad():
-                in_traj = gt_traj[:video_in_length].unsqueeze(dim=0)  # [1, in_l, c, h, w]
+                in_traj = gt_traj[:video_in_length].to(DEVICE).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj = pred_model.pred_n(in_traj, video_pred_length)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1)  # [1, in_l + pred_l, c, h, w]
-                pr_traj_vis = pr_traj.squeeze(dim=0).cpu().numpy().astype('uint8')  # [in_l + pred_l, c, h, w]
+                pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
 
                 save_video_vis(
-                    out_fp=os.path.join(out_dir, "{}.mp4".format(str(i))),
+                    out_fp=os.path.join(out_dir, "{}.gif".format(str(i))),
                     video_in_length=video_in_length,
                     true_trajectory=gt_traj_vis,
                     pred_trajectory=pr_traj_vis
@@ -66,7 +66,7 @@ def visualize_video(dataset, video_in_length, video_pred_length, pred_model=None
 
         else:
             save_video_vis(
-                out_fp=os.path.join(out_dir, "{}.mp4".format(str(i))),
+                out_fp=os.path.join(out_dir, "{}.gif".format(str(i))),
                 video_in_length=video_in_length,
                 true_trajectory=gt_traj_vis,
             )

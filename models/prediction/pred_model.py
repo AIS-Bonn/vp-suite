@@ -6,8 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
+from config import DEVICE
+from models.model_blocks import DoubleConv2d, DoubleConv3d, ConvLSTMCell
 
-from models.model_blocks import DoubleConv2d, DoubleConv3d
 
 class VideoPredictionModel(nn.Module):
 
@@ -100,6 +101,64 @@ class UNet3d(VideoPredictionModel):
         return self.final_conv(x)
 
 
+class LSTMModel(VideoPredictionModel):
+
+    def __init__(self, in_channels=3, out_channels=3):
+        super(LSTMModel, self).__init__()
+
+        self.encode = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=16, out_channels=64, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+        self.decode = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=32, out_channels=16, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=2, stride=2),
+            nn.Conv2d(in_channels=8, out_channels=3, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.BatchNorm2d(3),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=3, out_channels=3, kernel_size=1)  # final_conv
+        )
+
+        self.lstm = ConvLSTMCell(in_c=64, in_h=64, kernel_size=(3, 3), bias=True)
+
+    def init_hidden(self, img):
+        encoded_img = self.encode(img)  # [b, c, h, w] to [b, hidden, h_small, w_small]
+        return self.lstm.init_hidden(encoded_img.shape)
+
+    def forward(self, x):
+        return self.pred_n(x, pred_length=1)
+
+    def pred_n(self, x, pred_length=1):
+
+        x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
+        state = self.init_hidden(x[0])
+
+        for cur_x in list(x):
+            encoded = self.encode(cur_x)
+            state = self.lstm(encoded, state)
+
+        preds = [TF.resize(self.decode(state[0]), size=x.shape[3:])]
+
+        if pred_length > 1:
+            for t in range(pred_length-1):
+                encoded = self.encode(preds[-1])
+                state = self.lstm(encoded, state)
+                preds.append(TF.resize(self.decode(state[0]), size=x.shape[3:]))
+
+        preds = torch.stack(preds, dim=0).transpose(0, 1)  # output is [b, t, c, h, w] again
+        return preds
+
+
 def test():
     import time
 
@@ -107,12 +166,13 @@ def test():
     time_dim = 5
     num_channels = 3
     pred_length = 4
-    img_size = 256, 256
-    x = torch.randn((batch_size, time_dim, num_channels, *img_size))
+    img_size = 270, 480
+    x = torch.randn((batch_size, time_dim, num_channels, *img_size)).to(DEVICE)
 
     models = [
         CopyLastFrameModel(),
-        UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=time_dim)
+        UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=time_dim).to(DEVICE),
+        LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
     ]
 
     for model in models:
@@ -132,6 +192,7 @@ def test():
         print(f"Pred time (1 out frame / {pred_length} out frames): {t_pred1}s / {t_preds}s")
         print(f"Shapes ({time_dim} in frames / 1 out frame / {pred_length} out frames): "
               f"{list(x.shape)} / {list(pred1.shape)} / {list(preds.shape)}")
+
 
 if __name__ == '__main__':
     test()

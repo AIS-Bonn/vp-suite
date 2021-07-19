@@ -1,4 +1,4 @@
-import sys, os, time
+import sys, os, time, argparse
 from pathlib import Path
 
 import torch.nn
@@ -7,14 +7,14 @@ from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickVideoDataset
-from models.prediction.pred_model import CopyLastFrameModel, UNet3d
+from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel
 from utils import validate_video_model
 from visualize import visualize_video
 
 def main(args):
 
     # DATA
-    data_dir = args[0]
+    data_dir = cfg.in_path
     train_dir = os.path.join(data_dir, 'train', 'rgb')
     val_dir = os.path.join(data_dir, 'val', 'rgb')
     test_dir = os.path.join(data_dir, 'test', 'rgb')
@@ -26,8 +26,16 @@ def main(args):
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     # MODEL
-    # pred_model = CopyLastFrameModel()
-    pred_model = UNet3d(in_channels=3, out_channels=3, time_dim=VIDEO_IN_LENGTH).to(DEVICE)
+    if cfg.model == "unet":
+        print("using UNet3D prediction model")
+        pred_model = UNet3d(in_channels=3, out_channels=3, time_dim=VIDEO_IN_LENGTH).to(DEVICE)
+    elif cfg.model == "lstm":
+        print("using LSTM prediction model")
+        pred_model = LSTMModel(in_channels=3, out_channels=3).to(DEVICE)
+    else:
+        print("using copy-last-frame prediction model")
+        raise NotImplementedError  # TODO skip training
+        pred_model = CopyLastFrameModel().to(DEVICE)
 
     # ETC
     loss_fn = torch.nn.MSELoss()
@@ -49,7 +57,6 @@ def main(args):
 
             predictions = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
             loss = loss_fn(predictions, targets)
-
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -87,4 +94,10 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+
+    parser = argparse.ArgumentParser(description="Video Prediction Model Training")
+    parser.add_argument("--in-path", type=str, help="Path to dataset directory")
+    parser.add_argument("--model", type=str, help="identifier for model arch")
+
+    cfg = parser.parse_args()
+    main(cfg)

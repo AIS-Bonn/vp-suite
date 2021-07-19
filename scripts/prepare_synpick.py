@@ -1,14 +1,18 @@
 import sys, time, shutil
 from pathlib import Path
+import argparse
 
 from tqdm import tqdm
 import numpy as np
 import cv2
 import random
 
-def prepare_synpick(path, seed=42):
+TRAIN_VAL_SPLIT = (7/8)  # train:val  7:1
 
-    # TODO shuffle episodes only?
+def prepare_synpick_img(cfg):
+
+    path = Path(cfg.in_path)
+    seed = cfg.seed
 
     random.seed(seed)
 
@@ -22,14 +26,14 @@ def prepare_synpick(path, seed=42):
     random.shuffle(r_s)
     rgbs, segs = list(zip(*r_s))
 
-    # random split 'training' images into train and val (7:1)
+    # random split 'training' images into train and val
     lr, ls = len(rgbs), len(segs)
     assert lr == ls
-    cut = int(lr * 7 / 8)
+    cut = int(lr * TRAIN_VAL_SPLIT)
     train_rgbs, val_rgbs = rgbs[:cut], rgbs[cut:]
     train_segs, val_segs = segs[:cut], segs[cut:]
 
-    # get all testing testing image FPs
+    # get all testing image FPs
     test_rgbs = sorted(test_path.glob("*/rgb/*.jpg"))
     test_segs = sorted(test_path.glob("*/class_index_masks/*.png"))
     test_r_s = list(zip(test_rgbs, test_segs))
@@ -38,12 +42,55 @@ def prepare_synpick(path, seed=42):
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
 
-    # prepare file copying
-    out_path = Path("data").absolute() / "synpick_{}".format(int(time.time()))
+    # prepare and execute file copying
+    out_path = Path("data").absolute() / "synpick_img_{}".format(int(time.time()))
     out_path.mkdir(parents=True)
     all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
                      (out_path / "val" / "rgb"), (out_path / "val" / "masks"),
                      (out_path / "test" / "rgb"), (out_path / "test" / "masks")]
+    copy_imgs(all_fps, all_out_paths)
+
+
+def prepare_synpick_vid(cfg):
+
+    path = Path(cfg.in_path)
+    seed = cfg.seed
+
+    random.seed(seed)
+
+    train_path = path / "train"
+    test_path = path / "test"
+
+    # get all training image FPs for rgb
+    rgbs = sorted(train_path.glob("*/rgb/*.jpg"))
+
+    num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
+    train_eps = [i for i in range(num_ep)]
+    random.shuffle(train_eps)
+    cut = int(num_ep * TRAIN_VAL_SPLIT)
+    train_eps = train_eps[:cut]
+
+    # split rgb files into train and val by episode number only , as we need contiguous motions for video
+    train_rgbs, val_rgbs = [], []
+    for rgb in rgbs:
+        ep = int(Path(rgb).parent.parent.stem) + 1
+        if ep in train_eps:
+            train_rgbs.append(rgb)
+        else:
+            val_rgbs.append(rgb)
+
+    test_rgbs = sorted(test_path.glob("*/rgb/*.jpg"))
+
+    all_fps = [train_rgbs, val_rgbs, test_rgbs]
+
+    # prepare and execute file copying
+    out_path = Path("data").absolute() / "synpick_vid_{}".format(int(time.time()))
+    out_path.mkdir(parents=True)
+    all_out_paths = [(out_path / "train" / "rgb"), (out_path / "val" / "rgb"), (out_path / "test" / "rgb")]
+    copy_imgs(all_fps, all_out_paths)
+
+
+def copy_imgs(all_fps, all_out_paths):
 
     for op in all_out_paths:
         op.mkdir(parents=True)
@@ -58,10 +105,24 @@ def prepare_synpick(path, seed=42):
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
 
+
 if __name__ == '__main__':
-    synpick_path = Path(sys.argv[1])
-    if len(sys.argv) > 2:
-        seed = int(sys.argv[2])
-        prepare_synpick(synpick_path, seed)
-    else:
-        prepare_synpick(synpick_path)
+
+    parser = argparse.ArgumentParser(description="prepare_synpick")
+    parser.add_argument("--in-path", type=str, help="directory for synpick data")
+    parser.add_argument("--seed", type=int, default=42, help="rng seed for train/val split")
+    parser.add_argument("--img", action="store_true", help="whether to generate the img dataset")
+    parser.add_argument("--vid", action="store_true", help="whether to generate the vid dataset")
+
+    cfg = parser.parse_args()
+
+    if cfg.img == cfg.vid:
+        print("Preparing both image and video dataset")
+        prepare_synpick_img(cfg)
+        prepare_synpick_vid(cfg)
+    elif cfg.img:
+        print("Preparing image dataset only")
+        prepare_synpick_img(cfg)
+    elif cfg.vid:
+        print("Preparing video dataset only")
+        prepare_synpick_vid(cfg)

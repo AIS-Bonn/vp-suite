@@ -38,7 +38,7 @@ class SynpickSegmentationDataset(Dataset):
             image, mask = sample['image'], sample['mask']
 
         # apply preprocessing
-        image, mask = to_torch(image), to_torch(mask)
+        image, mask = preprocess_img(image), preprocess_mask(mask)
 
         return image, mask
 
@@ -58,8 +58,10 @@ class SynpickVideoDataset(Dataset):
         self.images_fps = [os.path.join(data_dir, image_id) for image_id in self.image_ids]
 
         # determine which dataset indices are valid for given sequence length T
+        self.all_idx = []
         self.valid_idx = []
         for idx in range(len(self.image_ids)):
+            self.all_idx.append(idx)
             # last T frames mustn't be chosen as the start of a sequence
             # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
             frame_num = int(self.image_ids[idx][-10:-4])
@@ -76,14 +78,35 @@ class SynpickVideoDataset(Dataset):
         for t in range(self.sequence_length):
             image = cv2.imread(self.images_fps[true_i + t])
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            images.append(to_torch(image).unsqueeze(dim=0))   # [1, c, h, w]
 
-        frames = torch.cat(images, dim=0)  # [T, c, h, w]
+            # apply preprocessing
+            image = preprocess_img(image)
+
+            images.append(image)
+
+        frames = torch.stack(images, dim=0)  # [T, c, h, w]
         return frames
 
     def __len__(self):
         return len(self.valid_idx)
 
 
-def to_torch(x, **kwargs):
+def preprocess_mask(x):
     return torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
+
+def postprocess_mask(x):
+    return x.cpu().numpy().astype('uint8')
+
+def preprocess_img(x):
+    '''
+    [0, 255, np.uint8] -> [-1, 1, torch.float32]
+    '''
+    torch_x = torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
+    return (2 * torch_x / 255) - 1
+
+def postprocess_img(x):
+    '''
+    [~-1, ~1, torch.float32] -> [0, 255, np.uint8]
+    '''
+    scaled_x = (torch.clamp(x, -1, 1) + 1) * 255 / 2
+    return scaled_x.cpu().numpy().astype('uint8')
