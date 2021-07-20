@@ -8,9 +8,9 @@ from dataset import SynpickSegmentationDataset, postprocess_img, postprocess_mas
 from utils import save_vis, save_video_vis, colorize_semseg, synpick_seg_val_augmentation
 
 
-def visualize(dataset, seg_model=None, out_dir="."):
+def visualize(dataset, seg_model=None, out_dir=".", num_vis=5):
 
-    for i in range(5):
+    for i in range(num_vis):
         n = np.random.choice(len(dataset))
 
         image, gt_mask = dataset[n]
@@ -39,9 +39,9 @@ def visualize(dataset, seg_model=None, out_dir="."):
             )
 
 
-def visualize_video(dataset, video_in_length, video_pred_length, pred_model=None, out_dir="."):
+def visualize_video(dataset, video_in_length, video_pred_length, pred_model=None, out_dir=".", num_vis=5):
 
-    for i in range(5):
+    for i in range(num_vis):
         n = np.random.choice(len(dataset))
 
         gt_traj = dataset[n] # [in_l + pred_l, c, h, w]

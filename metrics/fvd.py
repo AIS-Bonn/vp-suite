@@ -1,49 +1,61 @@
+import sys
+sys.path.append(".")
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.transforms.functional as TF
 
 from models.i3d.pytorch_i3d import InceptionI3d
 from config import DEVICE
+from utils import get_2_wasserstein_dist, get_2_wasserstein_dist_fast
 
 
 class FrechetVideoDistance(nn.Module):
+    '''
+    INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
+    '''
 
-    def __init__(self):
+    def __init__(self, num_frames, in_channels=3):
         super(FrechetVideoDistance, self).__init__()
 
-        self.i3d = InceptionI3d(num_classes=400, in_channels=3)
-        self.i3d.replace_logits(157)
+        if num_frames < 9:
+            raise ValueError(f"The I3D Module used for FVD needs at least 9 input frames (given: {num_frames})!")
+
+        self.i3d_in_shape = (224, 224)
+
+        self.i3d = InceptionI3d(num_classes=400, in_channels=in_channels)
         self.i3d.load_state_dict(torch.load("models/i3d/models/rgb_imagenet.pt"))
         self.i3d.to(DEVICE)
         self.i3d.eval()
 
 
-    def get_distance(self, pred, real):
-        logits_pred, _ = self.i3d.extract_features(pred)
-        logits_real, _ = self.i3d.extract_features(real)
+    def forward(self, pred, real):
 
-        # https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
-        mean_pred = torch.mean(logits_pred, dim=0)
-        mean_real = torch.mean(logits_real, dim=0)
-        n = mean_pred.shape[0]
+        # input: [b, T, c, h, w]
+        # output: scalar
 
-        covar_pred = torch.bmm(mean_pred, mean_pred.transpose(-1, -2)).div(n-1)
-        covar_real = torch.bmm(mean_real, mean_real.transpose(-1, -2)).div(n-1)
+        vid_shape = pred.shape
+        if vid_shape != real.shape:
+            raise ValueError("FrechetVideoDistance.get_distance(pred, real): vid shapes not equal!")
 
+        # resize images in video to 224x224 because the I3D network needs that
+        pred = TF.resize(pred.reshape(-1, *vid_shape[2:]), self.i3d_in_shape)
+        real = TF.resize(real.reshape(-1, *vid_shape[2:]), self.i3d_in_shape)
 
-        # Compute the two components of FID.
+        # re-arrange dims for I3D input
+        pred = pred.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))  # [b, T, c, 224, 224]
+        real = real.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))
 
-        # First the covariance component.
-        sqrt_trace_component = torch.trace(torch.sqrt(torch.bmm(covar_real, covar_pred)))
-        trace_term = torch.trace(covar_real + covar_pred) - 2.0 * sqrt_trace_component
+        logits_pred = self.i3d.extract_features(pred).squeeze()  # [b, n]
+        logits_real = self.i3d.extract_features(real).squeeze()
 
-        # Next the distance between means.
-        diff = mean_real - mean_pred
-        mean_term = torch.sum(torch.mul(diff, diff))
-
-        return trace_term + mean_term
+        return get_2_wasserstein_dist(logits_pred, logits_real)
 
 
 if __name__ == '__main__':
-    raise NotImplementedError
-    # TODO implement FVD testing
+    b, T, c, h, w = 5, 9, 3, 270, 480
+    a, b = torch.randn((b, T, c, h, w)).to(DEVICE), torch.randn((b, T, c, h, w)).to(DEVICE)
+    fvd = FrechetVideoDistance(num_frames=T)
+    loss = fvd.get_distance(a, b)
+    print(loss.item())

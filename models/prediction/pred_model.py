@@ -45,7 +45,7 @@ class UNet3d(VideoPredictionModel):
     def __init__(self, in_channels=3, out_channels=3, time_dim=4, features=[8, 16, 32, 64]):
         super(UNet3d, self).__init__()
 
-        self.time_dim=time_dim
+        self.time_dim = time_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()

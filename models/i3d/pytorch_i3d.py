@@ -335,6 +335,6 @@ class InceptionI3d(nn.Module):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 x = self._modules[end_point](x)
-        avg_pooled = self.avg_pool(x)
-        logits = self.logits(avg_pooled)
-        return logits, avg_pooled
+        avg_pool = self.avg_pool(x)
+        logits = self.logits(avg_pool)
+        return logits

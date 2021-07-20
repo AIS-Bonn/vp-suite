@@ -2,6 +2,7 @@ import albumentations as albu
 import numpy as np
 from tqdm import tqdm
 import torch
+import torch.linalg as linalg
 import torch.nn.functional as F
 import torch.nn as nn
 import math, sys
@@ -11,6 +12,120 @@ import hsluv
 import cv2
 from moviepy.editor import ImageSequenceClip
 
+from config import DEVICE
+
+
+def symmat_sqrt(matrix, eps=1e-10):
+    '''
+    Computes the square root A of a symmetric matrix X such that AA = X.
+    Only works for symmetric matrices!
+
+    Source: https://github.com/pytorch/pytorch/issues/25481#issuecomment-576493693
+    '''
+
+    try:
+        _, s, vh = linalg.svd(matrix)
+    except RuntimeError as e:
+        print("SVD fails, adding small I to matrix and trying again...")
+        matrix += torch.eye(matrix.shape[0]) * eps
+        _, s, vh = linalg.svd(matrix)
+    v = vh.transpose(-2, -1).conj()
+
+    good = s > s.max(-1, True).values * s.size(-1) * torch.finfo(s.dtype).eps
+    components = good.sum(-1)
+    common = components.max()
+    unbalanced = common != components.min()
+    if common < s.size(-1):
+        s = s[..., :common]
+        v = v[..., :common]
+        if unbalanced:
+            good = good[..., :common]
+    if unbalanced:
+        s = s.where(good, torch.zeros((), device=s.device, dtype=s.dtype))
+    return (v * s.sqrt().unsqueeze(-2)) @ v.transpose(-2, -1)
+
+
+def get_2_wasserstein_dist(pred, real):
+    '''
+    Calulates the two components of 2-Wasserstein metric:
+    The general formula is given by: d(P_real, P_pred = min_{X, Y} E[|X-Y|^2]
+
+    For multivariate gaussian distributed inputs x_real ~ MN(mu_real, cov_real) and x_pred ~ MN(mu_pred, cov_pred),
+    this reduces to: d = |mu_real - mu_pred|^2 - Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
+
+    Input shape: [b, n]
+    Output shape: scalar
+    '''
+
+    if pred.shape != real.shape:
+        raise ValueError("Expecting equal shapes for pred and real!")
+
+    pred, real = pred.transpose(0, 1), real.transpose(0, 1)  # [n, b]
+    mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
+    n, b = pred.shape
+    fact = 1.0 if b == 0 else 1.0 / (b - 1)
+
+    # Cov. Matrix
+    E_pred = pred - mu_pred
+    E_real = real - mu_real
+    cov_pred = torch.matmul(E_pred, E_pred.t()) * fact  # [n, n]
+    cov_real = torch.matmul(E_real, E_real.t()) * fact
+
+    # calculate Tr(cov_real * cov_pred)^(1/2) first by using Tr((XY)^(1/2)) = Tr((AYA)^(1/2)) with AA = X.
+    # As cov_real and A * cov_pred * A are symmetric, their root matrix can be found using symmat_sqrt().
+    A = symmat_sqrt(cov_real)
+    A_cov_pred_A = torch.matmul(A, torch.matmul(cov_pred, A))
+    sq_tr_cov = torch.trace(symmat_sqrt(A_cov_pred_A))  # scalar
+
+    # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
+    trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
+
+    # |mu_real - mu_pred|^2
+    diff = mu_real - mu_pred  # [n, 1]
+    mean_term = torch.sum(torch.mul(diff, diff))  # scalar
+
+    # put it together
+    return trace_term + mean_term
+
+
+def get_2_wasserstein_dist_fast(pred, real):
+    '''
+    https://arxiv.org/pdf/2009.14075.pdf
+    '''
+
+    # input: [b, n]
+    # output: scalar
+
+    if pred.shape != real.shape:
+        raise ValueError("Expecting equal shapes for pred and real!")
+
+    pred, real = pred.transpose(0, 1), real.transpose(0, 1)  # [n, b]
+    mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
+    n, b = pred.shape
+    fact = 1.0 if b == 0 else math.sqrt(b-1)
+
+    one_b = torch.ones((1, b)).to(DEVICE)
+    C_pred = (pred.squeeze(dim=-1) - torch.matmul(mu_pred, one_b)).div(fact)
+    C_real = (real.squeeze(dim=-1) - torch.matmul(mu_real, one_b)).div(fact)
+
+    C_left = torch.matmul(C_pred.t(), C_real)
+    C_right = torch.matmul(C_real.t(), C_pred)
+    C_full = torch.matmul(C_left, C_right)
+
+    S = linalg.eigvalsh(C_full)
+    S = torch.maximum(S, torch.zeros_like(S))  # set negative eigenvalues to zero (prob. obtained by num. instability)
+    sq_tr_cov = S.sqrt().abs().sum()
+
+    cov_pred = torch.matmul(C_pred, C_pred.t())
+    cov_real = torch.matmul(C_real, C_real.t())
+    trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
+
+    # |mu_real - mu_pred|^2
+    diff = mu_real - mu_pred  # [n, 1]
+    mean_term = torch.sum(torch.mul(diff, diff))  # scalar
+
+    # put it together
+    return trace_term + mean_term
 
 def get_grid_vis(input, mode='RGB'):
 
@@ -126,7 +241,7 @@ def get_accuracy(loader, seg_model, device):
     return 100.0 * num_correct / num_pixels
 
 
-def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, loss_fn):
+def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, loss_fn, concat_input_for_loss):
 
     pred_model.eval()
     with torch.no_grad():
@@ -134,8 +249,11 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
         val_total_loss = []
         for batch_idx, data in enumerate(loop):
             data = data.to(device)  # [b, T, h, w], with T = in_length + pred_length
-            input, targets = data[:, :video_in_length], data[:, video_in_length:]
+            input = data[:, :video_in_length]
+            targets = data if concat_input_for_loss else data[:, video_in_length:]
             predictions = pred_model.pred_n(input, pred_length=video_pred_length)
+            if concat_input_for_loss:
+                predictions = torch.cat([input, predictions], dim=1)
             val_total_loss.append(loss_fn(predictions, targets).item())
     pred_model.train()
 
