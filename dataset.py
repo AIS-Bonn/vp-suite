@@ -48,14 +48,15 @@ class SynpickSegmentationDataset(Dataset):
 
 class SynpickVideoDataset(Dataset):
 
-    def __init__(self, data_dir, sequence_length=8):
+    def __init__(self, data_dir, num_frames=8, step=1):
         super(SynpickVideoDataset, self).__init__()
 
-        self.sequence_length = sequence_length  # sequence length shall also include prediction horizon
         self.image_ids = sorted(os.listdir(data_dir))
-        self.total_len = len(self.image_ids)
-
         self.images_fps = [os.path.join(data_dir, image_id) for image_id in self.image_ids]
+
+        self.total_len = len(self.image_ids)
+        self.step = step  # if >1, (step - 1) frames are skipped between each frame
+        self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
@@ -68,14 +69,17 @@ class SynpickVideoDataset(Dataset):
             if frame_num >= self.sequence_length:
                 self.valid_idx.append((idx - self.sequence_length) % self.total_len)
 
+        # print(self.all_idx)
+        # print(self.valid_idx)
+
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
-                             "Perhaps the given sequence length is longer than the trajectories of the data?")
+                             "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
     def __getitem__(self, i):
         true_i = self.valid_idx[i]
         images = []
-        for t in range(self.sequence_length):
+        for t in range(0, self.sequence_length, self.step):
             image = cv2.imread(self.images_fps[true_i + t])
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
