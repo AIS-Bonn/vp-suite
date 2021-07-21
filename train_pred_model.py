@@ -42,8 +42,9 @@ def main(args):
     # LOSSES AND METRICS
     concat_input_for_loss = False
     if cfg.loss == "fvd":
-        print("loss function: FVD")
-        loss_fn = FrechetVideoDistance(num_frames=VIDEO_IN_LENGTH + VIDEO_PRED_LENGTH, in_channels=3)
+        print(f"loss function: FVD (2-Wasserstein fast method: {FVD_FAST_METHOD}")
+        loss_fn = FrechetVideoDistance(num_frames=VIDEO_IN_LENGTH + VIDEO_PRED_LENGTH, fast_method=FVD_FAST_METHOD,
+                                       in_channels=3)
         concat_input_for_loss = True
     else:
         print("loss function: MSE")

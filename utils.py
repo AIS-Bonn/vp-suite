@@ -25,10 +25,12 @@ def symmat_sqrt(matrix, eps=1e-10):
 
     try:
         _, s, vh = linalg.svd(matrix)
+        cond = np.linalg.cond(matrix.detach().cpu().numpy())
+        print(f"cond: {cond}")
     except RuntimeError as e:
-        print("SVD fails, adding small I to matrix and trying again...")
-        matrix += torch.eye(matrix.shape[0]) * eps
-        _, s, vh = linalg.svd(matrix)
+        print(matrix.shape)
+        print(f"SVD fails, cond: {np.linalg.cond(matrix.detach().cpu().numpy())}")
+        exit(0)
     v = vh.transpose(-2, -1).conj()
 
     good = s > s.max(-1, True).values * s.size(-1) * torch.finfo(s.dtype).eps
@@ -45,13 +47,15 @@ def symmat_sqrt(matrix, eps=1e-10):
     return (v * s.sqrt().unsqueeze(-2)) @ v.transpose(-2, -1)
 
 
-def get_2_wasserstein_dist(pred, real):
+def get_2_wasserstein_dist(pred, real, fast_method=False):
     '''
     Calulates the two components of 2-Wasserstein metric:
     The general formula is given by: d(P_real, P_pred = min_{X, Y} E[|X-Y|^2]
 
     For multivariate gaussian distributed inputs x_real ~ MN(mu_real, cov_real) and x_pred ~ MN(mu_pred, cov_pred),
     this reduces to: d = |mu_real - mu_pred|^2 - Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
+
+    Fast method: https://arxiv.org/pdf/2009.14075.pdf
 
     Input shape: [b, n]
     Output shape: scalar
@@ -60,10 +64,11 @@ def get_2_wasserstein_dist(pred, real):
     if pred.shape != real.shape:
         raise ValueError("Expecting equal shapes for pred and real!")
 
-    pred, real = pred.transpose(0, 1), real.transpose(0, 1)  # [n, b]
+    # the following ops need some extra precision
+    pred, real = pred.transpose(0, 1).double(), real.transpose(0, 1).double()  # [n, b]
     mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
     n, b = pred.shape
-    fact = 1.0 if b == 0 else 1.0 / (b - 1)
+    fact = 1.0 if b < 2 else 1.0 / (b - 1)
 
     # Cov. Matrix
     E_pred = pred - mu_pred
@@ -71,11 +76,30 @@ def get_2_wasserstein_dist(pred, real):
     cov_pred = torch.matmul(E_pred, E_pred.t()) * fact  # [n, n]
     cov_real = torch.matmul(E_real, E_real.t()) * fact
 
-    # calculate Tr(cov_real * cov_pred)^(1/2) first by using Tr((XY)^(1/2)) = Tr((AYA)^(1/2)) with AA = X.
-    # As cov_real and A * cov_pred * A are symmetric, their root matrix can be found using symmat_sqrt().
-    A = symmat_sqrt(cov_real)
-    A_cov_pred_A = torch.matmul(A, torch.matmul(cov_pred, A))
-    sq_tr_cov = torch.trace(symmat_sqrt(A_cov_pred_A))  # scalar
+    # calculate Tr((cov_real * cov_pred)^(1/2)).
+    if fast_method:
+
+        # calc. with the method proposed in https://arxiv.org/pdf/2009.14075.pdf
+        C_pred = E_pred * math.sqrt(fact)  # [n, n], "root" of covariance
+        C_real = E_real * math.sqrt(fact)
+
+        M_l = torch.matmul(C_pred.t(), C_real)
+        M_r = torch.matmul(C_real.t(), C_pred)
+        M = torch.matmul(M_l, M_r)
+
+        # TODO can we assume that M is symmetric (meaning all eigenvals are real)? Or can we take abs() of complex eigenvals?
+        S = linalg.eigvals(M)
+        sq_tr_cov = S.sqrt().abs().sum()
+    else:
+
+        # calc. by first by using Tr((XY)^(1/2)) = Tr((AYA)^(1/2)) with AA =
+        # As cov_real and A * cov_pred * A are symmetric, their root matrix can be found using symmat_sqrt().
+        # TODO symmat_sqrt() uses svd(), which does not always work! (np.svd fails at the same step)
+        #  (Is it bc. given matrix might be ill-conditioned/near-singular?)
+        #  (Might also be due to some low-level lib errors that are used by np/torch.svd(). In that case simply use the fast method)
+        A = symmat_sqrt(cov_real)
+        A_cov_pred_A = torch.matmul(A, torch.matmul(cov_pred, A))
+        sq_tr_cov = torch.trace(symmat_sqrt(A_cov_pred_A))  # scalar
 
     # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
     trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
@@ -84,48 +108,9 @@ def get_2_wasserstein_dist(pred, real):
     diff = mu_real - mu_pred  # [n, 1]
     mean_term = torch.sum(torch.mul(diff, diff))  # scalar
 
-    # put it together
-    return trace_term + mean_term
+    # put it together#
+    return (trace_term + mean_term).float()
 
-
-def get_2_wasserstein_dist_fast(pred, real):
-    '''
-    https://arxiv.org/pdf/2009.14075.pdf
-    '''
-
-    # input: [b, n]
-    # output: scalar
-
-    if pred.shape != real.shape:
-        raise ValueError("Expecting equal shapes for pred and real!")
-
-    pred, real = pred.transpose(0, 1), real.transpose(0, 1)  # [n, b]
-    mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
-    n, b = pred.shape
-    fact = 1.0 if b == 0 else math.sqrt(b-1)
-
-    one_b = torch.ones((1, b)).to(DEVICE)
-    C_pred = (pred.squeeze(dim=-1) - torch.matmul(mu_pred, one_b)).div(fact)
-    C_real = (real.squeeze(dim=-1) - torch.matmul(mu_real, one_b)).div(fact)
-
-    C_left = torch.matmul(C_pred.t(), C_real)
-    C_right = torch.matmul(C_real.t(), C_pred)
-    C_full = torch.matmul(C_left, C_right)
-
-    S = linalg.eigvalsh(C_full)
-    S = torch.maximum(S, torch.zeros_like(S))  # set negative eigenvalues to zero (prob. obtained by num. instability)
-    sq_tr_cov = S.sqrt().abs().sum()
-
-    cov_pred = torch.matmul(C_pred, C_pred.t())
-    cov_real = torch.matmul(C_real, C_real.t())
-    trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
-
-    # |mu_real - mu_pred|^2
-    diff = mu_real - mu_pred  # [n, 1]
-    mean_term = torch.sum(torch.mul(diff, diff))  # scalar
-
-    # put it together
-    return trace_term + mean_term
 
 def get_grid_vis(input, mode='RGB'):
 
