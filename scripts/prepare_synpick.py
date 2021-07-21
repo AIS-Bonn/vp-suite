@@ -111,8 +111,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="prepare_synpick")
     parser.add_argument("--in-path", type=str, help="directory for synpick data")
     parser.add_argument("--seed", type=int, default=42, help="rng seed for train/val split")
-    parser.add_argument("--img", action="store_true", help="whether to generate the img dataset")
-    parser.add_argument("--vid", action="store_true", help="whether to generate the vid dataset")
+    parser.add_argument("--img", action="store_true", help="Generate segmentation dataset only")
+    parser.add_argument("--vid", action="store_true", help="Generate video pred. dataset only")
 
     cfg = parser.parse_args()
 

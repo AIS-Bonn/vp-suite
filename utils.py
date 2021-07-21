@@ -219,7 +219,7 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
             # metrics
             predictions_full = torch.cat([input, predictions], dim=1)
             targets_full = data
-            for (name, use_full_input, _, loss_fn) in losses:
+            for name, (loss_fn, use_full_input, _) in losses.items():
                 pred = predictions_full if use_full_input else predictions
                 real = targets_full if use_full_input else targets
                 loss = loss_fn(pred, real).item()
@@ -230,7 +230,7 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
     print("Validation losses:")
     for key in total_losses.keys():
         cur_losses = total_losses[key]
-        print(f"{key}: {sum(cur_losses) / len(cur_losses)}")
+        print(f" - {key}: {sum(cur_losses) / len(cur_losses)}")
 
 def synpick_seg_train_augmentation():
     train_transform = [

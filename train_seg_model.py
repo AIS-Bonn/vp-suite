@@ -1,7 +1,9 @@
-import sys, os, time
+import sys, os, time, random, argparse
 from pathlib import Path
 
+import numpy as np
 from tqdm import tqdm
+import torch
 from torch.utils.data import DataLoader
 
 from config import *
@@ -11,10 +13,15 @@ from utils import get_accuracy, synpick_seg_train_augmentation, synpick_seg_val_
 from metrics.segmentation.ce import CrossEntropyLoss
 from visualize import visualize
 
-def main(args):
+def main(cfg):
+
+    # SEEDING
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
 
     # DATA
-    data_dir = args[0]
+    data_dir = cfg.in_path
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
@@ -86,4 +93,10 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+
+    parser = argparse.ArgumentParser(description="Semantic Segmentation Model Training")
+    parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
+    parser.add_argument("--in-path", type=str, help="Path to dataset directory")
+
+    cfg = parser.parse_args()
+    main(cfg)
