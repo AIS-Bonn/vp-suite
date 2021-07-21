@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from config import *
 from dataset import SynpickSegmentationDataset
 from models.segmentation.seg_model import UNet
-from utils import CrossEntropyLoss, get_accuracy, synpick_seg_train_augmentation, synpick_seg_val_augmentation
+from utils import get_accuracy, synpick_seg_train_augmentation, synpick_seg_val_augmentation
+from metrics.segmentation.ce import CrossEntropyLoss
 from visualize import visualize
 
 def main(args):

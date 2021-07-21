@@ -1,4 +1,4 @@
-import os
+import os, time
 import numpy as np
 import torch
 
@@ -28,6 +28,7 @@ class SynpickSegmentationDataset(Dataset):
         self.augmentation = augmentation
 
     def __getitem__(self, i):
+
         image = cv2.imread(self.images_fps[i])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = np.expand_dims(cv2.imread(self.masks_fps[i], 0), axis=-1)  # imread() mode 0 -> grayscale

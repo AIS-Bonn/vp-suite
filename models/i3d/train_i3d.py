@@ -100,11 +100,11 @@ def run(init_lr=0.1, max_steps=64e3, mode='rgb', root='/ssd/Charades_v1_rgb', tr
                 # upsample to input size
                 per_frame_logits = F.upsample(per_frame_logits, t, mode='linear')
 
-                # compute localization loss
+                # compute localization mse
                 loc_loss = F.binary_cross_entropy_with_logits(per_frame_logits, labels)
                 tot_loc_loss += loc_loss.data[0]
 
-                # compute classification loss (with max-pooling along time B x C x T)
+                # compute classification mse (with max-pooling along time B x C x T)
                 cls_loss = F.binary_cross_entropy_with_logits(torch.max(per_frame_logits, dim=2)[0], torch.max(labels, dim=2)[0])
                 tot_cls_loss += cls_loss.data[0]
 

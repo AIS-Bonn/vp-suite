@@ -3,16 +3,11 @@ import numpy as np
 from tqdm import tqdm
 import torch
 import torch.linalg as linalg
-import torch.nn.functional as F
-import torch.nn as nn
-import math, sys
+import math
 from PIL import Image
 import matplotlib.pyplot as plt
 import hsluv
-import cv2
 from moviepy.editor import ImageSequenceClip
-
-from config import DEVICE
 
 
 def symmat_sqrt(matrix, eps=1e-10):
@@ -191,24 +186,6 @@ def colorize_semseg(input : np.ndarray, num_classes : int):
     return colorized.reshape(h, w, 3)
 
 
-class CrossEntropyLoss():
-    '''
-    b means batch_size.
-    n means num_classes, including background.
-    '''
-    def __init__(self):
-        self.loss = nn.CrossEntropyLoss(reduction='mean')
-
-    def get_loss(self, output: torch.Tensor, target: torch.tensor):
-
-        # assumed shapes [b, n, h, w] for output, [b, 1, h, w] for target
-        batch_size, num_classes, h, w = output.shape
-        output = output.permute((0, 2, 3, 1)).reshape(-1, num_classes)  # shape: [b*h*w, n+1]
-        target = target.view(-1).long()  # [b*h*w]
-
-        return self.loss(output, target)  # scalar, reduced along b*h*w
-
-
 def get_accuracy(loader, seg_model, device):
     num_correct = 0
     num_pixels = 0
@@ -226,24 +203,34 @@ def get_accuracy(loader, seg_model, device):
     return 100.0 * num_correct / num_pixels
 
 
-def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, loss_fn, concat_input_for_loss):
+def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, losses):
 
     pred_model.eval()
     with torch.no_grad():
         loop = tqdm(loader)
-        val_total_loss = []
+        total_losses = {key: [] for key in losses.keys()}
         for batch_idx, data in enumerate(loop):
-            data = data.to(device)  # [b, T, h, w], with T = in_length + pred_length
-            input = data[:, :video_in_length]
-            targets = data if concat_input_for_loss else data[:, video_in_length:]
+
+            # fwd
+            data = data.to(device)  # [b, T, h, w], with T = video_tot_length
+            input, targets = data[:, :video_in_length], data[:, video_in_length:]
             predictions = pred_model.pred_n(input, pred_length=video_pred_length)
-            if concat_input_for_loss:
-                predictions = torch.cat([input, predictions], dim=1)
-            val_total_loss.append(loss_fn(predictions, targets).item())
+
+            # metrics
+            predictions_full = torch.cat([input, predictions], dim=1)
+            targets_full = data
+            for (name, use_full_input, _, loss_fn) in losses:
+                pred = predictions_full if use_full_input else predictions
+                real = targets_full if use_full_input else targets
+                loss = loss_fn(pred, real).item()
+                total_losses[name].append(loss)
+
     pred_model.train()
 
-    mean_loss = sum(val_total_loss) / len(val_total_loss)
-    return mean_loss
+    print("Validation losses:")
+    for key in total_losses.keys():
+        cur_losses = total_losses[key]
+        print(f"{key}: {sum(cur_losses) / len(cur_losses)}")
 
 def synpick_seg_train_augmentation():
     train_transform = [
