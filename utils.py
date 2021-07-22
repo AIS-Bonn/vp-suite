@@ -7,42 +7,11 @@ import math
 from PIL import Image
 import matplotlib.pyplot as plt
 import hsluv
+import scipy
 from moviepy.editor import ImageSequenceClip
 
 
-def symmat_sqrt(matrix, eps=1e-10):
-    '''
-    Computes the square root A of a symmetric matrix X such that AA = X.
-    Only works for symmetric matrices!
-
-    Source: https://github.com/pytorch/pytorch/issues/25481#issuecomment-576493693
-    '''
-
-    try:
-        _, s, vh = linalg.svd(matrix)
-        cond = np.linalg.cond(matrix.detach().cpu().numpy())
-        print(f"cond: {cond}")
-    except RuntimeError as e:
-        print(matrix.shape)
-        print(f"SVD fails, cond: {np.linalg.cond(matrix.detach().cpu().numpy())}")
-        exit(0)
-    v = vh.transpose(-2, -1).conj()
-
-    good = s > s.max(-1, True).values * s.size(-1) * torch.finfo(s.dtype).eps
-    components = good.sum(-1)
-    common = components.max()
-    unbalanced = common != components.min()
-    if common < s.size(-1):
-        s = s[..., :common]
-        v = v[..., :common]
-        if unbalanced:
-            good = good[..., :common]
-    if unbalanced:
-        s = s.where(good, torch.zeros((), device=s.device, dtype=s.dtype))
-    return (v * s.sqrt().unsqueeze(-2)) @ v.transpose(-2, -1)
-
-
-def get_2_wasserstein_dist(pred, real, fast_method=False):
+def get_2_wasserstein_dist(pred, real):
     '''
     Calulates the two components of 2-Wasserstein metric:
     The general formula is given by: d(P_real, P_pred = min_{X, Y} E[|X-Y|^2]
@@ -71,30 +40,16 @@ def get_2_wasserstein_dist(pred, real, fast_method=False):
     cov_pred = torch.matmul(E_pred, E_pred.t()) * fact  # [n, n]
     cov_real = torch.matmul(E_real, E_real.t()) * fact
 
-    # calculate Tr((cov_real * cov_pred)^(1/2)).
-    if fast_method:
-
-        # calc. with the method proposed in https://arxiv.org/pdf/2009.14075.pdf
-        C_pred = E_pred * math.sqrt(fact)  # [n, n], "root" of covariance
-        C_real = E_real * math.sqrt(fact)
-
-        M_l = torch.matmul(C_pred.t(), C_real)
-        M_r = torch.matmul(C_real.t(), C_pred)
-        M = torch.matmul(M_l, M_r)
-
-        # TODO can we assume that M is symmetric (meaning all eigenvals are real)? Or can we take abs() of complex eigenvals?
-        S = linalg.eigvals(M)
-        sq_tr_cov = S.sqrt().abs().sum()
-    else:
-
-        # calc. by first by using Tr((XY)^(1/2)) = Tr((AYA)^(1/2)) with AA =
-        # As cov_real and A * cov_pred * A are symmetric, their root matrix can be found using symmat_sqrt().
-        # TODO symmat_sqrt() uses svd(), which does not always work! (np.svd fails at the same step)
-        #  (Is it bc. given matrix might be ill-conditioned/near-singular?)
-        #  (Might also be due to some low-level lib errors that are used by np/torch.svd(). In that case simply use the fast method)
-        A = symmat_sqrt(cov_real)
-        A_cov_pred_A = torch.matmul(A, torch.matmul(cov_pred, A))
-        sq_tr_cov = torch.trace(symmat_sqrt(A_cov_pred_A))  # scalar
+    # calculate Tr((cov_real * cov_pred)^(1/2)). with the method proposed in https://arxiv.org/pdf/2009.14075.pdf
+    # The eigenvalues of the mm(cov_pred, cov_real) are real-valued, so for M, too.
+    #  TODO further dive into mathematical intuition about why the eigenvalues are guaranteed to be real-valued
+    C_pred = E_pred * math.sqrt(fact)  # [n, n], "root" of covariance
+    C_real = E_real * math.sqrt(fact)
+    M_l = torch.matmul(C_pred.t(), C_real)
+    M_r = torch.matmul(C_real.t(), C_pred)
+    M = torch.matmul(M_l, M_r)
+    S = linalg.eigvals(M)
+    sq_tr_cov = S.sqrt().abs().sum()
 
     # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
     trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
@@ -103,7 +58,7 @@ def get_2_wasserstein_dist(pred, real, fast_method=False):
     diff = mu_real - mu_pred  # [n, 1]
     mean_term = torch.sum(torch.mul(diff, diff))  # scalar
 
-    # put it together#
+    # put it together
     return (trace_term + mean_term).float()
 
 
@@ -208,7 +163,7 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
     pred_model.eval()
     with torch.no_grad():
         loop = tqdm(loader)
-        total_losses = {key: [] for key in losses.keys()}
+        all_losses = {key: [] for key in losses.keys()}
         for batch_idx, data in enumerate(loop):
 
             # fwd
@@ -223,14 +178,18 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
                 pred = predictions_full if use_full_input else predictions
                 real = targets_full if use_full_input else targets
                 loss = loss_fn(pred, real).item()
-                total_losses[name].append(loss)
+                all_losses[name].append(loss)
 
     pred_model.train()
 
     print("Validation losses:")
-    for key in total_losses.keys():
-        cur_losses = total_losses[key]
-        print(f" - {key}: {sum(cur_losses) / len(cur_losses)}")
+    for key in all_losses.keys():
+        cur_losses = all_losses[key]
+        avg_loss = sum(cur_losses) / len(cur_losses)
+        print(f" - {key}: {avg_loss}")
+        all_losses[key] = avg_loss
+
+    return all_losses
 
 def synpick_seg_train_augmentation():
     train_transform = [
