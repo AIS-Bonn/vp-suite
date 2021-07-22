@@ -41,14 +41,7 @@ def prepare_synpick_img(cfg):
     test_rgbs, test_segs = list(zip(*test_r_s))
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-
-    # prepare and execute file copying
-    out_path = Path("data").absolute() / "synpick_img_{}".format(int(time.time()))
-    out_path.mkdir(parents=True)
-    all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
-                     (out_path / "val" / "rgb"), (out_path / "val" / "masks"),
-                     (out_path / "test" / "rgb"), (out_path / "test" / "masks")]
-    copy_imgs(all_fps, all_out_paths)
+    copy_synpick_data(all_fps, f"img_{path.stem}", cfg.timestamp)
 
 
 def prepare_synpick_vid(cfg):
@@ -63,6 +56,7 @@ def prepare_synpick_vid(cfg):
 
     # get all training image FPs for rgb
     rgbs = sorted(train_path.glob("*/rgb/*.jpg"))
+    segs = sorted(train_path.glob("*/class_index_masks/*.png"))
 
     num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
     train_eps = [i for i in range(num_ep)]
@@ -71,26 +65,30 @@ def prepare_synpick_vid(cfg):
     train_eps = train_eps[:cut]
 
     # split rgb files into train and val by episode number only , as we need contiguous motions for video
-    train_rgbs, val_rgbs = [], []
-    for rgb in rgbs:
+    train_rgbs, val_rgbs, train_segs, val_segs = [], [], [], []
+    for rgb, seg in zip(rgbs, segs):
         ep = int(Path(rgb).parent.parent.stem) + 1
         if ep in train_eps:
             train_rgbs.append(rgb)
+            train_segs.append(seg)
         else:
             val_rgbs.append(rgb)
+            val_segs.append(seg)
 
     test_rgbs = sorted(test_path.glob("*/rgb/*.jpg"))
+    test_segs = sorted(test_path.glob("*/class_index_masks/*.png"))
 
-    all_fps = [train_rgbs, val_rgbs, test_rgbs]
+    all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
+    copy_synpick_data(all_fps, f"vid_{path.stem}", cfg.timestamp)
+
+def copy_synpick_data(all_fps, dir_name, timestamp):
 
     # prepare and execute file copying
-    out_path = Path("data").absolute() / "synpick_vid_{}".format(int(time.time()))
+    out_path = Path("data").absolute() / f"{dir_name}_{timestamp}"
     out_path.mkdir(parents=True)
-    all_out_paths = [(out_path / "train" / "rgb"), (out_path / "val" / "rgb"), (out_path / "test" / "rgb")]
-    copy_imgs(all_fps, all_out_paths)
-
-
-def copy_imgs(all_fps, all_out_paths):
+    all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
+                     (out_path / "val" / "rgb"), (out_path / "val" / "masks"),
+                     (out_path / "test" / "rgb"), (out_path / "test" / "masks")]
 
     for op in all_out_paths:
         op.mkdir(parents=True)
@@ -115,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument("--vid", action="store_true", help="Generate video pred. dataset only")
 
     cfg = parser.parse_args()
+    cfg.timestamp = int(time.time())
 
     if cfg.img == cfg.vid:
         print("Preparing both image and video dataset")

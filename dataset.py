@@ -1,4 +1,6 @@
 import os, time
+
+import albumentations as albu
 import numpy as np
 import torch
 
@@ -49,24 +51,26 @@ class SynpickSegmentationDataset(Dataset):
 
 class SynpickVideoDataset(Dataset):
 
-    def __init__(self, data_dir, num_frames=8, step=1):
+    def __init__(self, data_dir, vid_type:tuple, num_frames=8, step=1):
         super(SynpickVideoDataset, self).__init__()
 
-        self.image_ids = sorted(os.listdir(data_dir))
-        self.images_fps = [os.path.join(data_dir, image_id) for image_id in self.image_ids]
+        self.is_mask = "mask" in vid_type[0]
+        self.num_channels = vid_type[1]
+        self.data_ids = sorted(os.listdir(data_dir))
+        self.data_fps = [os.path.join(data_dir, image_id) for image_id in self.data_ids]
 
-        self.total_len = len(self.image_ids)
+        self.total_len = len(self.data_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
         self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
         self.valid_idx = []
-        for idx in range(len(self.image_ids)):
+        for idx in range(len(self.data_ids)):
             self.all_idx.append(idx)
             # last T frames mustn't be chosen as the start of a sequence
             # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
-            frame_num = int(self.image_ids[idx][-10:-4])
+            frame_num = int(self.data_ids[idx][-10:-4])
             if frame_num >= self.sequence_length:
                 self.valid_idx.append((idx - self.sequence_length) % self.total_len)
 
@@ -79,25 +83,32 @@ class SynpickVideoDataset(Dataset):
 
     def __getitem__(self, i):
         true_i = self.valid_idx[i]
-        images = []
+        frames = []
         for t in range(0, self.sequence_length, self.step):
-            image = cv2.imread(self.images_fps[true_i + t])
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if self.is_mask:
+                datapoint = np.expand_dims(cv2.imread(self.data_fps[true_i + t], 0), axis=-1)  # imread() grayscale mode
+                datapoint = preprocess_mask_inflate(datapoint, self.num_channels) # apply preprocessing
+            else:
+                datapoint = cv2.imread(self.data_fps[true_i + t])
+                datapoint = cv2.cvtColor(datapoint, cv2.COLOR_BGR2RGB)
+                datapoint = preprocess_img(datapoint)  # apply preprocessing
+            frames.append(datapoint)
 
-            # apply preprocessing
-            image = preprocess_img(image)
-
-            images.append(image)
-
-        frames = torch.stack(images, dim=0)  # [T, c, h, w]
+        frames = torch.stack(frames, dim=0)  # [T, c, h, w]
         return frames
 
     def __len__(self):
         return len(self.valid_idx)
 
+# ==============================================================================
 
 def preprocess_mask(x):
     return torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
+
+def preprocess_mask_inflate(x, num_channels):
+    x = torch.from_numpy(x.transpose(2, 0, 1))
+    x_list = [(x == i) for i in range(num_channels)]
+    return torch.cat(x_list, dim=0).float()
 
 def postprocess_mask(x):
     return x.cpu().numpy().astype('uint8')
@@ -115,3 +126,50 @@ def postprocess_img(x):
     '''
     scaled_x = (torch.clamp(x, -1, 1) + 1) * 255 / 2
     return scaled_x.cpu().numpy().astype('uint8')
+
+# ==============================================================================
+
+def synpick_seg_val_augmentation():
+    """Add paddings to make image shape divisible by 32"""
+    test_transform = [
+        albu.PadIfNeeded(270, 480),
+    ]
+    return albu.Compose(test_transform)
+
+
+def synpick_seg_train_augmentation():
+    train_transform = [
+
+        albu.HorizontalFlip(p=0.5),
+        albu.ShiftScaleRotate(scale_limit=0.3, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+        albu.PadIfNeeded(min_height=270, min_width=270, always_apply=True, border_mode=0),
+        albu.RandomCrop(height=256, width=256, always_apply=True),
+        albu.IAAAdditiveGaussianNoise(p=0.2),
+        albu.IAAPerspective(p=0.5),
+        albu.OneOf(
+            [
+                albu.CLAHE(p=1),
+                albu.RandomBrightness(p=1),
+                albu.RandomGamma(p=1),
+            ],
+            p=0.9,
+        ),
+
+        albu.OneOf(
+            [
+                albu.IAASharpen(p=1),
+                albu.Blur(blur_limit=3, p=1),
+                albu.MotionBlur(blur_limit=3, p=1),
+            ],
+            p=0.9,
+        ),
+
+        albu.OneOf(
+            [
+                albu.RandomContrast(p=1),
+                albu.HueSaturationValue(p=1),
+            ],
+            p=0.9,
+        ),
+    ]
+    return albu.Compose(train_transform)

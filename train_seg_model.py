@@ -7,11 +7,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from config import *
-from dataset import SynpickSegmentationDataset
+from dataset import SynpickSegmentationDataset, synpick_seg_val_augmentation, synpick_seg_train_augmentation
 from models.segmentation.seg_model import UNet
-from utils import get_accuracy, synpick_seg_train_augmentation, synpick_seg_val_augmentation
+from utils import validate_seg_model
 from metrics.segmentation.ce import CrossEntropyLoss
-from visualize import visualize
+from visualize import visualize_seg
 
 def main(cfg):
 
@@ -29,7 +29,7 @@ def main(cfg):
     train_data = SynpickSegmentationDataset(data_dir=train_dir, augmentation=synpick_seg_train_augmentation())
     val_data = SynpickSegmentationDataset(data_dir=val_dir, augmentation=synpick_seg_val_augmentation())
 
-    train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=12)
+    train_loader = DataLoader(train_data, batch_size=SEG_BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     # MODEL
@@ -63,7 +63,7 @@ def main(cfg):
             loop.set_postfix(loss=loss.item())
 
         print("Validating...")
-        accuracy = get_accuracy(valid_loader, seg_model, DEVICE)
+        accuracy = validate_seg_model(valid_loader, seg_model, DEVICE)
         print("Accuracy = {}".format(accuracy))
 
         # save model if last epoch improved acc.
@@ -73,7 +73,7 @@ def main(cfg):
             print('Model saved!')
 
         # visualize model predictions using eval mode and validation data
-        visualize(val_data, seg_model, out_dir)
+        visualize_seg(val_data, seg_model, out_dir)
 
         if i == 25:
             optimizer.param_groups[0]['lr'] *= 0.1
@@ -85,10 +85,10 @@ def main(cfg):
     test_data = SynpickSegmentationDataset(data_dir=test_dir, augmentation=synpick_seg_val_augmentation())
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
-    accuracy = get_accuracy(test_loader, best_model, DEVICE)
+    accuracy = validate_seg_model(test_loader, best_model, DEVICE)
     print("Accuracy = {}".format(accuracy))
 
-    visualize(test_data, best_model, out_dir)
+    visualize_seg(test_data, best_model, out_dir)
     print("Testing done, bye bye!")
 
 

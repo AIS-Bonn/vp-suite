@@ -1,4 +1,3 @@
-import albumentations as albu
 import numpy as np
 from tqdm import tqdm
 import torch
@@ -7,7 +6,6 @@ import math
 from PIL import Image
 import matplotlib.pyplot as plt
 import hsluv
-import scipy
 from moviepy.editor import ImageSequenceClip
 
 
@@ -79,9 +77,8 @@ def get_grid_vis(input, mode='RGB'):
     return Image.fromarray((imgmatrix * 255).astype('uint8')).convert("RGB")
 
 
-# helper function for data visualization
-def save_vis(out_fp, **images):
-    """PLot images in one row."""
+def save_seg_vis(out_fp, **images):
+    """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
     for i, (name, image) in enumerate(images.items()):
@@ -93,7 +90,7 @@ def save_vis(out_fp, **images):
     plt.savefig(out_fp)
 
 
-def save_video_vis(out_fp, video_in_length, **trajs):
+def save_vid_vis(out_fp, video_in_length, **trajs):
 
     # put green bars next to GT trajectory
     gt_traj = trajs["true_trajectory"]
@@ -124,10 +121,14 @@ def save_video_vis(out_fp, video_in_length, **trajs):
 
 
 def colorize_semseg(input : np.ndarray, num_classes : int):
-    # num_classes also counts the background
-    assert input.ndim == 2  # input: [h, w]
+    '''
+    Assigns a unique hue value to each class and replaces each pixel's class value with the corresponding RGB vector.
+    The <num_classes> different hue values are spread out evenly over [0°, 360°).
+    num_classes also counts the background.
+    '''
+
     assert input.dtype == np.uint8
-    h, w = input.shape
+    input_shape = input.shape
 
     colors = np.zeros((num_classes, 3)).astype('uint8')
     colors[0] = [255, 255, 255]
@@ -136,12 +137,12 @@ def colorize_semseg(input : np.ndarray, num_classes : int):
         rgb = hsluv.hsluv_to_rgb([hue, 100, 40])
         colors[i] = (np.array(rgb) * 255.0).astype('uint8')
 
-    flattened = input.astype('uint8').reshape(-1)  # [h*w]
-    colorized = colors[flattened]  # [h*w, 3]
-    return colorized.reshape(h, w, 3)
+    flattened = input.flatten()  # [-1]
+    colorized = colors[flattened].reshape(*input_shape, 3)  # [*input_shape, 3]
+    return colorized
 
 
-def get_accuracy(loader, seg_model, device):
+def validate_seg_model(loader, seg_model, device):
     num_correct = 0
     num_pixels = 0
     seg_model.eval()
@@ -149,7 +150,7 @@ def get_accuracy(loader, seg_model, device):
     with torch.no_grad():
         for x, y in loader:
             x, y = x.to(device), y.to(device)  # shapes: [1, 3, h, w] for x and [1, h, w] for y
-            preds = torch.argmax(seg_model(x), dim=1)   #  [1, h, w]
+            preds = torch.argmax(seg_model(x), dim=1)   # [1, h, w]
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
 
@@ -158,7 +159,7 @@ def get_accuracy(loader, seg_model, device):
     return 100.0 * num_correct / num_pixels
 
 
-def validate_video_model(loader, pred_model, device, video_in_length, video_pred_length, losses):
+def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_length, losses):
 
     pred_model.eval()
     with torch.no_grad():
@@ -191,55 +192,10 @@ def validate_video_model(loader, pred_model, device, video_in_length, video_pred
 
     return all_losses
 
-def synpick_seg_train_augmentation():
-    train_transform = [
-
-        albu.HorizontalFlip(p=0.5),
-        albu.ShiftScaleRotate(scale_limit=0.3, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
-        albu.PadIfNeeded(min_height=270, min_width=270, always_apply=True, border_mode=0),
-        albu.RandomCrop(height=256, width=256, always_apply=True),
-        albu.IAAAdditiveGaussianNoise(p=0.2),
-        albu.IAAPerspective(p=0.5),
-        albu.OneOf(
-            [
-                albu.CLAHE(p=1),
-                albu.RandomBrightness(p=1),
-                albu.RandomGamma(p=1),
-            ],
-            p=0.9,
-        ),
-
-        albu.OneOf(
-            [
-                albu.IAASharpen(p=1),
-                albu.Blur(blur_limit=3, p=1),
-                albu.MotionBlur(blur_limit=3, p=1),
-            ],
-            p=0.9,
-        ),
-
-        albu.OneOf(
-            [
-                albu.RandomContrast(p=1),
-                albu.HueSaturationValue(p=1),
-            ],
-            p=0.9,
-        ),
-    ]
-    return albu.Compose(train_transform)
-
-
-def synpick_seg_val_augmentation():
-    """Add paddings to make image shape divisible by 32"""
-    test_transform = [
-        albu.PadIfNeeded(270, 480),
-    ]
-    return albu.Compose(test_transform)
-
 
 def test():
     a, b, c = [np.random.randint(low=0, high=256, size=(12, 3, 270, 480)).astype('uint8')] * 3
-    save_video_vis("out/test_clip.gif", 8, true_trajectory=a, pred1=b, pred2=c)
+    save_vid_vis("out/test_clip.gif", 8, true_trajectory=a, pred1=b, pred2=c)
 
 if __name__ == '__main__':
     test()

@@ -1,11 +1,13 @@
 import torch
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 7
-IMG_SIZE = (256, 256)
+SEG_BATCH_SIZE = 16
+VID_BATCH_SIZE = 7
 LEARNING_RATE = 1e-4
-NUM_EPOCHS = 20
+NUM_EPOCHS = 40
 LOAD_MODEL = False
+
+SYNPICK_CLASSES = 22
 
 VIDEO_IN_LENGTH = 6
 VIDEO_PRED_LENGTH = 3

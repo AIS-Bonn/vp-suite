@@ -107,7 +107,7 @@ class LSTMModel(VideoPredictionModel):
         super(LSTMModel, self).__init__()
 
         self.encode = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.Conv2d(in_channels=in_channels, out_channels=16, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
             nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -123,10 +123,10 @@ class LSTMModel(VideoPredictionModel):
             nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=8, out_channels=3, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
+            nn.Conv2d(in_channels=8, out_channels=out_channels, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
             nn.BatchNorm2d(3),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=3, out_channels=3, kernel_size=1)  # final_conv
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=1)  # final_conv
         )
 
         self.lstm = ConvLSTMCell(in_c=64, in_h=64, kernel_size=(3, 3), bias=True)
