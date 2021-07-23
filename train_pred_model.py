@@ -37,8 +37,10 @@ def main(args):
     train_dir = os.path.join(data_dir, 'train', data_in_type)
     val_dir = os.path.join(data_dir, 'val', data_in_type)
     test_dir = os.path.join(data_dir, 'test', data_in_type)
-    train_data = SynpickVideoDataset(data_dir=train_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH, step=3)
-    val_data = SynpickVideoDataset(data_dir=val_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH, step=3)
+    train_data = SynpickVideoDataset(data_dir=train_dir, vid_type=vid_type,
+                                     num_frames=VIDEO_TOT_LENGTH, step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+    val_data = SynpickVideoDataset(data_dir=val_dir, vid_type=vid_type,
+                                   num_frames=VIDEO_TOT_LENGTH, step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
@@ -76,7 +78,7 @@ def main(args):
 
     # TRAINING
     for i in range(0, NUM_EPOCHS):
-        print('\nEpoch: {}'.format(i))
+        print(f'\nEpoch: {i+1} of {NUM_EPOCHS}')
 
         if not cfg.no_train:
             print("Cur epoch training loss scales: {}"
@@ -122,14 +124,14 @@ def main(args):
         print("Saving visualizations...")
         visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
 
-        if i == 25:
-            optimizer.param_groups[0]['lr'] *= 0.1
+        if i >= 30 and i % 10 == 0:
+            optimizer.param_groups[0]['lr'] *= 0.5
             print('Decrease learning rate!')
 
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickVideoDataset(data_dir=test_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH)
+    test_data = SynpickVideoDataset(data_dir=test_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH, step=4)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
     validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses)
 

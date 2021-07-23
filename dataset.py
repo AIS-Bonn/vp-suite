@@ -51,7 +51,7 @@ class SynpickSegmentationDataset(Dataset):
 
 class SynpickVideoDataset(Dataset):
 
-    def __init__(self, data_dir, vid_type:tuple, num_frames=8, step=1):
+    def __init__(self, data_dir, vid_type:tuple, num_frames=8, step=1, allow_overlap=True):
         super(SynpickVideoDataset, self).__init__()
 
         self.is_mask = "mask" in vid_type[0]
@@ -62,20 +62,25 @@ class SynpickVideoDataset(Dataset):
         self.total_len = len(self.data_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
         self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
+        # allow_overlap == True: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...]. False: [[0, 1, 2], [3, 4, 5], ...]
+        self.allow_overlap = allow_overlap
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
         self.valid_idx = []
         for idx in range(len(self.data_ids)):
-            self.all_idx.append(idx)
             # last T frames mustn't be chosen as the start of a sequence
             # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
+            self.all_idx.append(idx)
             frame_num = int(self.data_ids[idx][-10:-4])
-            if frame_num >= self.sequence_length:
+            frame_num_ok = frame_num >= self.sequence_length
+            overlap_ok = self.allow_overlap or frame_num % self.sequence_length == 0
+            if frame_num_ok and overlap_ok:
                 self.valid_idx.append((idx - self.sequence_length) % self.total_len)
 
         # print(self.all_idx)
         # print(self.valid_idx)
+        # exit(0)
 
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
