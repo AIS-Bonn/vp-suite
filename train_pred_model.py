@@ -37,14 +37,15 @@ def main(args):
     train_dir = os.path.join(data_dir, 'train', data_in_type)
     val_dir = os.path.join(data_dir, 'val', data_in_type)
     test_dir = os.path.join(data_dir, 'test', data_in_type)
-    train_data = SynpickVideoDataset(data_dir=train_dir, vid_type=vid_type,
-                                     num_frames=VIDEO_TOT_LENGTH, step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+    train_data = SynpickVideoDataset(data_dir=train_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH,
+                                     step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
     val_data = SynpickVideoDataset(data_dir=val_dir, vid_type=vid_type,
                                    num_frames=VIDEO_TOT_LENGTH, step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     # MODEL
+
     if cfg.model == "unet":
         print("prediction model: UNet3d")
         pred_model = UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=VIDEO_IN_LENGTH).to(DEVICE)
@@ -147,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
     parser.add_argument("--model", type=str, choices=["unet", "lstm", "copy"], help="Which model arch to use")
-    parser.add_argument("--in-type", type=str, choices=["rgb3", "masks22"], default="rgb3",
+    parser.add_argument("--in-type", type=str, choices=["rgb3", "masks3", "masks22"], default="rgb3",
                         help="Which kind of data to train/test on")
     parser.add_argument("--indicator-val-loss", type=str, choices=["mse", "fvd", "bce"], default="fvd",
                         help="Loss to use for determining if validated model has become 'better' and should be saved")

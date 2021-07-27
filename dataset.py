@@ -8,10 +8,12 @@ import cv2
 
 from torch.utils.data import Dataset
 
-class SynpickSegmentationDataset(Dataset):
+from utils import colorize_semseg
 
-    NUM_CLASSES = 22  # 21 YCB-Video objects and the background
-    CLASSES = ['object_{}'.format(i) for i in range(1, NUM_CLASSES)]
+NUM_CLASSES = 22  # 21 YCB-Video objects and the background
+CLASSES = ['object_{}'.format(i) for i in range(1, NUM_CLASSES)]
+
+class SynpickSegmentationDataset(Dataset):
 
     def __init__(self, data_dir, augmentation=None):
 
@@ -55,7 +57,8 @@ class SynpickVideoDataset(Dataset):
         super(SynpickVideoDataset, self).__init__()
 
         self.is_mask = "mask" in vid_type[0]
-        self.num_channels = vid_type[1]
+        self.is_colorized_mask = self.is_mask and vid_type[1] == 3
+        self.num_channels = NUM_CLASSES if self.is_mask and not self.is_colorized_mask else vid_type[1]
         self.data_ids = sorted(os.listdir(data_dir))
         self.data_fps = [os.path.join(data_dir, image_id) for image_id in self.data_ids]
 
@@ -90,7 +93,9 @@ class SynpickVideoDataset(Dataset):
         true_i = self.valid_idx[i]
         frames = []
         for t in range(0, self.sequence_length, self.step):
-            if self.is_mask:
+            if self.is_colorized_mask:
+                datapoint = preprocess_mask_colorize(cv2.imread(self.data_fps[true_i + t], 0), self.num_channels)
+            elif self.is_mask:
                 datapoint = np.expand_dims(cv2.imread(self.data_fps[true_i + t], 0), axis=-1)  # imread() grayscale mode
                 datapoint = preprocess_mask_inflate(datapoint, self.num_channels) # apply preprocessing
             else:
@@ -114,6 +119,10 @@ def preprocess_mask_inflate(x, num_channels):
     x = torch.from_numpy(x.transpose(2, 0, 1))
     x_list = [(x == i) for i in range(num_channels)]
     return torch.cat(x_list, dim=0).float()
+
+def preprocess_mask_colorize(x, num_channels):
+    x = colorize_semseg(x.squeeze(), num_channels)
+    return preprocess_img(x)
 
 def postprocess_mask(x):
     return x.cpu().numpy().astype('uint8')
