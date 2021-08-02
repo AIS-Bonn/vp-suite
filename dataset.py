@@ -58,7 +58,6 @@ class SynpickVideoDataset(Dataset):
 
         self.is_mask = "mask" in vid_type[0]
         self.is_colorized_mask = self.is_mask and vid_type[1] == 3
-        self.num_channels = NUM_CLASSES if self.is_mask and not self.is_colorized_mask else vid_type[1]
         self.data_ids = sorted(os.listdir(data_dir))
         self.data_fps = [os.path.join(data_dir, image_id) for image_id in self.data_ids]
 
@@ -93,11 +92,12 @@ class SynpickVideoDataset(Dataset):
         true_i = self.valid_idx[i]
         frames = []
         for t in range(0, self.sequence_length, self.step):
-            if self.is_colorized_mask:
-                datapoint = preprocess_mask_colorize(cv2.imread(self.data_fps[true_i + t], 0), self.num_channels)
-            elif self.is_mask:
-                datapoint = np.expand_dims(cv2.imread(self.data_fps[true_i + t], 0), axis=-1)  # imread() grayscale mode
-                datapoint = preprocess_mask_inflate(datapoint, self.num_channels) # apply preprocessing
+            if self.is_mask:
+                datapoint = cv2.imread(self.data_fps[true_i + t], 0)
+                if self.is_colorized_mask:
+                    datapoint = preprocess_mask_colorize(datapoint, NUM_CLASSES)
+                else:
+                    datapoint = preprocess_mask_inflate(datapoint, NUM_CLASSES) # apply preprocessing
             else:
                 datapoint = cv2.imread(self.data_fps[true_i + t])
                 datapoint = cv2.cvtColor(datapoint, cv2.COLOR_BGR2RGB)
@@ -116,12 +116,12 @@ def preprocess_mask(x):
     return torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
 
 def preprocess_mask_inflate(x, num_channels):
-    x = torch.from_numpy(x.transpose(2, 0, 1))
+    x = torch.from_numpy(x).unsqueeze(0)  # [1, h, w]
     x_list = [(x == i) for i in range(num_channels)]
     return torch.cat(x_list, dim=0).float()
 
 def preprocess_mask_colorize(x, num_channels):
-    x = colorize_semseg(x.squeeze(), num_channels)
+    x = colorize_semseg(x, num_channels)
     return preprocess_img(x)
 
 def postprocess_mask(x):
