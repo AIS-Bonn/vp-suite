@@ -116,7 +116,8 @@ def preprocess_mask(x):
     return torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
 
 def preprocess_mask_inflate(x, num_channels):
-    x = torch.from_numpy(x).unsqueeze(0)  # [1, h, w]
+    # input: [h, w] or [t, h, w], np.uint8
+    x = torch.from_numpy(x)  # [1, h, w]
     x_list = [(x == i) for i in range(num_channels)]
     return torch.cat(x_list, dim=0).float()
 
@@ -131,7 +132,8 @@ def preprocess_img(x):
     '''
     [0, 255, np.uint8] -> [-1, 1, torch.float32]
     '''
-    torch_x = torch.from_numpy(x.transpose(2, 0, 1).astype('float32'))
+    permutation = (2, 0, 1) if x.ndim == 3 else (0, 3, 1, 2)
+    torch_x = torch.from_numpy(x.transpose(permutation).astype('float32'))
     return (2 * torch_x / 255) - 1
 
 def postprocess_img(x):
