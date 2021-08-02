@@ -64,12 +64,12 @@ def visualize_4_way(cfg):
             save_vid_vis(
                 out_fp=os.path.join(cfg.out_dir, "4way_vis_{}.gif".format(str(i))),
                 video_in_length=VIDEO_IN_LENGTH,
-                true_trajectory=frames_vis,
-                gt_colorized=frames_colorized_vis,
-                pr_rgb=pred_rgb_vis,
-                pr_rgb_colorized=pred_then_colorized_vis,
-                pr_mask=pred_mask_vis,
-                pr_colorized=colorized_then_pred_vis
+                True_Trajectory=frames_vis,
+                Framewise_Segmentation=frames_colorized_vis,
+                RGB_Prediction=pred_rgb_vis,
+                RGB_Prediction_Colorized=pred_then_colorized_vis,
+                Mask_Prediction_Colorized=pred_mask_vis,
+                Colorization_Prediction=colorized_then_pred_vis
             )
 
 if __name__ == '__main__':

@@ -5,9 +5,11 @@ import torch.linalg as linalg
 import math
 from PIL import Image
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import hsluv
 from moviepy.editor import ImageSequenceClip
-
+import imageio
+import math
 
 def get_2_wasserstein_dist(pred, real):
     '''
@@ -90,34 +92,59 @@ def save_seg_vis(out_fp, **images):
     plt.savefig(out_fp)
 
 
+def get_color_array(color):
+    if color == "green":
+        color_array = np.array([0, 200, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    elif color == "red":
+        color_array = np.array([150, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    elif color == "black":
+        color_array = np.array([0, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    else:
+        color_array = np.array([255, 255, 255], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    return color_array
+
+def add_border_around_vid(vid, c_and_l, b_width=10):
+
+    _, _, h, w = vid.shape
+    color_bars_vertical = [np.tile(get_color_array(c), (l, 1, h, b_width)) for (c, l) in c_and_l]
+    cbv = np.concatenate(color_bars_vertical, axis=0)
+
+    color_bars_horizontal = [np.tile(get_color_array(c), (l, 1, b_width, w + 2 * b_width)) for (c, l) in c_and_l]
+    cbh = np.concatenate(color_bars_horizontal, axis=0)
+
+    vid = np.concatenate([cbv, vid, cbv], axis=-1)   # add bars in the width dim
+    vid = np.concatenate([cbh, vid, cbh], axis=-2)   # add bars in the height dim
+    return vid
+
+
 def save_vid_vis(out_fp, video_in_length, **trajs):
 
-    # put green bars next to GT trajectory
-    gt_traj = trajs["true_trajectory"]
-    T, _, h, w = gt_traj.shape
-    green = np.array([0, 200, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
-    gt_traj_bar = np.tile(green, (T, 1, h, 20))  # [T, 3, h, 20]
-    out_barred = np.concatenate([gt_traj_bar, gt_traj, gt_traj_bar], axis=-1)  # add bars in the width dim
+    T, _, h, w = list(trajs.values())[0].shape
+    T_in, T_pred = video_in_length, T-video_in_length
+    for key, traj in trajs.items():
+        if "true_" in key or "gt_" in key:
+            trajs[key] = add_border_around_vid(traj, [("green", traj.shape[0])], b_width=16)
+        else:
+            trajs[key] = add_border_around_vid(traj, [("green", T_in), ("red", T_pred)], b_width=16)
 
-    # put green bars that turn red for pred. frames next to predicted trajectories and concat the 4D arrays depth-wise
-    if len(trajs) > 1:
-        red = np.array([150, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
-        black = np.array([0, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
-        black_bar = np.tile(black, (T, 1, h, 10))  # [T, 3, h, 10]
-        green_and_red = [np.tile(green, (video_in_length, 1, h, 20)), np.tile(red, (T-video_in_length, 1, h, 20))]
-        pr_traj_bar = np.concatenate(green_and_red, axis=0)   # [T, 3, h, 20]
+    n_trajs = len(trajs)
+    plt_scale = 0.01
+    plt_cols = math.ceil(math.sqrt(n_trajs))
+    plt_rows = math.ceil(n_trajs / plt_cols)
+    plt_w = 1.2 * w * plt_scale * plt_cols
+    plt_h = 1.4 * h * plt_scale * plt_rows
+    fig = plt.figure(figsize=(plt_w, plt_h), dpi=100)
 
-        for _, (name, pr_traj) in enumerate(trajs.items()):
-            if name == "true_trajectory": continue
-            pr_traj_barred = np.concatenate([black_bar, pr_traj_bar, pr_traj, pr_traj_bar], axis=-1)  # add bars in the width dim
-            out_barred = np.concatenate([out_barred, pr_traj_barred], axis=-1)  # add bars in the width dim
+    def update(t):
+        for i, (name, traj) in enumerate(trajs.items()):
+            plt.subplot(plt_rows, plt_cols, i+1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.title(' '.join(name.split('_')).title())
+            plt.imshow(traj[t].transpose(1, 2, 0))
 
-    out_frames, _, out_h, out_w = out_barred.shape
-    out_barred = np.transpose(out_barred, (0, 2, 3, 1))  # [T, h, w, 3]
-
-    out_FPS = 2
-    clip = ImageSequenceClip(list(out_barred), fps=out_FPS)
-    clip.write_gif(out_fp, fps=out_FPS, logger=None)
+    anim = FuncAnimation(fig, update, frames=np.arange(T), interval=500)
+    anim.save(out_fp, writer="imagemagick", dpi=200)
 
 
 def colorize_semseg(input : np.ndarray, num_classes : int):
