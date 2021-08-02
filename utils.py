@@ -97,8 +97,8 @@ def get_color_array(color):
         color_array = np.array([0, 200, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
     elif color == "red":
         color_array = np.array([150, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
-    elif color == "black":
-        color_array = np.array([0, 0, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    elif color == "yellow":
+        color_array = np.array([100, 100, 0], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
     else:
         color_array = np.array([255, 255, 255], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
     return color_array
@@ -122,8 +122,10 @@ def save_vid_vis(out_fp, video_in_length, **trajs):
     T, _, h, w = list(trajs.values())[0].shape
     T_in, T_pred = video_in_length, T-video_in_length
     for key, traj in trajs.items():
-        if "true_" in key or "gt_" in key:
-            trajs[key] = add_border_around_vid(traj, [("green", traj.shape[0])], b_width=16)
+        if "true_" in key.lower() or "gt_" in key.lower():
+            trajs[key] = add_border_around_vid(traj, [("green", T)], b_width=16)
+        elif "seg" in key.lower():
+            trajs[key] = add_border_around_vid(traj, [("yellow", T)], b_width=16)
         else:
             trajs[key] = add_border_around_vid(traj, [("green", T_in), ("red", T_pred)], b_width=16)
 

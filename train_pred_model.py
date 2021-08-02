@@ -34,13 +34,13 @@ def main(args):
 
     # DATA
     data_dir = cfg.in_path
-    train_dir = os.path.join(data_dir, 'train', data_in_type)
-    val_dir = os.path.join(data_dir, 'val', data_in_type)
-    test_dir = os.path.join(data_dir, 'test', data_in_type)
-    train_data = SynpickVideoDataset(data_dir=train_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH,
+    train_dir = os.path.join(data_dir, 'train')
+    val_dir = os.path.join(data_dir, 'val')
+    test_dir = os.path.join(data_dir, 'test')
+    train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH,
                                      step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
-    val_data = SynpickVideoDataset(data_dir=val_dir, vid_type=vid_type,
-                                   num_frames=VIDEO_TOT_LENGTH, step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+    val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
+                                   step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
@@ -86,7 +86,11 @@ def main(args):
                   .format(["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
             loop = tqdm(train_loader)
 
-            for batch_idx, data in enumerate(loop):
+            for batch_idx, (imgs, masks, colorized_masks) in enumerate(loop):
+
+                if data_in_type == "rgb": data = imgs
+                elif num_channels == 3: data = colorized_masks
+                else: data == masks
                 # fwd
                 data = data.to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
                 input, targets = data[:, :VIDEO_IN_LENGTH], data[:, VIDEO_IN_LENGTH:]
@@ -132,7 +136,7 @@ def main(args):
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickVideoDataset(data_dir=test_dir, vid_type=vid_type, num_frames=VIDEO_TOT_LENGTH, step=4)
+    test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
     validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses)
 

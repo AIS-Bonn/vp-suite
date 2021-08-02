@@ -26,16 +26,16 @@ class SynpickSegmentationDataset(Dataset):
             if a[:-4] != b[:-4]:
                 print(a, b)
                 raise ValueError("image filenames are mask filenames do not match!")
-        self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
-        self.masks_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
+        self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
+        self.mask_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
 
         self.augmentation = augmentation
 
     def __getitem__(self, i):
 
-        image = cv2.imread(self.images_fps[i])
+        image = cv2.imread(self.image_fps[i])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        mask = np.expand_dims(cv2.imread(self.masks_fps[i], 0), axis=-1)  # imread() mode 0 -> grayscale
+        mask = np.expand_dims(cv2.imread(self.mask_fps[i], 0), axis=-1)  # imread() mode 0 -> grayscale
 
         # apply augmentations
         if self.augmentation:
@@ -53,28 +53,35 @@ class SynpickSegmentationDataset(Dataset):
 
 class SynpickVideoDataset(Dataset):
 
-    def __init__(self, data_dir, vid_type:tuple, num_frames=8, step=1, allow_overlap=True):
+    def __init__(self, data_dir, num_frames=8, step=1, allow_overlap=True):
         super(SynpickVideoDataset, self).__init__()
 
-        self.is_mask = "mask" in vid_type[0]
-        self.is_colorized_mask = self.is_mask and vid_type[1] == 3
-        self.data_ids = sorted(os.listdir(data_dir))
-        self.data_fps = [os.path.join(data_dir, image_id) for image_id in self.data_ids]
+        images_dir = os.path.join(data_dir, 'rgb')
+        masks_dir = os.path.join(data_dir, 'masks')
+        self.image_ids = sorted(os.listdir(images_dir))
+        self.mask_ids = sorted(os.listdir(masks_dir))
+        for a, b in zip(self.image_ids, self.mask_ids):
+            if a[:-4] != b[:-4]:
+                print(a, b)
+                raise ValueError("image filenames are mask filenames do not match!")
+        self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
+        self.mask_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
 
-        self.total_len = len(self.data_ids)
+        self.total_len = len(self.image_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
         self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
-        # allow_overlap == True: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...]. False: [[0, 1, 2], [3, 4, 5], ...]
+
+        # If allow_overlap == True: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...]. False: [[0, 1, 2], [3, 4, 5], ...]
         self.allow_overlap = allow_overlap
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
         self.valid_idx = []
-        for idx in range(len(self.data_ids)):
+        for idx in range(len(self.image_ids)):
             # last T frames mustn't be chosen as the start of a sequence
             # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
             self.all_idx.append(idx)
-            frame_num = int(self.data_ids[idx][-10:-4])
+            frame_num = int(self.image_ids[idx][-10:-4])
             frame_num_ok = frame_num >= self.sequence_length
             overlap_ok = self.allow_overlap or frame_num % self.sequence_length == 0
             if frame_num_ok and overlap_ok:
@@ -90,22 +97,17 @@ class SynpickVideoDataset(Dataset):
 
     def __getitem__(self, i):
         true_i = self.valid_idx[i]
-        frames = []
+        imgs, masks, colorized_masks = [], [], []
         for t in range(0, self.sequence_length, self.step):
-            if self.is_mask:
-                datapoint = cv2.imread(self.data_fps[true_i + t], 0)
-                if self.is_colorized_mask:
-                    datapoint = preprocess_mask_colorize(datapoint, NUM_CLASSES)
-                else:
-                    datapoint = preprocess_mask_inflate(datapoint, NUM_CLASSES) # apply preprocessing
-            else:
-                datapoint = cv2.imread(self.data_fps[true_i + t])
-                datapoint = cv2.cvtColor(datapoint, cv2.COLOR_BGR2RGB)
-                datapoint = preprocess_img(datapoint)  # apply preprocessing
-            frames.append(datapoint)
 
-        frames = torch.stack(frames, dim=0)  # [T, c, h, w]
-        return frames
+            img_dp = cv2.cvtColor(cv2.imread(self.image_fps[true_i + t]), cv2.COLOR_BGR2RGB)
+            mask_dp = cv2.imread(self.mask_fps[true_i + t], 0)
+
+            imgs.append(preprocess_img(img_dp))
+            masks.append(preprocess_mask_inflate(mask_dp, NUM_CLASSES))
+            colorized_masks.append(preprocess_mask_colorize(mask_dp, NUM_CLASSES))
+
+        return torch.stack(imgs, dim=0), torch.stack(masks, dim=0), torch.stack(colorized_masks, dim=0)
 
     def __len__(self):
         return len(self.valid_idx)

@@ -67,7 +67,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
                     pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
                 else:
                     pr_traj_vis = postprocess_mask(pr_traj.argmax(dim=2).squeeze())  # [in_l + pred_l, h, w]
-                    pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=vid_type[1]).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
+                    pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=num_channels).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
 
                 save_vid_vis(
                     out_fp=os.path.join(out_dir, "{}.gif".format(str(i))),
