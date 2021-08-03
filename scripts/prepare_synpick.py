@@ -79,9 +79,9 @@ def prepare_synpick_vid(cfg):
     test_segs = sorted(test_path.glob("*/class_index_masks/*.png"))
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    copy_synpick_data(all_fps, f"vid_{path.stem}", cfg.timestamp)
+    copy_synpick_data(all_fps, f"vid_{path.stem}", cfg.timestamp, cfg.resize_ratio)
 
-def copy_synpick_data(all_fps, dir_name, timestamp):
+def copy_synpick_data(all_fps, dir_name, timestamp, resize_ratio):
 
     # prepare and execute file copying
     out_path = Path("data").absolute() / f"{dir_name}_{timestamp}"
@@ -98,7 +98,7 @@ def copy_synpick_data(all_fps, dir_name, timestamp):
         for fp in tqdm(fps, postfix=op.parent.stem + "/" + op.stem):
             fp = Path(fp)
             img = cv2.imread(str(fp.absolute()), cv2.IMREAD_COLOR if "jpg" in fp.suffix else cv2.IMREAD_GRAYSCALE)
-            resized_img = cv2.resize(img, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
+            resized_img = cv2.resize(img, None, fx=resize_ratio, fy=resize_ratio, interpolation=cv2.INTER_AREA)
             ep_number = ''.join(filter(str.isdigit, fp.parent.parent.stem)).zfill(6)
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
@@ -111,6 +111,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="rng seed for train/val split")
     parser.add_argument("--img", action="store_true", help="Generate segmentation dataset only")
     parser.add_argument("--vid", action="store_true", help="Generate video pred. dataset only")
+    parser.add_argument("--resize-ratio", type=float, default=0.25, help="Scale frame sizes by this amount")
 
     cfg = parser.parse_args()
     cfg.timestamp = int(time.time())

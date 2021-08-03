@@ -66,6 +66,7 @@ class SynpickVideoDataset(Dataset):
                 raise ValueError("image filenames are mask filenames do not match!")
         self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
         self.mask_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
+        self.skip_first_n = 72  # skip first 72 frames as the gripper is not moving in the box yet
 
         self.total_len = len(self.image_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
@@ -82,13 +83,13 @@ class SynpickVideoDataset(Dataset):
             # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
             self.all_idx.append(idx)
             frame_num = int(self.image_ids[idx][-10:-4])
-            frame_num_ok = frame_num >= self.sequence_length
+            frame_num_ok = frame_num >= self.sequence_length + self.skip_first_n
             overlap_ok = self.allow_overlap or frame_num % self.sequence_length == 0
             if frame_num_ok and overlap_ok:
                 self.valid_idx.append((idx - self.sequence_length) % self.total_len)
 
-        # print(self.all_idx)
-        # print(self.valid_idx)
+        # print(len(self.all_idx))
+        # print(len(self.valid_idx))
         # exit(0)
 
         if len(self.valid_idx) < 1:

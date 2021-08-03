@@ -48,7 +48,7 @@ def get_2_wasserstein_dist(pred, real):
     M_l = torch.matmul(C_pred.t(), C_real)
     M_r = torch.matmul(C_real.t(), C_pred)
     M = torch.matmul(M_l, M_r)
-    S = linalg.eigvals(M)
+    S = linalg.eigvals(M) + 1e-15  # add small constant to avoid infinite gradients from sqrt(0)
     sq_tr_cov = S.sqrt().abs().sum()
 
     # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
@@ -188,13 +188,21 @@ def validate_seg_model(loader, seg_model, device):
     return 100.0 * num_correct / num_pixels
 
 
-def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_length, losses):
+def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_length, losses,
+                       data_in_type, num_channels):
 
     pred_model.eval()
     with torch.no_grad():
         loop = tqdm(loader)
         all_losses = {key: [] for key in losses.keys()}
-        for batch_idx, data in enumerate(loop):
+        for batch_idx, (imgs, masks, colorized_masks) in enumerate(loop):
+
+            if data_in_type == "rgb":
+                data = imgs
+            elif num_channels == 3:
+                data = colorized_masks
+            else:
+                data == masks
 
             # fwd
             data = data.to(device)  # [b, T, h, w], with T = video_tot_length

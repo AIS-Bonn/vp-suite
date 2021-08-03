@@ -18,8 +18,9 @@ class FrechetVideoDistance(nn.Module):
     def __init__(self, num_frames, in_channels=3):
         super(FrechetVideoDistance, self).__init__()
 
-        if num_frames < 9:
-            raise ValueError(f"The I3D Module used for FVD needs at least 9 input frames (given: {num_frames})!")
+        if num_frames < 9 or num_frames > 16:
+            raise ValueError(f"The I3D Module used for FVD needs in between"
+                             f" 9 and 16 input frames (given: {num_frames})!")
 
         self.i3d_in_shape = (224, 224)
 
@@ -43,7 +44,7 @@ class FrechetVideoDistance(nn.Module):
         real = TF.resize(real.reshape(-1, *vid_shape[2:]), self.i3d_in_shape)
 
         # re-arrange dims for I3D input
-        pred = pred.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))  # [b, T, c, 224, 224]
+        pred = pred.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))  # [b, c, T, 224, 224]
         real = real.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))
 
         logits_pred = self.i3d.extract_features(pred).squeeze()  # [b, n]

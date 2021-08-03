@@ -38,11 +38,12 @@ def main(args):
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
     train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH,
-                                     step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+                                     step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP)
     val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
-                                   step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
-    train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE)
-    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
+                                   step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+    train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
+                              drop_last=True)
+    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
 
     # MODEL
 
@@ -65,7 +66,7 @@ def main(args):
     }
     # FVD loss only available for 2- or 3- channel input
     if num_channels == 2 or num_channels == 3:
-        losses["fvd"] = (FrechetVideoDistance(num_frames=VIDEO_TOT_LENGTH, in_channels=num_channels), True, 0.0)
+        losses["fvd"] = (FrechetVideoDistance(num_frames=VIDEO_TOT_LENGTH, in_channels=num_channels), True, 0.001)
     # Check if indicator loss available
     if cfg.indicator_val_loss not in losses.keys():
         default_loss = "mse"
@@ -76,6 +77,8 @@ def main(args):
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=LEARNING_RATE)
+
+    torch.autograd.set_detect_anomaly(True)
 
     # TRAINING
     for i in range(0, NUM_EPOCHS):
@@ -109,14 +112,17 @@ def main(args):
                 # bwd
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 10)
                 optimizer.step()
 
-                loop.set_postfix(loss=loss.item())
+                # loop.set_postfix(loss=loss.item())
+                loop.set_postfix(mem=torch.cuda.memory_allocated())
         else:
             print("Skipping trianing loop.")
 
         print("Validating...")
-        val_losses = validate_vid_model(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses)
+        val_losses = validate_vid_model(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
+                                        data_in_type, num_channels)
         cur_val_loss = val_losses[cfg.indicator_val_loss]
 
         # save model if last epoch improved acc.
@@ -137,8 +143,9 @@ def main(args):
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
     test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4)
-    test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
-    validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses)
+    test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
+                                        data_in_type, num_channels)
 
     print("Saving visualizations...")
     visualize_vid(test_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, best_model, out_dir, vid_type, num_vis=10)
