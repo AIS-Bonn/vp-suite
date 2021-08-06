@@ -41,7 +41,7 @@ def prepare_synpick_img(cfg):
     test_rgbs, test_segs = list(zip(*test_r_s))
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    copy_synpick_data(all_fps, f"img_{path.stem}", cfg.timestamp)
+    copy_synpick_data(all_fps, f"img_{path.stem}", cfg.timestamp, cfg.resize_ratio)
 
 
 def prepare_synpick_vid(cfg):

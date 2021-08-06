@@ -15,6 +15,8 @@ from visualize import visualize_seg
 
 def main(cfg):
 
+    num_classes = SYNPICK_CLASSES + 1 if cfg.include_gripper else SYNPICK_CLASSES
+
     # SEEDING
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -26,14 +28,16 @@ def main(cfg):
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
 
-    train_data = SynpickSegmentationDataset(data_dir=train_dir, augmentation=synpick_seg_train_augmentation())
-    val_data = SynpickSegmentationDataset(data_dir=val_dir, augmentation=synpick_seg_val_augmentation())
+    train_data = SynpickSegmentationDataset(data_dir=train_dir, num_classes=num_classes)
+    train_data.augmentation = synpick_seg_train_augmentation(img_h=train_data.img_h)
+    val_data = SynpickSegmentationDataset(data_dir=val_dir, num_classes=num_classes)
+    val_data.augmentation = synpick_seg_val_augmentation(img_h=val_data.img_h)
 
     train_loader = DataLoader(train_data, batch_size=SEG_BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     # MODEL
-    seg_model = UNet(in_channels=3, out_channels=train_data.NUM_CLASSES).to(DEVICE)
+    seg_model = UNet(in_channels=3, out_channels=num_classes).to(DEVICE)
 
     # ETC
     loss_fn = CrossEntropyLoss()
@@ -82,7 +86,8 @@ def main(cfg):
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickSegmentationDataset(data_dir=test_dir, augmentation=synpick_seg_val_augmentation())
+    test_data = SynpickSegmentationDataset(data_dir=test_dir, num_classes=num_classes)
+    test_data.augmentation = synpick_seg_val_augmentation(img_h=test_data.img_h)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
     accuracy = validate_seg_model(test_loader, best_model, DEVICE)
@@ -97,6 +102,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Semantic Segmentation Model Training")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
+    parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
 
     cfg = parser.parse_args()
     main(cfg)

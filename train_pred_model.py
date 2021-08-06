@@ -25,6 +25,7 @@ def main(args):
 
     data_in_type = ''.join(s for s in cfg.in_type if not s.isdigit())
     num_channels = int(''.join(i for i in cfg.in_type if i.isdigit()))
+    num_classes = SYNPICK_CLASSES + 1 if cfg.include_gripper else SYNPICK_CLASSES
     vid_type = (data_in_type, num_channels)
 
     # SEEDING
@@ -38,9 +39,9 @@ def main(args):
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
     train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH,
-                                     step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+                                     step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
-                                   step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+                                   step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
@@ -66,7 +67,7 @@ def main(args):
     }
     # FVD loss only available for 2- or 3- channel input
     if num_channels == 2 or num_channels == 3:
-        losses["fvd"] = (FrechetVideoDistance(num_frames=VIDEO_TOT_LENGTH, in_channels=num_channels), True, 0.001)
+        losses["fvd"] = (FrechetVideoDistance(num_frames=VIDEO_TOT_LENGTH, in_channels=num_channels), True, 0.00)
     # Check if indicator loss available
     if cfg.indicator_val_loss not in losses.keys():
         default_loss = "mse"
@@ -115,8 +116,8 @@ def main(args):
                 torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 10)
                 optimizer.step()
 
-                # loop.set_postfix(loss=loss.item())
-                loop.set_postfix(mem=torch.cuda.memory_allocated())
+                loop.set_postfix(loss=loss.item())
+                # loop.set_postfix(mem=torch.cuda.memory_allocated())
         else:
             print("Skipping trianing loop.")
 
@@ -142,7 +143,7 @@ def main(args):
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4)
+    test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4, num_classes=num_channels)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
     validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
                                         data_in_type, num_channels)
@@ -158,6 +159,7 @@ if __name__ == '__main__':
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
+    parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--model", type=str, choices=["unet", "lstm", "copy"], help="Which model arch to use")
     parser.add_argument("--in-type", type=str, choices=["rgb3", "masks3", "masks22"], default="rgb3",
                         help="Which kind of data to train/test on")
