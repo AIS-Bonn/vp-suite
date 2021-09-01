@@ -1,4 +1,4 @@
-import os, time
+import os, time, json, math
 
 import albumentations as albu
 import numpy as np
@@ -58,6 +58,11 @@ class SynpickVideoDataset(Dataset):
 
         images_dir = os.path.join(data_dir, 'rgb')
         masks_dir = os.path.join(data_dir, 'masks')
+        scene_gt_dir = os.path.join(data_dir, 'scene_gt')
+
+        self.include_gripper = num_classes > SYNPICK_CLASSES
+        self.check_gripper_movement = self.include_gripper and os.path.isdir(scene_gt_dir)
+
         self.image_ids = sorted(os.listdir(images_dir))
         self.mask_ids = sorted(os.listdir(masks_dir))
         for a, b in zip(self.image_ids, self.mask_ids):
@@ -67,11 +72,21 @@ class SynpickVideoDataset(Dataset):
 
         self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
         self.mask_fps = [os.path.join(masks_dir, mask_id) for mask_id in self.mask_ids]
-        self.skip_first_n = 72  # skip first 72 frames as the gripper is not moving in the box yet
+
+        if self.check_gripper_movement:
+            scene_gt_fps = [os.path.join(scene_gt_dir, scene_gt_fp) for scene_gt_fp in sorted(os.listdir(scene_gt_dir))]
+            self.gripper_positions = {}
+            for scene_gt_fp, ep in zip(scene_gt_fps, [int(a[-20:-14]) for a in scene_gt_fps]):
+                with open(scene_gt_fp, "r") as scene_json_file:
+                    ep_dict = json.load(scene_json_file)
+                gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
+                self.gripper_positions[ep] = gripper_pos
+                gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
 
         self.total_len = len(self.image_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
         self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
+        self.frame_offsets = range(0, num_frames * self.step, self.step)
 
         # If allow_overlap == True: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...]. False: [[0, 1, 2], [3, 4, 5], ...]
         self.allow_overlap = allow_overlap
@@ -80,21 +95,36 @@ class SynpickVideoDataset(Dataset):
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
         self.valid_idx = []
-        for idx in range(len(self.image_ids)):
-            # last T frames mustn't be chosen as the start of a sequence
-            # -> declare indices of each trajectory's first T images as invalid and shift the indices back by T
+        last_valid_idx = -1 * self.sequence_length
+        for idx in range(len(self.image_ids) - self.sequence_length + 1):
+
             self.all_idx.append(idx)
-            frame_num = int(self.image_ids[idx][-10:-4])
-            frame_num_ok = frame_num >= self.sequence_length + self.skip_first_n
-            overlap_ok = self.allow_overlap or frame_num % self.sequence_length == 0
-            if frame_num_ok and overlap_ok:
-                self.valid_idx.append((idx - self.sequence_length) % self.total_len)
+            ep_nums = [int(self.image_ids[idx + offset][-17:-11]) for offset in self.frame_offsets]
+            frame_nums = [int(self.image_ids[idx + offset][-10:-4]) for offset in self.frame_offsets]
 
-        self.img_shape = cv2.cvtColor(cv2.imread(self.image_fps[self.valid_idx[0]]), cv2.COLOR_BGR2RGB).shape
+            # last T frames of an episode mustn't be chosen as the start of a sequence
+            if ep_nums[0] != ep_nums[-1]:
+                continue
 
-        # print(len(self.all_idx))
-        # print(len(self.valid_idx))
-        # exit(0)
+            # if overlap is not allowed, sequences should not overlap
+            if not self.allow_overlap and idx < last_valid_idx + self.sequence_length:
+                continue
+
+            # if gripper positions are included, discard sequences without considerable gripper movement
+            if self.check_gripper_movement:
+                gripper_pos = [self.gripper_positions[ep_nums[0]][frame_num] for frame_num in frame_nums]
+                gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
+                gripper_movement_ok = all([delta >= 0.08 for delta in gripper_pos_deltas])
+                if not gripper_movement_ok:
+                    continue
+
+            self.valid_idx.append(idx)
+            last_valid_idx = idx
+
+        self.img_shape = cv2.cvtColor(cv2.imread(self.image_fps[self.valid_idx[0]]), cv2.COLOR_BGR2RGB).shape[:-1]
+
+        print(len(self.all_idx))
+        print(len(self.valid_idx))
 
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
@@ -109,13 +139,17 @@ class SynpickVideoDataset(Dataset):
             mask_dp = cv2.imread(self.mask_fps[true_i + t], 0)
 
             imgs.append(preprocess_img(img_dp))
-            masks.append(preprocess_mask_inflate(mask_dp, self.num_classes))
+            masks.append(preprocess_mask_inflate(np.expand_dims(mask_dp, axis=2), self.num_classes))
             colorized_masks.append(preprocess_mask_colorize(mask_dp, self.num_classes))
 
         return torch.stack(imgs, dim=0), torch.stack(masks, dim=0), torch.stack(colorized_masks, dim=0)
 
     def __len__(self):
         return len(self.valid_idx)
+
+    def comp_gripper_pos(self, old, new):
+        x_diff, y_diff = new[0] - old[0], new[1] - old[1]
+        return math.sqrt(x_diff * x_diff + y_diff * y_diff)
 
 # ==============================================================================
 
@@ -124,9 +158,9 @@ def preprocess_mask(x):
 
 def preprocess_mask_inflate(x, num_channels):
     # input: [h, w] or [t, h, w], np.uint8
-    x = torch.from_numpy(x)  # [1, h, w]
+    x = torch.from_numpy(x.squeeze())  # [1, h, w]
     x_list = [(x == i) for i in range(num_channels)]
-    return torch.cat(x_list, dim=0).float()
+    return torch.stack(x_list, dim=0).float()
 
 def preprocess_mask_colorize(x, num_channels):
     x = colorize_semseg(x, num_channels)

@@ -1,4 +1,7 @@
 import sys
+
+import numpy as np
+
 sys.path.append(".")
 
 import torch
@@ -7,7 +10,7 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
 from config import DEVICE
-from models.model_blocks import DoubleConv2d, DoubleConv3d, ConvLSTMCell
+from models.model_blocks import DoubleConv2d, DoubleConv3d, ConvLSTMCell, SpatioTemporalLSTMCell, Autoencoder
 
 
 class VideoPredictionModel(nn.Module):
@@ -24,11 +27,19 @@ class VideoPredictionModel(nn.Module):
         # input: T frames: [b, T, c, h, w]
         # output: pred_length (P) frames: [b, P, c, h, w]
         preds = []
+        loss_dicts = []
         for i in range(pred_length):
-            pred = self.forward(x).unsqueeze(dim=1)
+            pred, loss_dict = self.forward(x).unsqueeze(dim=1)
             preds.append(pred)
+            loss_dicts.append(loss_dict)
             x = torch.cat([x[:, 1:], pred], dim=1)
-        return torch.cat(preds, dim=1)
+
+        pred = torch.cat(preds, dim=1)
+        if loss_dicts[0] is not None:
+            loss_dict = {k: torch.mean([loss_dict[k] for loss_dict in loss_dicts]) for k in loss_dicts[0]}
+        else:
+            loss_dict = None
+        return pred, loss_dict
 
 
 class CopyLastFrameModel(VideoPredictionModel):
@@ -37,7 +48,7 @@ class CopyLastFrameModel(VideoPredictionModel):
         super(CopyLastFrameModel, self).__init__()
 
     def forward(self, x):
-        return x[:, -1, :, :, :]
+        return x[:, -1, :, :, :], None
 
 
 class UNet3d(VideoPredictionModel):
@@ -98,7 +109,7 @@ class UNet3d(VideoPredictionModel):
             x = self.ups[i + 1](concat_skip)
 
         # FINAL
-        return self.final_conv(x)
+        return self.final_conv(x), None
 
 
 class LSTMModel(VideoPredictionModel):
@@ -124,7 +135,7 @@ class LSTMModel(VideoPredictionModel):
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=2, stride=2),
             nn.Conv2d(in_channels=8, out_channels=out_channels, kernel_size=(3, 3), padding=(1, 1), padding_mode="replicate"),
-            nn.BatchNorm2d(3),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=1)  # final_conv
         )
@@ -156,23 +167,103 @@ class LSTMModel(VideoPredictionModel):
                 preds.append(TF.resize(self.decode(state[0]), size=x.shape[3:]))
 
         preds = torch.stack(preds, dim=0).transpose(0, 1)  # output is [b, t, c, h, w] again
-        return preds
+        return preds, None
 
+class ST_LSTM_NoEncode(VideoPredictionModel):
+
+    # MAGIC NUMBERZ
+    enc_channels = 64
+    num_layers = 4
+    num_hidden = [64, 64, 64, 64]
+    decouple_loss_scale = 1.0
+
+    def __init__(self, img_size, img_channels, device):
+        super(ST_LSTM_NoEncode, self).__init__()
+
+        img_height, img_width = img_size
+
+        self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
+        _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
+
+        cells = []
+        for i in range(self.num_layers):
+            in_channel = self.enc_channels if i == 0 else self.num_hidden[i - 1]
+            cells.append(SpatioTemporalLSTMCell(in_channel, self.num_hidden[i], self.enc_h, self.enc_w,
+                                                filter_size=5, stride=1, layer_norm=True))
+        self.cell_list = nn.ModuleList(cells)
+        self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.enc_channels, kernel_size=1, stride=1,
+                                   bias=False)
+        # shared adapter
+        adapter_num_hidden = self.num_hidden[0]
+        self.adapter = nn.Conv2d(adapter_num_hidden, adapter_num_hidden, 1, stride=1, padding=0, bias=False)
+
+        self.device = device
+        self.to(self.device)
+
+    def forward(self, x):
+        return self.pred_n(x, pred_length=1)
+
+    def pred_n(self, frames, pred_length=1):
+
+        frames = frames.transpose(0, 1)  # [t, b, c, h, w]
+
+        t_in, b, _, _, _ = frames.shape
+        T = t_in + pred_length
+        next_frames = []
+        h_t = []
+        c_t = []
+        delta_c_list = []
+        delta_m_list = []
+        decouple_loss = []
+
+        for i in range(self.num_layers):
+            zeros = torch.zeros([b, self.num_hidden[i], self.enc_h, self.enc_w]).to(self.device)
+            h_t.append(zeros)
+            c_t.append(zeros)
+            delta_c_list.append(zeros)
+            delta_m_list.append(zeros)
+
+        memory = torch.zeros([b, self.num_hidden[0], self.enc_h, self.enc_w]).to(self.device)
+
+        for t in range(T):
+
+            next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen
+
+            for i in range(self.num_layers):
+                h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](next_cell_input, h_t[i], c_t[i], memory)
+                delta_c_list[i] = F.normalize(self.adapter(delta_c).view(delta_c.shape[0], delta_c.shape[1], -1), dim=2)
+                delta_m_list[i] = F.normalize(self.adapter(delta_m).view(delta_m.shape[0], delta_m.shape[1], -1), dim=2)
+                next_cell_input = h_t[i]
+
+            x_gen = self.conv_last(h_t[self.num_layers - 1])
+            next_frames.append(self.autoencoder.decode(x_gen))
+
+            # decoupling loss
+            for i in range(0, self.num_layers):
+                decouple_loss_ = torch.cosine_similarity(delta_c_list[i], delta_m_list[i], dim=2)
+                decouple_loss.append(torch.mean(torch.abs(decouple_loss_)))
+
+        predictions = torch.stack(next_frames[t_in:], dim=0).transpose(0, 1)
+
+        decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0)) * self.decouple_loss_scale
+
+        return predictions, {"ST-LSTM decouple loss": decouple_loss}
 
 def test():
     import time
 
     batch_size = 8
     time_dim = 5
-    num_channels = 3
-    pred_length = 4
-    img_size = 270, 480
+    num_channels = 23
+    pred_length = 10
+    img_size = 135, 240
     x = torch.randn((batch_size, time_dim, num_channels, *img_size)).to(DEVICE)
 
     models = [
         CopyLastFrameModel(),
         UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=time_dim).to(DEVICE),
-        LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
+        LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE),
+        ST_LSTM_NoEncode(img_size, img_channels=num_channels, device=DEVICE)
     ]
 
     for model in models:

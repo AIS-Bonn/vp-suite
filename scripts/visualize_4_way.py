@@ -25,10 +25,12 @@ def visualize_4_way(cfg):
     pred_mask_model.eval()
     pred_colorized_mask_model.eval()
 
+    dataset_classes = SYNPICK_CLASSES+1 if cfg.include_gripper else SYNPICK_CLASSES
+
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
     test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=VIDEO_TOT_LENGTH,
-                                    step=4, allow_overlap=VID_DATA_ALLOW_OVERLAP)
+                                    step=2, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=dataset_classes)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     iter_loader = iter(test_loader)
 
@@ -37,7 +39,7 @@ def visualize_4_way(cfg):
         return np.square(np.subtract(pred, target)).mean()
 
     with torch.no_grad():
-        for i in tqdm(range(1)):
+        for i in tqdm(range(10)):
 
             imgs, _, colorized_masks = next(iter_loader)
             imgs, colorized_masks = imgs.to(DEVICE), colorized_masks.to(DEVICE) # [1, T, 3, h, w]
@@ -51,16 +53,16 @@ def visualize_4_way(cfg):
 
             pred_then_seg = torch.stack([seg_model(pred_rgb[:, i]) for i in range(pred_rgb.shape[1])], dim=1)
             pred_then_seg = pred_then_seg.argmax(dim=2).squeeze()  # [T, h, w]
-            pred_seg_color_vis = colorize_semseg(postprocess_mask(pred_then_seg), num_classes=SYNPICK_CLASSES).transpose(0, 3, 1, 2) # [T, 3, h, w]
+            pred_seg_color_vis = colorize_semseg(postprocess_mask(pred_then_seg), num_classes=dataset_classes).transpose(0, 3, 1, 2) # [T, 3, h, w]
 
             seg = torch.stack([seg_model(imgs[:, i]) for i in range(imgs.shape[1])], dim=1).argmax(dim=2)  # [1, T, 1, h, w]
-            seg_input = torch.stack([(seg == i) for i in range(SYNPICK_CLASSES)], dim=2).float()  # [1, T, c, h, w] one-hot float
+            seg_input = torch.stack([(seg == i) for i in range(dataset_classes)], dim=2).float()  # [1, T, c, h, w] one-hot float
             input_seg = seg_input[:, :VIDEO_IN_LENGTH]  # [1, t, c, h, w]
             seg_then_pred = pred_mask_model.pred_n(input_seg, pred_length=VIDEO_PRED_LENGTH).argmax(dim=2)  # [1, n, 1, h, w]
             seg_then_pred = torch.cat([input_seg.argmax(dim=2), seg_then_pred], dim=1).squeeze()  # [T, h, w]
-            seg_pred_color_vis = colorize_semseg(postprocess_mask(seg_then_pred), num_classes=SYNPICK_CLASSES).transpose(0, 3, 1, 2)  # [T, 3, h, w]
+            seg_pred_color_vis = colorize_semseg(postprocess_mask(seg_then_pred), num_classes=dataset_classes).transpose(0, 3, 1, 2)  # [T, 3, h, w]
 
-            seg_colorized = colorize_semseg(postprocess_mask(seg.squeeze()), num_classes=SYNPICK_CLASSES)
+            seg_colorized = colorize_semseg(postprocess_mask(seg.squeeze()), num_classes=dataset_classes)
             seg_color_per_frame_vis = seg_colorized.transpose(0, 3, 1, 2)  # [T, 3, h, w]
 
             input_colorized = preprocess_img(seg_colorized[:VIDEO_IN_LENGTH]).to(DEVICE).unsqueeze(dim=0)  # [b, t, 3, h, w]
@@ -97,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument("--pred-colorized", type=str, help="Path to prediction model (colorized)")
     parser.add_argument("--data-dir", type=str, help="Path to data dir")
     parser.add_argument("--out-dir", type=str, help="Output path for results")
+    parser.add_argument("--include-gripper", action="store_true")
 
     cfg = parser.parse_args()
     visualize_4_way(cfg)

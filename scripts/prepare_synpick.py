@@ -41,7 +41,10 @@ def prepare_synpick_img(cfg):
     test_rgbs, test_segs = list(zip(*test_r_s))
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    copy_synpick_data(all_fps, f"img_{path.stem}", cfg.timestamp, cfg.resize_ratio)
+    out_path = Path("data").absolute() / f"vid_{path.stem}_{cfg.timestamp}"
+    out_path.mkdir(parents=True)
+
+    copy_synpick_imgs(all_fps, out_path, cfg.resize_ratio)
 
 
 def prepare_synpick_vid(cfg):
@@ -57,6 +60,7 @@ def prepare_synpick_vid(cfg):
     # get all training image FPs for rgb
     rgbs = sorted(train_path.glob("*/rgb/*.jpg"))
     segs = sorted(train_path.glob("*/class_index_masks/*.png"))
+    scene_gts = sorted(train_path.glob("*/scene_gt.json"))
 
     num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
     train_eps = [i for i in range(num_ep)]
@@ -65,7 +69,7 @@ def prepare_synpick_vid(cfg):
     train_eps = train_eps[:cut]
 
     # split rgb files into train and val by episode number only , as we need contiguous motions for video
-    train_rgbs, val_rgbs, train_segs, val_segs = [], [], [], []
+    train_rgbs, val_rgbs, train_segs, val_segs, train_scene_gts, val_scene_gts = [], [], [], [], [], []
     for rgb, seg in zip(rgbs, segs):
         ep = int(Path(rgb).parent.parent.stem) + 1
         if ep in train_eps:
@@ -75,17 +79,28 @@ def prepare_synpick_vid(cfg):
             val_rgbs.append(rgb)
             val_segs.append(seg)
 
+    for scene_gt in scene_gts:
+        ep = int(Path(scene_gt).parent.stem) + 1
+        if ep in train_eps:
+            train_scene_gts.append(scene_gt)
+        else:
+            val_scene_gts.append(scene_gt)
+
     test_rgbs = sorted(test_path.glob("*/rgb/*.jpg"))
     test_segs = sorted(test_path.glob("*/class_index_masks/*.png"))
+    test_scene_gts = sorted(test_path.glob("*/scene_gt.json"))
 
-    all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    copy_synpick_data(all_fps, f"vid_{path.stem}", cfg.timestamp, cfg.resize_ratio)
+    all_img_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
+    all_scene_gts = [train_scene_gts, val_scene_gts, test_scene_gts]
+    out_path = Path("data").absolute() / f"vid_{path.stem}_{cfg.timestamp}"
+    out_path.mkdir(parents=True)
 
-def copy_synpick_data(all_fps, dir_name, timestamp, resize_ratio):
+    copy_synpick_imgs(all_img_fps, out_path, cfg.resize_ratio)
+    copy_synpick_scene_gts(all_scene_gts, out_path)
+
+def copy_synpick_imgs(all_fps, out_path, resize_ratio):
 
     # prepare and execute file copying
-    out_path = Path("data").absolute() / f"{dir_name}_{timestamp}"
-    out_path.mkdir(parents=True)
     all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
                      (out_path / "val" / "rgb"), (out_path / "val" / "masks"),
                      (out_path / "test" / "rgb"), (out_path / "test" / "masks")]
@@ -103,6 +118,22 @@ def copy_synpick_data(all_fps, dir_name, timestamp, resize_ratio):
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
 
+def copy_synpick_scene_gts(all_fps, out_path):
+
+    # prepare and execute file copying
+    all_out_paths = [(out_path / "train" / "scene_gt"), (out_path / "val" / "scene_gt"),
+                     (out_path / "test" / "scene_gt")]
+
+    for op in all_out_paths:
+        op.mkdir(parents=True)
+
+    # copy files to new folder structure
+    for fps, op in zip(all_fps, all_out_paths):
+        for fp in fps:
+            ep_number = ''.join(filter(str.isdigit, fp.parent.stem)).zfill(6)
+            out_fp = op / "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
+            print(fp, out_fp)
+            shutil.copyfile(fp, out_fp)
 
 if __name__ == '__main__':
 

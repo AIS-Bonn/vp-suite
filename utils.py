@@ -202,12 +202,12 @@ def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_l
             elif num_channels == 3:
                 data = colorized_masks
             else:
-                data == masks
+                data = masks
 
             # fwd
             data = data.to(device)  # [b, T, h, w], with T = video_tot_length
             input, targets = data[:, :video_in_length], data[:, video_in_length:]
-            predictions = pred_model.pred_n(input, pred_length=video_pred_length)
+            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length)
 
             # metrics
             predictions_full = torch.cat([input, predictions], dim=1)
@@ -217,6 +217,12 @@ def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_l
                 real = targets_full if use_full_input else targets
                 loss = loss_fn(pred, real).item()
                 all_losses[name].append(loss)
+            if model_losses is not None:
+                for loss_name, loss_value in model_losses.items():
+                    if loss_name in all_losses.keys():
+                        all_losses[loss_name].append(loss_value.item())
+                    else:
+                        all_losses[loss_name] = [loss_value.item()]
 
     pred_model.train()
 

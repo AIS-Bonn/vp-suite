@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickVideoDataset
-from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel
+from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel, ST_LSTM_NoEncode
 from metrics.prediction.fvd import FrechetVideoDistance
 from metrics.prediction.mse import MSE
 from metrics.prediction.bce import BCELogits
@@ -23,10 +23,9 @@ def main(args):
     out_dir = Path("out/{}_pred_model".format(timestamp))
     out_dir.mkdir(parents=True)
 
-    data_in_type = ''.join(s for s in cfg.in_type if not s.isdigit())
-    num_channels = int(''.join(i for i in cfg.in_type if i.isdigit()))
     num_classes = SYNPICK_CLASSES + 1 if cfg.include_gripper else SYNPICK_CLASSES
-    vid_type = (data_in_type, num_channels)
+    num_channels = num_classes if cfg.pred_mode == "mask" else 3
+    vid_type = (cfg.pred_mode, num_channels)
 
     # SEEDING
     random.seed(cfg.seed)
@@ -42,6 +41,7 @@ def main(args):
                                      step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
                                    step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
+    exit(0)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
@@ -54,6 +54,9 @@ def main(args):
     elif cfg.model == "lstm":
         print("prediction model: LSTM")
         pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
+    elif cfg.model == "st_lstm":
+        print("prediction model: ST-LSTM")
+        pred_model = ST_LSTM_NoEncode(img_size=train_data.img_shape, img_channels=num_channels, device=DEVICE)
     else:
         print("prediction model: CopyLastFrame")
         pred_model = CopyLastFrameModel().to(DEVICE)
@@ -79,8 +82,6 @@ def main(args):
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=LEARNING_RATE)
 
-    torch.autograd.set_detect_anomaly(True)
-
     # TRAINING
     for i in range(0, NUM_EPOCHS):
         print(f'\nEpoch: {i+1} of {NUM_EPOCHS}')
@@ -92,13 +93,18 @@ def main(args):
 
             for batch_idx, (imgs, masks, colorized_masks) in enumerate(loop):
 
-                if data_in_type == "rgb": data = imgs
-                elif num_channels == 3: data = colorized_masks
-                else: data == masks
+                if cfg.pred_mode == "rgb":
+                    data = imgs
+                elif cfg.pred_mode == "colorized":
+                    data = colorized_masks
+                else:
+                    data = masks
+
                 # fwd
                 data = data.to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+
                 input, targets = data[:, :VIDEO_IN_LENGTH], data[:, VIDEO_IN_LENGTH:]
-                predictions = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
+                predictions, model_losses = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
 
                 # loss
                 predictions_full = torch.cat([input, predictions], dim=1)
@@ -109,6 +115,9 @@ def main(args):
                     pred = predictions_full if use_full_input else predictions
                     real = targets_full if use_full_input else targets
                     loss += scale * loss_fn(pred, real)
+                if model_losses is not None:
+                    for loss_value in model_losses.values():
+                        loss += loss_value
 
                 # bwd
                 optimizer.zero_grad()
@@ -123,7 +132,7 @@ def main(args):
 
         print("Validating...")
         val_losses = validate_vid_model(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
-                                        data_in_type, num_channels)
+                                        cfg.pred_mode, num_channels)
         cur_val_loss = val_losses[cfg.indicator_val_loss]
 
         # save model if last epoch improved acc.
@@ -146,7 +155,7 @@ def main(args):
     test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4, num_classes=num_channels)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
     validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
-                                        data_in_type, num_channels)
+                                        cfg.pred_mode, num_channels)
 
     print("Saving visualizations...")
     visualize_vid(test_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, best_model, out_dir, vid_type, num_vis=10)
@@ -160,8 +169,9 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
-    parser.add_argument("--model", type=str, choices=["unet", "lstm", "copy"], help="Which model arch to use")
-    parser.add_argument("--in-type", type=str, choices=["rgb3", "masks3", "masks22"], default="rgb3",
+    parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy"], default="unet",
+                        help="Which model arch to use")
+    parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
     parser.add_argument("--indicator-val-loss", type=str, choices=["mse", "fvd", "bce"], default="fvd",
                         help="Loss to use for determining if validated model has become 'better' and should be saved")
