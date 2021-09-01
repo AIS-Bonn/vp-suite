@@ -68,3 +68,4 @@ dependencies:
     - torchvision==0.10.0
     - typing-extensions==3.10.0.0
     - urllib3==1.26.6
+prefix: /home/user/boltres/anaconda3/envs/sem_vp
