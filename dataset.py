@@ -123,8 +123,8 @@ class SynpickVideoDataset(Dataset):
 
         self.img_shape = cv2.cvtColor(cv2.imread(self.image_fps[self.valid_idx[0]]), cv2.COLOR_BGR2RGB).shape[:-1]
 
-        print(len(self.all_idx))
-        print(len(self.valid_idx))
+        # print(len(self.all_idx))
+        # print(len(self.valid_idx))
 
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "

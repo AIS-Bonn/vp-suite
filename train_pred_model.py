@@ -41,7 +41,6 @@ def main(args):
                                      step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
                                    step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
-    exit(0)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
