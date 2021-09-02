@@ -1,4 +1,5 @@
 import os, time, json, math
+from typing import List
 
 import albumentations as albu
 import numpy as np
@@ -83,6 +84,7 @@ class SynpickVideoDataset(Dataset):
                 self.gripper_positions[ep] = gripper_pos
                 gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
 
+        self.skip_first_n = 72
         self.total_len = len(self.image_ids)
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
         self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
@@ -102,6 +104,10 @@ class SynpickVideoDataset(Dataset):
             ep_nums = [int(self.image_ids[idx + offset][-17:-11]) for offset in self.frame_offsets]
             frame_nums = [int(self.image_ids[idx + offset][-10:-4]) for offset in self.frame_offsets]
 
+            # first few frames are discarded
+            if frame_nums[0] < self.skip_first_n:
+                continue
+
             # last T frames of an episode mustn't be chosen as the start of a sequence
             if ep_nums[0] != ep_nums[-1]:
                 continue
@@ -114,17 +120,23 @@ class SynpickVideoDataset(Dataset):
             if self.check_gripper_movement:
                 gripper_pos = [self.gripper_positions[ep_nums[0]][frame_num] for frame_num in frame_nums]
                 gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
-                gripper_movement_ok = all([delta >= 0.08 for delta in gripper_pos_deltas])
+                gripper_pos_deltas_above_min = [(delta > 1.0) for delta in gripper_pos_deltas]
+                gripper_pos_deltas_below_max = [(delta < 30.0) for delta in gripper_pos_deltas]
+                gripper_movement_ok = self.most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
                 if not gripper_movement_ok:
                     continue
+                #for a, d in zip(gripper_pos[:-1], gripper_pos_deltas):
+                #    print(a[0], a[1], d)
+            #input()
 
             self.valid_idx.append(idx)
             last_valid_idx = idx
 
         self.img_shape = cv2.cvtColor(cv2.imread(self.image_fps[self.valid_idx[0]]), cv2.COLOR_BGR2RGB).shape[:-1]
 
-        # print(len(self.all_idx))
-        # print(len(self.valid_idx))
+        #print(len(self.all_idx))
+        #print(len(self.valid_idx))
+       # exit(0)
 
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
@@ -150,6 +162,9 @@ class SynpickVideoDataset(Dataset):
     def comp_gripper_pos(self, old, new):
         x_diff, y_diff = new[0] - old[0], new[1] - old[1]
         return math.sqrt(x_diff * x_diff + y_diff * y_diff)
+
+    def most(self, l: List[bool], factor=0.67):
+        return sum(l) >= factor * len(l)
 
 # ==============================================================================
 
