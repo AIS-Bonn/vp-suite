@@ -4,6 +4,8 @@ sys.path.append(".")
 from tqdm import tqdm
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -13,6 +15,10 @@ from config import *
 from utils import colorize_semseg, save_vid_vis
 
 def visualize_4_way(cfg):
+
+    # SEEDING
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
 
     # MODELS
     seg_model = torch.load(cfg.seg)
@@ -41,8 +47,11 @@ def visualize_4_way(cfg):
     def mse(pred, target):
         return np.square(np.subtract(pred, target)).mean()
 
+    mse_seg_only, mse_pred_rgb, mse_pred_mask, mse_pred_colorized = [], [], [], []
+    eval_length = len(iter_loader) if cfg.full_evaluation else 10
+
     with torch.no_grad():
-        for i in tqdm(range(10)):
+        for i in tqdm(range(eval_length)):
 
             imgs, _, colorized_masks = next(iter_loader)
             imgs, colorized_masks = imgs.to(DEVICE), colorized_masks.to(DEVICE) # [1, T, 3, h, w]
@@ -74,12 +83,10 @@ def visualize_4_way(cfg):
             seg_color_pred = torch.cat([input_colorized, seg_color_pred], dim=1).squeeze(dim=0)
             seg_color_pred_vis = postprocess_img(seg_color_pred)  # [T, 3, h, w]
 
-            print("")
-            print(f"MSE loss seg->colorize (per frame): {mse(seg_color_per_frame_vis, gt_colorized_vis)}")
-            print(f"MSE loss pred->seg->colorize: {mse(pred_seg_color_vis, gt_colorized_vis)}")
-            print(f"MSE loss seg->pred->colorize: {mse(seg_pred_color_vis, gt_colorized_vis)}")
-            print(f"MSE loss seg->colorize->pred: {mse(seg_color_pred_vis, gt_colorized_vis)}")
-            print("")
+            mse_seg_only.append(mse(seg_color_per_frame_vis, gt_colorized_vis))
+            mse_pred_rgb.append(mse(pred_seg_color_vis, gt_colorized_vis))
+            mse_pred_mask.append(mse(seg_pred_color_vis, gt_colorized_vis))
+            mse_pred_colorized.append(mse(seg_color_pred_vis, gt_colorized_vis))
 
             save_vid_vis(
                 out_fp=os.path.join(cfg.out_dir, "4way_vis_{}.gif".format(str(i))),
@@ -93,10 +100,21 @@ def visualize_4_way(cfg):
                 Colorization_Prediction=seg_color_pred_vis
             )
 
+    data = [np.array(mse_seg_only), np.array(mse_pred_rgb), np.array(mse_pred_mask), np.array(mse_pred_colorized)]
+
+    fig = plt.figure(figsize=(10, 7))
+    ax = fig.add_subplot(111)
+    ax.set_xticklabels(['seg. only', 'pred. on RGB',
+                        'pred. on mask', 'pred. on colorized'])
+    bp = ax.boxplot(data, showmeans=True, meanline=True, notch=True)
+    plt.title("MSE values")
+    plt.savefig(os.path.join(cfg.out_dir, "mse_values.jpg"))
+
 if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser(description="Video Prediction 4way vis")
+    parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--seg", type=str, help="Path to segmentation model")
     parser.add_argument("--pred-rgb", type=str, help="Path to prediction model (rgb)")
     parser.add_argument("--pred-mask", type=str, help="Path to prediction model (masks)")
@@ -104,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument("--data-dir", type=str, help="Path to data dir")
     parser.add_argument("--out-dir", type=str, help="Output path for results")
     parser.add_argument("--include-gripper", action="store_true")
+    parser.add_argument("--full-evaluation", action="store_true", help="If specified, checks the whole test set")
 
     cfg = parser.parse_args()
     visualize_4_way(cfg)
