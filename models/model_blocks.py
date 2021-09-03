@@ -132,6 +132,7 @@ class SpatioTemporalLSTMCell(nn.Module):
 
 
     def forward(self, x_t, h_t, c_t, m_t):
+
         x_concat = self.conv_x(x_t)
         h_concat = self.conv_h(h_t)
         m_concat = self.conv_m(m_t)

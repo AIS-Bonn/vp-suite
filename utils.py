@@ -1,15 +1,16 @@
-import numpy as np
-from tqdm import tqdm
-import torch
-import torch.linalg as linalg
+from typing import List
 import math
-from PIL import Image
+
+import hsluv
+import imageio
+from tqdm import tqdm
+from moviepy.editor import ImageSequenceClip
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import hsluv
-from moviepy.editor import ImageSequenceClip
-import imageio
-import math
+import numpy as np
+from PIL import Image
+import torch
+import torch.linalg as linalg
 
 def get_2_wasserstein_dist(pred, real):
     '''
@@ -203,8 +204,9 @@ def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_l
 
             # fwd
             img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
+            actions = data["actions"].to(device)
             input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
-            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length)
+            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
 
             # metrics
             predictions_full = torch.cat([input, predictions], dim=1)

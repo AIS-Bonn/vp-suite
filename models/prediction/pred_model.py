@@ -178,7 +178,7 @@ class STLSTM(VideoPredictionModel):
     num_hidden = [64, 64, 64, 64]
     decouple_loss_scale = 1.0
 
-    def __init__(self, img_size, img_channels, device, action_size=0):
+    def __init__(self, img_size, img_channels, action_size, device):
         super(STLSTM, self).__init__()
 
         img_height, img_width = img_size
@@ -215,7 +215,7 @@ class STLSTM(VideoPredictionModel):
             if actions is None or kwargs["actions"].shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
             else:
-                actions = actions.transpose(0, 1)  # [T, b, a]
+                actions = F.pad(actions.transpose(0, 1), (0, 0, 0, 0, 1, 0))  # front-pad 1st dim with 0s -> [t, b, a]
 
         t_in, b, _, _, _ = frames.shape
         T = t_in + pred_length

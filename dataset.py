@@ -1,5 +1,4 @@
 import os, time, json, math
-from typing import List
 
 import albumentations as albu
 import numpy as np
@@ -92,6 +91,7 @@ class SynpickVideoDataset(Dataset):
         # If allow_overlap == True: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...]. False: [[0, 1, 2], [3, 4, 5], ...]
         self.allow_overlap = allow_overlap
         self.num_classes = num_classes
+        self.action_size = 3
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
@@ -146,15 +146,14 @@ class SynpickVideoDataset(Dataset):
         ep_num = self.ep_num_from_id(self.image_ids[idx[0]])
         frame_nums = [self.frame_num_from_id(self.image_ids[id_]) for id_ in idx]
         gripper_pos = [self.gripper_pos[ep_num][frame_num] for frame_num in frame_nums]
-        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos))
+        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()
 
-        imgs = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
-        imgs = [preprocess_img(img) for img in imgs]
+        imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
+        masks_ = [cv2.imread(self.mask_fps[id_], 0) for id_ in idx]
 
-        masks = [cv2.imread(self.mask_fps[id_], 0) for id_ in idx]
-        masks = [preprocess_mask_inflate(np.expand_dims(mask, axis=2), self.num_classes) for mask in masks]
-
-        colorized_masks = [preprocess_mask_colorize(mask, self.num_classes) for mask in masks]
+        imgs = [preprocess_img(img) for img in imgs_]
+        masks = [preprocess_mask_inflate(np.expand_dims(mask, axis=2), self.num_classes) for mask in masks_]
+        colorized_masks = [preprocess_mask_colorize(mask, self.num_classes) for mask in masks_]
 
         data = {
             "rgb": torch.stack(imgs, dim=0),
@@ -177,7 +176,7 @@ class SynpickVideoDataset(Dataset):
 
     def get_gripper_pos_diff(self, gripper_pos):
         gripper_pos_numpy = np.array(gripper_pos)
-        return np.stack([new-old for old, new in gripper_pos_numpy, gripper_pos_numpy[1:]], axis=0)
+        return np.stack([new-old for old, new in zip(gripper_pos_numpy, gripper_pos_numpy[1:])], axis=0)
 
     def ep_num_from_id(self, file_id: str):
         return int(file_id[-17:-11])

@@ -53,6 +53,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
 
         gt_rgb_vis = postprocess_img(data["rgb"])
         gt_colorized_vis = postprocess_img(data["colorized"])
+        actions = data["actions"].to(DEVICE)
 
         in_traj = data[pred_mode]
 
@@ -60,7 +61,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
             pred_model.eval()
             with torch.no_grad():
                 in_traj = in_traj[:video_in_length].to(DEVICE).unsqueeze(dim=0)  # [1, in_l, c, h, w]
-                pr_traj, _ = pred_model.pred_n(in_traj, video_pred_length)  # [1, pred_l, c, h, w]
+                pr_traj, _ = pred_model.pred_n(in_traj, video_pred_length, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
                 if num_channels == 3:
                     pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]

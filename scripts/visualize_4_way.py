@@ -61,7 +61,7 @@ def visualize_4_way(cfg):
             gt_colorized_vis = postprocess_img(colorized_masks.squeeze(dim=0))  # [T, h, w, 3]
             input = imgs[:, :VIDEO_IN_LENGTH]  # [1, t, 3, h, w]
 
-            pred_rgb, _ = pred_rgb_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
+            pred_rgb, _ = pred_rgb_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH, actions=actions)
             pred_rgb = torch.cat([input, pred_rgb], dim=1)  # [1, T, 3, h, w]
             pred_rgb_vis = postprocess_img(pred_rgb.squeeze(dim=0))  # [T, 3, h, w]
 
@@ -72,7 +72,7 @@ def visualize_4_way(cfg):
             seg = torch.stack([seg_model(imgs[:, i]) for i in range(imgs.shape[1])], dim=1).argmax(dim=2)  # [1, T, 1, h, w]
             seg_input = torch.stack([(seg == i) for i in range(dataset_classes)], dim=2).float()  # [1, T, c, h, w] one-hot float
             input_seg = seg_input[:, :VIDEO_IN_LENGTH]  # [1, t, c, h, w]
-            seg_then_pred, _ = pred_mask_model.pred_n(input_seg, pred_length=VIDEO_PRED_LENGTH)
+            seg_then_pred, _ = pred_mask_model.pred_n(input_seg, pred_length=VIDEO_PRED_LENGTH, actions=actions)
             seg_then_pred = seg_then_pred.argmax(dim=2)  # [1, n, 1, h, w]
             seg_then_pred = torch.cat([input_seg.argmax(dim=2), seg_then_pred], dim=1).squeeze()  # [T, h, w]
             seg_pred_color_vis = colorize_semseg(postprocess_mask(seg_then_pred), num_classes=dataset_classes).transpose(0, 3, 1, 2)  # [T, 3, h, w]
@@ -81,7 +81,7 @@ def visualize_4_way(cfg):
             seg_color_per_frame_vis = seg_colorized.transpose(0, 3, 1, 2)  # [T, 3, h, w]
 
             input_colorized = preprocess_img(seg_colorized[:VIDEO_IN_LENGTH]).to(DEVICE).unsqueeze(dim=0)  # [b, t, 3, h, w]
-            seg_color_pred, _ = pred_colorized_mask_model.pred_n(input_colorized, pred_length=VIDEO_PRED_LENGTH)
+            seg_color_pred, _ = pred_colorized_mask_model.pred_n(input_colorized, pred_length=VIDEO_PRED_LENGTH, actions=actions)
             seg_color_pred = torch.cat([input_colorized, seg_color_pred], dim=1).squeeze(dim=0)
             seg_color_pred_vis = postprocess_img(seg_color_pred)  # [T, 3, h, w]
 

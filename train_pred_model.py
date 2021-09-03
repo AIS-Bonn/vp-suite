@@ -54,8 +54,13 @@ def main(args):
         print("prediction model: LSTM")
         pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
     elif cfg.model == "st_lstm":
-        print("prediction model: ST-LSTM")
-        pred_model = STLSTM(img_size=train_data.img_shape, img_channels=num_channels, device=DEVICE)
+        if cfg.include_actions:
+            a_dim = train_data.action_size
+            print("prediction model: action-conditional ST-LSTM")
+        else:
+            a_dim = 0
+            print("prediction model: ST-LSTM")
+        pred_model = STLSTM(img_size=train_data.img_shape, img_channels=num_channels, action_size=a_dim, device=DEVICE)
     else:
         print("prediction model: CopyLastFrame")
         pred_model = CopyLastFrameModel().to(DEVICE)
@@ -94,9 +99,10 @@ def main(args):
 
                 # fwd
                 img_data = data[cfg.pred_mode].to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+                actions = data["actions"].to(DEVICE)
 
                 input, targets = img_data[:, :VIDEO_IN_LENGTH], img_data[:, VIDEO_IN_LENGTH:]
-                predictions, model_losses = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
+                predictions, model_losses = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH, actions=actions)
 
                 # loss
                 predictions_full = torch.cat([input, predictions], dim=1)
