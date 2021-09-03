@@ -53,7 +53,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
 
         gt_rgb_vis = postprocess_img(data["rgb"])
         gt_colorized_vis = postprocess_img(data["colorized"])
-        actions = data["actions"].to(DEVICE)
+        actions = data["actions"].to(DEVICE).unsqueeze(dim=0)
 
         in_traj = data[pred_mode]
 
