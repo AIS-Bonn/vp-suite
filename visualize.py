@@ -44,22 +44,17 @@ def visualize_seg(dataset, seg_model=None, out_dir=".", num_vis=5):
 def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, out_dir=".",
                   vid_type=("rgb", 3), num_vis=5):
 
-    frame_type, num_channels = vid_type
+    pred_mode, num_channels = vid_type
 
     for i in range(num_vis):
         n = np.random.choice(len(dataset))
 
-        imgs, masks, colorized_masks = dataset[n] # [in_l + pred_l, c, h, w]
+        data = dataset[n] # [in_l + pred_l, c, h, w]
 
-        gt_rgb_vis = postprocess_img(imgs)
-        gt_colorized_vis = postprocess_img(colorized_masks)
+        gt_rgb_vis = postprocess_img(data["rgb"])
+        gt_colorized_vis = postprocess_img(data["colorized"])
 
-        if frame_type == "rgb":
-            in_traj = imgs
-        elif num_channels == 3:
-            in_traj = colorized_masks
-        else:
-            in_traj = masks
+        in_traj = data[pred_mode]
 
         if pred_model is not None:
             pred_model.eval()

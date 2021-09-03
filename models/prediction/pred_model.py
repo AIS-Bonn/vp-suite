@@ -18,18 +18,19 @@ class VideoPredictionModel(nn.Module):
     def __init__(self):
         super(VideoPredictionModel, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]
         # output: single frame: [b, c, h, w]
         raise NotImplementedError
 
-    def pred_n(self, x, pred_length=1):
+    def pred_n(self, x, pred_length=1, **kwargs):
         # input: T frames: [b, T, c, h, w]
         # output: pred_length (P) frames: [b, P, c, h, w]
         preds = []
         loss_dicts = []
         for i in range(pred_length):
-            pred, loss_dict = self.forward(x).unsqueeze(dim=1)
+            pred, loss_dict = self.forward(x)
+            pred = pred.unsqueeze(dim=1)
             preds.append(pred)
             loss_dicts.append(loss_dict)
             x = torch.cat([x[:, 1:], pred], dim=1)
@@ -47,7 +48,7 @@ class CopyLastFrameModel(VideoPredictionModel):
     def __init__(self):
         super(CopyLastFrameModel, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return x[:, -1, :, :, :], None
 
 
@@ -77,7 +78,7 @@ class UNet3d(VideoPredictionModel):
         self.final_conv = nn.Conv2d(in_channels=features[0], out_channels=out_channels, kernel_size=1)
 
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]
         # output: single frame: [b, c, h, w]
         assert x.shape[1] == self.time_dim, f"{self.time_dim} frames needed as pred input, {x.shape[1]} are given"
@@ -146,10 +147,10 @@ class LSTMModel(VideoPredictionModel):
         encoded_img = self.encode(img)  # [b, c, h, w] to [b, hidden, h_small, w_small]
         return self.lstm.init_hidden(encoded_img.shape)
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1)
 
-    def pred_n(self, x, pred_length=1):
+    def pred_n(self, x, pred_length=1, **kwargs):
 
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         state = self.init_hidden(x[0])
@@ -169,7 +170,7 @@ class LSTMModel(VideoPredictionModel):
         preds = torch.stack(preds, dim=0).transpose(0, 1)  # output is [b, t, c, h, w] again
         return preds, None
 
-class ST_LSTM_NoEncode(VideoPredictionModel):
+class STLSTM(VideoPredictionModel):
 
     # MAGIC NUMBERZ
     enc_channels = 64
@@ -177,17 +178,19 @@ class ST_LSTM_NoEncode(VideoPredictionModel):
     num_hidden = [64, 64, 64, 64]
     decouple_loss_scale = 1.0
 
-    def __init__(self, img_size, img_channels, device):
-        super(ST_LSTM_NoEncode, self).__init__()
+    def __init__(self, img_size, img_channels, device, action_size=0):
+        super(STLSTM, self).__init__()
 
         img_height, img_width = img_size
 
         self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
+        self.action_size = action_size
+        self.use_actions = self.action_size > 0
 
         cells = []
         for i in range(self.num_layers):
-            in_channel = self.enc_channels if i == 0 else self.num_hidden[i - 1]
+            in_channel = self.enc_channels + self.action_size if i == 0 else self.num_hidden[i - 1]
             cells.append(SpatioTemporalLSTMCell(in_channel, self.num_hidden[i], self.enc_h, self.enc_w,
                                                 filter_size=5, stride=1, layer_norm=True))
         self.cell_list = nn.ModuleList(cells)
@@ -200,12 +203,19 @@ class ST_LSTM_NoEncode(VideoPredictionModel):
         self.device = device
         self.to(self.device)
 
-    def forward(self, x):
-        return self.pred_n(x, pred_length=1)
+    def forward(self, x, **kwargs):
+        return self.pred_n(x, pred_length=1, **kwargs)
 
-    def pred_n(self, frames, pred_length=1):
+    def pred_n(self, frames, pred_length=1, **kwargs):
 
         frames = frames.transpose(0, 1)  # [t, b, c, h, w]
+
+        actions = kwargs.get("actions", None)
+        if self.use_actions:
+            if actions is None or kwargs["actions"].shape[-1] != self.action_size:
+                raise ValueError("Given actions are None or of the wrong size!")
+            else:
+                actions = actions.transpose(0, 1)  # [T, b, a]
 
         t_in, b, _, _, _ = frames.shape
         T = t_in + pred_length
@@ -228,6 +238,9 @@ class ST_LSTM_NoEncode(VideoPredictionModel):
         for t in range(T):
 
             next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen
+            if self.use_actions:
+                inflated_action = actions[t].unsqueeze(-1).unsqueeze(-1).expand(-1, -1, self.enc_h, self.enc_w)
+                next_cell_input = torch.cat([next_cell_input, inflated_action], dim=1)
 
             for i in range(self.num_layers):
                 h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](next_cell_input, h_t[i], c_t[i], memory)
@@ -252,18 +265,21 @@ class ST_LSTM_NoEncode(VideoPredictionModel):
 def test():
     import time
 
-    batch_size = 8
+    batch_size = 6
     time_dim = 5
     num_channels = 23
-    pred_length = 10
+    pred_length = 5
     img_size = 135, 240
+    action_size = 3
     x = torch.randn((batch_size, time_dim, num_channels, *img_size)).to(DEVICE)
+    a = torch.randn((batch_size, time_dim+pred_length, action_size)).to(DEVICE)
 
     models = [
         CopyLastFrameModel(),
         UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=time_dim).to(DEVICE),
         LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE),
-        ST_LSTM_NoEncode(img_size, img_channels=num_channels, device=DEVICE)
+        STLSTM(img_size, img_channels=num_channels, device=DEVICE),
+        STLSTM(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size)
     ]
 
     for model in models:
@@ -273,11 +289,11 @@ def test():
               f" / {sum([p.numel() for p in model.parameters() if p.requires_grad])}")
 
         t_start = time.time()
-        pred1 = model(x)
+        pred1, _ = model(x, actions=a)
         t_pred1 = round(time.time() - t_start, 6)
 
         t_start = time.time()
-        preds = model.pred_n(x, pred_length)
+        preds, _ = model.pred_n(x, pred_length, actions=a)
         t_preds = round(time.time() - t_start, 6)
 
         print(f"Pred time (1 out frame / {pred_length} out frames): {t_pred1}s / {t_preds}s")

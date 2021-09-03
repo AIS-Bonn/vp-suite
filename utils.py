@@ -62,6 +62,10 @@ def get_2_wasserstein_dist(pred, real):
     return (trace_term + mean_term).float()
 
 
+def most(l: List[bool], factor=0.67):
+    return sum(l) >= factor * len(l)
+
+
 def get_grid_vis(input, mode='RGB'):
 
     val = input.detach().clone()
@@ -189,29 +193,22 @@ def validate_seg_model(loader, seg_model, device):
 
 
 def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_length, losses,
-                       data_in_type, num_channels):
+                       pred_mode, num_channels):
 
     pred_model.eval()
     with torch.no_grad():
         loop = tqdm(loader)
         all_losses = {key: [] for key in losses.keys()}
-        for batch_idx, (imgs, masks, colorized_masks) in enumerate(loop):
-
-            if data_in_type == "rgb":
-                data = imgs
-            elif num_channels == 3:
-                data = colorized_masks
-            else:
-                data = masks
+        for batch_idx, data in enumerate(loop):
 
             # fwd
-            data = data.to(device)  # [b, T, h, w], with T = video_tot_length
-            input, targets = data[:, :video_in_length], data[:, video_in_length:]
+            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
+            input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
             predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length)
 
             # metrics
             predictions_full = torch.cat([input, predictions], dim=1)
-            targets_full = data
+            targets_full = img_data
             for name, (loss_fn, use_full_input, _) in losses.items():
                 pred = predictions_full if use_full_input else predictions
                 real = targets_full if use_full_input else targets

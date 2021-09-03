@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickVideoDataset
-from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel, ST_LSTM_NoEncode
+from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel, STLSTM
 from metrics.prediction.fvd import FrechetVideoDistance
 from metrics.prediction.mse import MSE
 from metrics.prediction.bce import BCELogits
@@ -37,8 +37,8 @@ def main(args):
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
-    train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH,
-                                     step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
+    train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH, step=VID_STEP,
+                                     allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
                                    step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
@@ -55,7 +55,7 @@ def main(args):
         pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
     elif cfg.model == "st_lstm":
         print("prediction model: ST-LSTM")
-        pred_model = ST_LSTM_NoEncode(img_size=train_data.img_shape, img_channels=num_channels, device=DEVICE)
+        pred_model = STLSTM(img_size=train_data.img_shape, img_channels=num_channels, device=DEVICE)
     else:
         print("prediction model: CopyLastFrame")
         pred_model = CopyLastFrameModel().to(DEVICE)
@@ -90,24 +90,17 @@ def main(args):
                   .format(["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
             loop = tqdm(train_loader)
 
-            for batch_idx, (imgs, masks, colorized_masks) in enumerate(loop):
-
-                if cfg.pred_mode == "rgb":
-                    data = imgs
-                elif cfg.pred_mode == "colorized":
-                    data = colorized_masks
-                else:
-                    data = masks
+            for batch_idx, data in enumerate(loop):
 
                 # fwd
-                data = data.to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+                img_data = data[cfg.pred_mode].to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
 
-                input, targets = data[:, :VIDEO_IN_LENGTH], data[:, VIDEO_IN_LENGTH:]
+                input, targets = img_data[:, :VIDEO_IN_LENGTH], img_data[:, VIDEO_IN_LENGTH:]
                 predictions, model_losses = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
 
                 # loss
                 predictions_full = torch.cat([input, predictions], dim=1)
-                targets_full = data
+                targets_full = img_data
                 loss = torch.tensor(0.0, device=DEVICE)
                 for _, (loss_fn, use_full_input, scale) in losses.items():
                     if scale == 0: continue
@@ -168,6 +161,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
+    parser.add_argument("--include-actions", action="store_true", help="use gripper deltas for action-conditional learning")
     parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy"], default="unet",
                         help="Which model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",

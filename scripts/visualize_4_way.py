@@ -53,8 +53,10 @@ def visualize_4_way(cfg):
     with torch.no_grad():
         for i in tqdm(range(eval_length)):
 
-            imgs, _, colorized_masks = next(iter_loader)
-            imgs, colorized_masks = imgs.to(DEVICE), colorized_masks.to(DEVICE) # [1, T, 3, h, w]
+            data = next(iter_loader)
+            imgs, colorized_masks, actions \
+                = data["rgb"].to(DEVICE), data["colorized"].to(DEVICE), data["actions"].to(DEVICE)  # [1, T, 3, h, w]
+            
             gt_rgb_vis = postprocess_img(imgs.squeeze(dim=0))  # [T, h, w, 3]
             gt_colorized_vis = postprocess_img(colorized_masks.squeeze(dim=0))  # [T, h, w, 3]
             input = imgs[:, :VIDEO_IN_LENGTH]  # [1, t, 3, h, w]

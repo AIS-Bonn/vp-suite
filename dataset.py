@@ -9,7 +9,7 @@ import cv2
 
 from torch.utils.data import Dataset
 
-from utils import colorize_semseg
+from utils import colorize_semseg, most
 from config import SYNPICK_CLASSES
 
 class SynpickSegmentationDataset(Dataset):
@@ -76,13 +76,12 @@ class SynpickVideoDataset(Dataset):
 
         if self.check_gripper_movement:
             scene_gt_fps = [os.path.join(scene_gt_dir, scene_gt_fp) for scene_gt_fp in sorted(os.listdir(scene_gt_dir))]
-            self.gripper_positions = {}
+            self.gripper_pos = {}
             for scene_gt_fp, ep in zip(scene_gt_fps, [int(a[-20:-14]) for a in scene_gt_fps]):
                 with open(scene_gt_fp, "r") as scene_json_file:
                     ep_dict = json.load(scene_json_file)
                 gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
-                self.gripper_positions[ep] = gripper_pos
-                gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
+                self.gripper_pos[ep] = gripper_pos
 
         self.skip_first_n = 72
         self.total_len = len(self.image_ids)
@@ -101,8 +100,8 @@ class SynpickVideoDataset(Dataset):
         for idx in range(len(self.image_ids) - self.sequence_length + 1):
 
             self.all_idx.append(idx)
-            ep_nums = [int(self.image_ids[idx + offset][-17:-11]) for offset in self.frame_offsets]
-            frame_nums = [int(self.image_ids[idx + offset][-10:-4]) for offset in self.frame_offsets]
+            ep_nums = [self.ep_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
+            frame_nums = [self.frame_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
 
             # first few frames are discarded
             if frame_nums[0] < self.skip_first_n:
@@ -118,16 +117,13 @@ class SynpickVideoDataset(Dataset):
 
             # if gripper positions are included, discard sequences without considerable gripper movement
             if self.check_gripper_movement:
-                gripper_pos = [self.gripper_positions[ep_nums[0]][frame_num] for frame_num in frame_nums]
-                gripper_pos_deltas = [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
+                gripper_pos = [self.gripper_pos[ep_nums[0]][frame_num] for frame_num in frame_nums]
+                gripper_pos_deltas = self.get_gripper_pos_xydist(gripper_pos)
                 gripper_pos_deltas_above_min = [(delta > 1.0) for delta in gripper_pos_deltas]
                 gripper_pos_deltas_below_max = [(delta < 30.0) for delta in gripper_pos_deltas]
-                gripper_movement_ok = self.most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
+                gripper_movement_ok = most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
                 if not gripper_movement_ok:
                     continue
-                #for a, d in zip(gripper_pos[:-1], gripper_pos_deltas):
-                #    print(a[0], a[1], d)
-            #input()
 
             self.valid_idx.append(idx)
             last_valid_idx = idx
@@ -143,18 +139,31 @@ class SynpickVideoDataset(Dataset):
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
     def __getitem__(self, i):
-        true_i = self.valid_idx[i]
-        imgs, masks, colorized_masks = [], [], []
-        for t in range(0, self.sequence_length, self.step):
 
-            img_dp = cv2.cvtColor(cv2.imread(self.image_fps[true_i + t]), cv2.COLOR_BGR2RGB)
-            mask_dp = cv2.imread(self.mask_fps[true_i + t], 0)
+        i = self.valid_idx[i]  # only consider valid indices
+        idx = range(i, i + self.sequence_length, self.step)  # create range of indices for frame sequence
 
-            imgs.append(preprocess_img(img_dp))
-            masks.append(preprocess_mask_inflate(np.expand_dims(mask_dp, axis=2), self.num_classes))
-            colorized_masks.append(preprocess_mask_colorize(mask_dp, self.num_classes))
+        ep_num = self.ep_num_from_id(self.image_ids[idx[0]])
+        frame_nums = [self.frame_num_from_id(self.image_ids[id_]) for id_ in idx]
+        gripper_pos = [self.gripper_pos[ep_num][frame_num] for frame_num in frame_nums]
+        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos))
 
-        return torch.stack(imgs, dim=0), torch.stack(masks, dim=0), torch.stack(colorized_masks, dim=0)
+        imgs = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
+        imgs = [preprocess_img(img) for img in imgs]
+
+        masks = [cv2.imread(self.mask_fps[id_], 0) for id_ in idx]
+        masks = [preprocess_mask_inflate(np.expand_dims(mask, axis=2), self.num_classes) for mask in masks]
+
+        colorized_masks = [preprocess_mask_colorize(mask, self.num_classes) for mask in masks]
+
+        data = {
+            "rgb": torch.stack(imgs, dim=0),
+            "mask": torch.stack(masks, dim=0),
+            "colorized": torch.stack(colorized_masks, dim=0),
+            "actions": actions
+        }
+
+        return data
 
     def __len__(self):
         return len(self.valid_idx)
@@ -163,8 +172,18 @@ class SynpickVideoDataset(Dataset):
         x_diff, y_diff = new[0] - old[0], new[1] - old[1]
         return math.sqrt(x_diff * x_diff + y_diff * y_diff)
 
-    def most(self, l: List[bool], factor=0.67):
-        return sum(l) >= factor * len(l)
+    def get_gripper_pos_xydist(self, gripper_pos):
+        return [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
+
+    def get_gripper_pos_diff(self, gripper_pos):
+        gripper_pos_numpy = np.array(gripper_pos)
+        return np.stack([new-old for old, new in gripper_pos_numpy, gripper_pos_numpy[1:]], axis=0)
+
+    def ep_num_from_id(self, file_id: str):
+        return int(file_id[-17:-11])
+
+    def frame_num_from_id(self, file_id: str):
+        return int(file_id[-10:-4])
 
 # ==============================================================================
 
