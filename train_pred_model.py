@@ -42,7 +42,9 @@ def main(args):
                                    allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
                               drop_last=True)
-    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)encoder_optimizer
+    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    cfg.action_size = train_data.action_size
+    cfg.img_shape = train_data.img_shape
 
     # MODEL AND OPTIMIZER
     pred_model = get_pred_model(cfg, num_channels, VIDEO_IN_LENGTH, DEVICE)
@@ -68,16 +70,17 @@ def main(args):
 
 
     # MAIN LOOP
-    for i in range(0, NUM_EPOCHS):
+    for epoch in range(0, NUM_EPOCHS):
 
         # train
-        print('\nTraining (epoch: {i+1} of {NUM_EPOCHS}, loss scales: {})'
-              .format(i+1, NUM_EPOCHS, ["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
+        print('\nTraining (epoch: {} of {}, loss scales: {})'
+              .format(epoch+1, NUM_EPOCHS, ["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
         if not cfg.no_train:
+
             # use prediction model's own training loop if available
             if callable(getattr(pred_model, "train_iter", None)):
                 pred_model.train_iter(train_loader, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, cfg.pred_mode,
-                                      optimizer, losses)
+                                      optimizer, losses, epoch)
             else:
                 train_iter(train_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, cfg.pred_mode,
                            optimizer, losses)
@@ -143,7 +146,7 @@ def train_iter(loader, pred_model, device, video_in_length, video_pred_length, p
         # bwd
         optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 10)
+        torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 100)
         optimizer.step()
 
         loop.set_postfix(loss=loss.item())
@@ -200,7 +203,7 @@ if __name__ == '__main__':
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true", help="use gripper deltas for action-conditional learning")
-    parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy"], default="unet",
+    parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy", "phy"], default="unet",
                         help="Which model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")

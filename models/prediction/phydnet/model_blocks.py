@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.special import factorial
 import torch
-import torch.nn as nn
+from functools import reduce
+from scipy.special import factorial
+from torch import nn as nn
+from torchvision.transforms import Resize
 
-from metrics.prediction.mse import MSE
-from pred_model import VideoPredictionModel
 
 class PhyCell_Cell(nn.Module):
     def __init__(self, input_dim, F_hidden_dim, kernel_size, bias=1):
@@ -218,18 +218,20 @@ class encoder_E(nn.Module):
 
 
 class decoder_D(nn.Module):
-    def __init__(self, nc=1, nf=32):
+    def __init__(self, out_size, nc=1, nf=32):
         super(decoder_D, self).__init__()
         self.upc1 = dcgan_upconv(2 * nf, nf, stride=2)  # (32) x 32 x 32
         self.upc2 = dcgan_upconv(nf, nf, stride=1)  # (32) x 32 x 32
         self.upc3 = nn.ConvTranspose2d(in_channels=nf, out_channels=nc, kernel_size=(3, 3), stride=2, padding=1,
                                        output_padding=1)  # (nc) x 64 x 64
+        self.resize = Resize(size=out_size)
 
     def forward(self, input):
         d1 = self.upc1(input)
         d2 = self.upc2(d1)
         d3 = self.upc3(d2)
-        return d3
+        out = self.resize(d3)
+        return out
 
 
 class encoder_specific(nn.Module):
@@ -257,23 +259,30 @@ class decoder_specific(nn.Module):
 
 
 class EncoderRNN(torch.nn.Module):
-    def __init__(self, img_size, img_channels, phycell, convcell, device):
-        super(EncoderRNN, self).__init__()
-        self.encoder_E = encoder_E()  # general encoder 64x64x1 -> 32x32x32
-        self.encoder_Ep = encoder_specific()  # specific image encoder 32x32x32 -> 16x16x64
-        self.encoder_Er = encoder_specific()
-        self.decoder_Dp = decoder_specific()  # specific image decoder 16x16x64 -> 32x32x32
-        self.decoder_Dr = decoder_specific()
-        self.decoder_D = decoder_D()  # general decoder 32x32x32 -> 64x64x1
 
-        self.encoder_E = self.encoder_E.to(device)
-        self.encoder_Ep = self.encoder_Ep.to(device)
-        self.encoder_Er = self.encoder_Er.to(device)
-        self.decoder_Dp = self.decoder_Dp.to(device)
-        self.decoder_Dr = self.decoder_Dr.to(device)
-        self.decoder_D = self.decoder_D.to(device)
-        self.phycell = phycell.to(device)
-        self.convcell = convcell.to(device)
+    def __init__(self, img_size, img_channels, device):
+        super(EncoderRNN, self).__init__()
+        self.encoder_E = encoder_E(nc=img_channels).to(device)
+        self.encoder_Ep = encoder_specific().to(device)
+        self.encoder_Er = encoder_specific().to(device)
+
+        zeros = torch.zeros((1, img_channels, *img_size), device=device)
+        encoded_zeros = self.encoder_E(zeros)
+        self.shape_Ep = self.encoder_Ep(encoded_zeros).shape[1:]
+        self.shape_Er = self.encoder_Er(encoded_zeros).shape[1:]
+
+        self.decoder_Dp = decoder_specific().to(device)
+        self.decoder_Dr = decoder_specific().to(device)
+        self.decoder_D = decoder_D(out_size=img_size, nc=img_channels).to(device)
+
+        self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=[49],
+                               n_layers=1, kernel_size=(7, 7), device=device)
+        self.phycell.to(device)
+        self.convcell = ConvLSTM(input_shape=self.shape_Er[1:], input_dim=self.shape_Ep[0], hidden_dims=[128, 128, 64],
+                                 n_layers=3, kernel_size=(3, 3), device=device)
+        self.convcell.to(device)
+        self.device = device
+
 
     def forward(self, input, first_timestep=False, decoding=False):
         input = self.encoder_E(input)  # general encoder 64x64x1 -> 32x32x32
@@ -298,60 +307,6 @@ class EncoderRNN(torch.nn.Module):
         return out_phys, hidden1, output_image, out_phys, out_conv
 
 
-class PhyDNet(VideoPredictionModel):
-    def __init__(self, img_size, img_channels, device):
-
-        self.phycell = PhyCell(input_shape=(16, 16), input_dim=64, F_hidden_dims=[49], n_layers=1, kernel_size=(7, 7),
-                          device=device)
-        self.convcell = ConvLSTM(input_shape=(16, 16), input_dim=64, hidden_dims=[128, 128, 64], n_layers=3,
-                            kernel_size=(3, 3), device=device)
-        self.encoder = EncoderRNN(img_size, img_channels, self.phycell, self.convcell, device)
-
-        self.constraints = torch.zeros((49, 7, 7)).to(device)
-        ind = 0
-        for i in range(0, 7):
-            for j in range(0, 7):
-                self.constraints[ind, i, j] = 1
-                ind += 1
-
-        self.criterion = MSE()
-        self.device = device
-
-    def forward(self, x, **kwargs):
-        return self.pred_n(x, 1, kwargs)
-
-    def pred_n(self, frames, pred_length=1, **kwargs):
-
-        frames = frames.transpose(0, 1)  # [t, b, c, h, w]
-        in_length = frames.shape[0]
-        out_frames = []
-
-        loss = 0
-        for ei in range(in_length - 1):
-            encoder_output, encoder_hidden, output_image, _, _ = self.encoder(frames[ei], (ei == 0))
-            loss += self.criterion(output_image, frames[ei + 1])
-
-        decoder_input = frames[-1]  # first decoder input = last image of input sequence
-
-        for di in range(pred_length):
-            decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input)
-            out_frames.append(output_image)
-            decoder_input = output_image
-
-        # Moment regularization  # encoder.phycell.cell_list[0].F.conv1.weight # size (nb_filters,in_channels,7,7)
-        k2m = K2M([7, 7]).to(self.device)
-        for b in range(0, self.encoder.phycell.cell_list[0].input_dim):
-            filters = self.encoder.phycell.cell_list[0].F.conv1.weight[:, b, :, :]  # (nb_filters,7,7)
-            m = k2m(filters.double())
-            m = m.float()
-            loss += self.criterion(m, self.constraints)  # constrains is a precomputed matrix
-
-        out_frames = torch.stack(out_frames, dim=0)
-
-        return out_frames, loss / (in_length + pred_length)
-
-
-
 class _MK(nn.Module):
     def __init__(self, shape):
         super(_MK, self).__init__()
@@ -365,7 +320,7 @@ class _MK(nn.Module):
             M.append(np.zeros((l,l)))
             for i in range(l):
                 M[-1][i] = ((np.arange(l)-(l-1)//2)**i)/factorial(i)
-            invM.append(np.inv(M[-1]))
+            invM.append(np.linalg.inv(M[-1]))
             self.register_buffer('_M'+str(j), torch.from_numpy(M[-1]))
             self.register_buffer('_invM'+str(j), torch.from_numpy(invM[-1]))
             j += 1
@@ -398,7 +353,7 @@ def _apply_axis_left_dot(x, mats):
     sizex = x.size()
     k = x.dim() - 1
     for i in range(k):
-        x = np.tensordot(mats[k - i - 1], x, dim=[1, k])
+        x = tensordot(mats[k - i - 1], x, dim=[1, k])
     x = x.permute([k, ] + list(range(k))).contiguous()
     x = x.view(sizex)
     return x
@@ -425,3 +380,48 @@ class K2M(_MK):
         k = _apply_axis_left_dot(k, self.M)
         k = k.view(sizek)
         return k
+
+def tensordot(a,b,dim):
+    """
+    tensordot in PyTorch, see numpy.tensordot?
+    """
+    l = lambda x,y:x*y
+    if isinstance(dim,int):
+        a = a.contiguous()
+        b = b.contiguous()
+        sizea = a.size()
+        sizeb = b.size()
+        sizea0 = sizea[:-dim]
+        sizea1 = sizea[-dim:]
+        sizeb0 = sizeb[:dim]
+        sizeb1 = sizeb[dim:]
+        N = reduce(l, sizea1, 1)
+        assert reduce(l, sizeb0, 1) == N
+    else:
+        adims = dim[0]
+        bdims = dim[1]
+        adims = [adims,] if isinstance(adims, int) else adims
+        bdims = [bdims,] if isinstance(bdims, int) else bdims
+        adims_ = set(range(a.dim())).difference(set(adims))
+        adims_ = list(adims_)
+        adims_.sort()
+        perma = adims_+adims
+        bdims_ = set(range(b.dim())).difference(set(bdims))
+        bdims_ = list(bdims_)
+        bdims_.sort()
+        permb = bdims+bdims_
+        a = a.permute(*perma).contiguous()
+        b = b.permute(*permb).contiguous()
+
+        sizea = a.size()
+        sizeb = b.size()
+        sizea0 = sizea[:-len(adims)]
+        sizea1 = sizea[-len(adims):]
+        sizeb0 = sizeb[:len(bdims)]
+        sizeb1 = sizeb[len(bdims):]
+        N = reduce(l, sizea1, 1)
+        assert reduce(l, sizeb0, 1) == N
+    a = a.view([-1,N])
+    b = b.view([N,-1])
+    c = a@b
+    return c.view(sizea0+sizeb1)
