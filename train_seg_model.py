@@ -9,15 +9,14 @@ from torch.utils.data import DataLoader
 from config import *
 from dataset import SynpickSegmentationDataset, synpick_seg_val_augmentation, synpick_seg_train_augmentation
 from models.segmentation.seg_model import UNet
-from utils import validate_seg_model
 from metrics.segmentation.ce import CrossEntropyLoss
 from visualize import visualize_seg
 
 def main(cfg):
 
+    # PREPARATION pt. 1
     num_classes = SYNPICK_CLASSES + 1 if cfg.include_gripper else SYNPICK_CLASSES
-
-    # SEEDING
+    device = DEVICE
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -36,41 +35,25 @@ def main(cfg):
     train_loader = DataLoader(train_data, batch_size=SEG_BATCH_SIZE, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
-    # MODEL
-    seg_model = UNet(in_channels=3, out_channels=num_classes).to(DEVICE)
-
-    # ETC
+    # MODEL, LOSSES, OPTIMIZERS
+    seg_model = UNet(in_channels=3, out_channels=num_classes).to(device)
     loss_fn = CrossEntropyLoss()
     optimizer = torch.optim.Adam(params=seg_model.parameters(), lr=LEARNING_RATE)
 
+    # PREPARATION pt. 2
     max_accuracy = 0
     timestamp = int(1000000 * time.time())
     out_dir = Path("out/{}_seg_model".format(timestamp))
     out_dir.mkdir(parents=True)
 
-    # TRAINING
+    # MAIN LOOP
     for i in range(0, NUM_EPOCHS):
-        print('\nEpoch: {}'.format(i))
 
-        loop = tqdm(train_loader)
-        for batch_idx, (data, targets) in enumerate(loop):
-            data = data.to(DEVICE)
-            targets = targets.to(DEVICE)
-
-            predictions = seg_model(data)
-            loss = loss_fn.get_loss(predictions, targets)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            loop.set_postfix(loss=loss.item())
-
-        print("Validating...")
-        accuracy = validate_seg_model(valid_loader, seg_model, DEVICE)
-        print("Accuracy = {}".format(accuracy))
+        train_iter(train_loader, seg_model, optimizer, loss_fn)
+        accuracy = eval_iter(valid_loader, seg_model, device)
 
         # save model if last epoch improved acc.
+        print("Accuracy = {}".format(accuracy))
         if max_accuracy < accuracy:
             max_accuracy = accuracy
             torch.save(seg_model, str((out_dir / 'best_model.pth').resolve()))
@@ -90,12 +73,52 @@ def main(cfg):
     test_data.augmentation = synpick_seg_val_augmentation(img_h=test_data.img_h)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
-    accuracy = validate_seg_model(test_loader, best_model, DEVICE)
+    accuracy = eval_iter(test_loader, best_model, device)
     print("Accuracy = {}".format(accuracy))
 
     visualize_seg(test_data, best_model, out_dir)
     print("Testing done, bye bye!")
 
+
+def train_iter(loader, seg_model, optimizer, loss_fn, device):
+
+    print('\nEpoch: {}'.format(i))
+    loop = tqdm(loader)
+
+    for batch_idx, (data, targets) in enumerate(loop):
+        data = data.to(device)
+        targets = targets.to(device)
+
+        predictions = seg_model(data)
+        loss = loss_fn.get_loss(predictions, targets)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        loop.set_postfix(loss=loss.item())
+
+
+def eval_iter(loader, seg_model, device):
+
+    print("Validating...")
+    num_correct = 0
+    num_pixels = 0
+    seg_model.eval()
+
+    with torch.no_grad():
+        for data, targets in loader:
+            data, targets = data.to(device), targets.to(device)  # shapes: [1, 3, h, w] for x and [1, h, w] for y
+            preds = torch.argmax(seg_model(data), dim=1)   # [1, h, w]
+            num_correct += (preds == targets).sum()
+            num_pixels += torch.numel(preds)
+
+    seg_model.train()
+
+    return 100.0 * num_correct / num_pixels
+
+
+# ==============================================================================
 
 if __name__ == '__main__':
 

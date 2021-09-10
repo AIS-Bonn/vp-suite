@@ -2,9 +2,6 @@ from typing import List
 import math
 
 import hsluv
-import imageio
-from tqdm import tqdm
-from moviepy.editor import ImageSequenceClip
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
@@ -64,6 +61,9 @@ def get_2_wasserstein_dist(pred, real):
 
 
 def most(l: List[bool], factor=0.67):
+    '''
+    Like List.all(), but not 'all' of them.
+    '''
     return sum(l) >= factor * len(l)
 
 
@@ -107,6 +107,7 @@ def get_color_array(color):
     else:
         color_array = np.array([255, 255, 255], dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
     return color_array
+
 
 def add_border_around_vid(vid, c_and_l, b_width=10):
 
@@ -176,68 +177,10 @@ def colorize_semseg(input : np.ndarray, num_classes : int):
     return colorized
 
 
-def validate_seg_model(loader, seg_model, device):
-    num_correct = 0
-    num_pixels = 0
-    seg_model.eval()
-
-    with torch.no_grad():
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)  # shapes: [1, 3, h, w] for x and [1, h, w] for y
-            preds = torch.argmax(seg_model(x), dim=1)   # [1, h, w]
-            num_correct += (preds == y).sum()
-            num_pixels += torch.numel(preds)
-
-    seg_model.train()
-
-    return 100.0 * num_correct / num_pixels
-
-
-def validate_vid_model(loader, pred_model, device, video_in_length, video_pred_length, losses,
-                       pred_mode, num_channels):
-
-    pred_model.eval()
-    with torch.no_grad():
-        loop = tqdm(loader)
-        all_losses = {key: [] for key in losses.keys()}
-        for batch_idx, data in enumerate(loop):
-
-            # fwd
-            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
-            actions = data["actions"].to(device)
-            input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
-            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
-
-            # metrics
-            predictions_full = torch.cat([input, predictions], dim=1)
-            targets_full = img_data
-            for name, (loss_fn, use_full_input, _) in losses.items():
-                pred = predictions_full if use_full_input else predictions
-                real = targets_full if use_full_input else targets
-                loss = loss_fn(pred, real).item()
-                all_losses[name].append(loss)
-            if model_losses is not None:
-                for loss_name, loss_value in model_losses.items():
-                    if loss_name in all_losses.keys():
-                        all_losses[loss_name].append(loss_value.item())
-                    else:
-                        all_losses[loss_name] = [loss_value.item()]
-
-    pred_model.train()
-
-    print("Validation losses:")
-    for key in all_losses.keys():
-        cur_losses = all_losses[key]
-        avg_loss = sum(cur_losses) / len(cur_losses)
-        print(f" - {key}: {avg_loss}")
-        all_losses[key] = avg_loss
-
-    return all_losses
-
-
 def test():
     a, b, c = [np.random.randint(low=0, high=256, size=(12, 3, 270, 480)).astype('uint8')] * 3
     save_vid_vis("out/test_clip.gif", 8, true_trajectory=a, pred1=b, pred2=c)
+
 
 if __name__ == '__main__':
     test()

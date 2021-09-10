@@ -132,7 +132,7 @@ class SynpickVideoDataset(Dataset):
 
         #print(len(self.all_idx))
         #print(len(self.valid_idx))
-       # exit(0)
+        #exit(0)
 
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "

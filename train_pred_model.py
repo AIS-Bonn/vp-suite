@@ -2,22 +2,22 @@ import os, time, argparse, random
 from pathlib import Path
 
 import numpy as np
+import torch
 import torch.nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickVideoDataset
-from models.prediction.pred_model import CopyLastFrameModel, UNet3d, LSTMModel, STLSTM
+from models.prediction.pred_model_factory import get_pred_model
 from metrics.prediction.fvd import FrechetVideoDistance
 from metrics.prediction.mse import MSE
 from metrics.prediction.bce import BCELogits
-from utils import validate_vid_model
 from visualize import visualize_vid
 
 def main(args):
 
-    # INITIAL PREPPING
+    # PREPARATION pt. 1
     best_val_loss = float("inf")
     timestamp = int(1000000 * time.time())
     out_dir = Path("out/{}_pred_model".format(timestamp))
@@ -27,7 +27,6 @@ def main(args):
     num_channels = num_classes if cfg.pred_mode == "mask" else 3
     vid_type = (cfg.pred_mode, num_channels)
 
-    # SEEDING
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -39,32 +38,18 @@ def main(args):
     test_dir = os.path.join(data_dir, 'test')
     train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=VIDEO_TOT_LENGTH, step=VID_STEP,
                                      allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
-    val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH,
-                                   step=VID_STEP, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
+    val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=VIDEO_TOT_LENGTH, step=VID_STEP,
+                                   allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     train_loader = DataLoader(train_data, batch_size=VID_BATCH_SIZE, shuffle=True, num_workers=VID_BATCH_SIZE,
                               drop_last=True)
-    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)encoder_optimizer
 
-    # MODEL
-
-    if cfg.model == "unet":
-        print("prediction model: UNet3d")
-        pred_model = UNet3d(in_channels=num_channels, out_channels=num_channels, time_dim=VIDEO_IN_LENGTH).to(DEVICE)
-    elif cfg.model == "lstm":
-        print("prediction model: LSTM")
-        pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE)
-    elif cfg.model == "st_lstm":
-        if cfg.include_actions:
-            a_dim = train_data.action_size
-            print("prediction model: action-conditional ST-LSTM")
-        else:
-            a_dim = 0
-            print("prediction model: ST-LSTM")
-        pred_model = STLSTM(img_size=train_data.img_shape, img_channels=num_channels, action_size=a_dim, device=DEVICE)
-    else:
-        print("prediction model: CopyLastFrame")
-        pred_model = CopyLastFrameModel().to(DEVICE)
-        cfg.no_train = True
+    # MODEL AND OPTIMIZER
+    pred_model = get_pred_model(cfg, num_channels, VIDEO_IN_LENGTH, DEVICE)
+    optimizer = None
+    if not cfg.no_train:
+        optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=LEARNING_RATE)
+        optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.2, min_lr=1e-7)
 
     # LOSSES
     # name: (loss_fn, use_full_input, scale)
@@ -81,57 +66,30 @@ def main(args):
         print(f"Indicator loss {cfg.indicator_val_loss} only usable with 2 or 3 input channels -> using {default_loss}")
         cfg.indicator_val_loss = default_loss
 
-    # OPTIMIZER
-    optimizer = None
-    if not cfg.no_train:
-        optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=LEARNING_RATE)
 
-    # TRAINING
+    # MAIN LOOP
     for i in range(0, NUM_EPOCHS):
-        print(f'\nEpoch: {i+1} of {NUM_EPOCHS}')
 
+        # train
+        print('\nTraining (epoch: {i+1} of {NUM_EPOCHS}, loss scales: {})'
+              .format(i+1, NUM_EPOCHS, ["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
         if not cfg.no_train:
-            print("Cur epoch training loss scales: {}"
-                  .format(["{}: {}".format(name, scale) for name, (_, _, scale) in losses.items()]))
-            loop = tqdm(train_loader)
-
-            for batch_idx, data in enumerate(loop):
-
-                # fwd
-                img_data = data[cfg.pred_mode].to(DEVICE)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
-                actions = data["actions"].to(DEVICE)
-
-                input, targets = img_data[:, :VIDEO_IN_LENGTH], img_data[:, VIDEO_IN_LENGTH:]
-                predictions, model_losses = pred_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH, actions=actions)
-
-                # loss
-                predictions_full = torch.cat([input, predictions], dim=1)
-                targets_full = img_data
-                loss = torch.tensor(0.0, device=DEVICE)
-                for _, (loss_fn, use_full_input, scale) in losses.items():
-                    if scale == 0: continue
-                    pred = predictions_full if use_full_input else predictions
-                    real = targets_full if use_full_input else targets
-                    loss += scale * loss_fn(pred, real)
-                if model_losses is not None:
-                    for loss_value in model_losses.values():
-                        loss += loss_value
-
-                # bwd
-                optimizer.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 10)
-                optimizer.step()
-
-                loop.set_postfix(loss=loss.item())
-                # loop.set_postfix(mem=torch.cuda.memory_allocated())
+            # use prediction model's own training loop if available
+            if callable(getattr(pred_model, "train_iter", None)):
+                pred_model.train_iter(train_loader, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, cfg.pred_mode,
+                                      optimizer, losses)
+            else:
+                train_iter(train_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, cfg.pred_mode,
+                           optimizer, losses)
         else:
             print("Skipping trianing loop.")
 
+        # eval.
         print("Validating...")
-        val_losses = validate_vid_model(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
-                                        cfg.pred_mode, num_channels)
+        val_losses = eval_iter(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH,
+                               cfg.pred_mode, losses)
         cur_val_loss = val_losses[cfg.indicator_val_loss]
+        optimizer_scheduler.step(cur_val_loss)
 
         # save model if last epoch improved acc.
         if best_val_loss > cur_val_loss:
@@ -143,22 +101,96 @@ def main(args):
         print("Saving visualizations...")
         visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
 
-        if i >= 30 and i % 10 == 0:
-            optimizer.param_groups[0]['lr'] *= 0.5
-            print('Decrease learning rate!')
-
     # TESTING
     print("\nTraining done, testing best model...")
     best_model = torch.load(str((out_dir / 'best_model.pth').resolve()))
-    test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4, num_classes=num_channels)
+    test_data = SynpickVideoDataset(data_dir=test_dir, num_frames=VIDEO_TOT_LENGTH, step=4,
+                                    allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=num_classes)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
-    validate_vid_model(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, losses,
-                                        cfg.pred_mode, num_channels)
+    eval_iter(test_loader, best_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, cfg.pred_mode, losses)
 
     print("Saving visualizations...")
     visualize_vid(test_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, best_model, out_dir, vid_type, num_vis=10)
     print("Testing done, bye bye!")
 
+
+
+def train_iter(loader, pred_model, device, video_in_length, video_pred_length, pred_mode, optimizer, losses):
+
+    loop = tqdm(loader)
+    for batch_idx, data in enumerate(loop):
+
+        # fwd
+        img_data = data[cfg.pred_mode].to(device)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+        actions = data["actions"].to(device)
+
+        input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
+        predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
+
+        # loss
+        predictions_full = torch.cat([input, predictions], dim=1)
+        targets_full = img_data
+        loss = torch.tensor(0.0, device=device)
+        for _, (loss_fn, use_full_input, scale) in losses.items():
+            if scale == 0: continue
+            pred = predictions_full if use_full_input else predictions
+            real = targets_full if use_full_input else targets
+            loss += scale * loss_fn(pred, real)
+        if model_losses is not None:
+            for loss_value in model_losses.values():
+                loss += loss_value
+
+        # bwd
+        optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 10)
+        optimizer.step()
+
+        loop.set_postfix(loss=loss.item())
+        # loop.set_postfix(mem=torch.cuda.memory_allocated())
+
+
+def eval_iter(loader, pred_model, device, video_in_length, video_pred_length, pred_mode, losses):
+
+    pred_model.eval()
+    with torch.no_grad():
+        loop = tqdm(loader)
+        all_losses = {key: [] for key in losses.keys()}
+        for batch_idx, data in enumerate(loop):
+
+            # fwd
+            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
+            actions = data["actions"].to(device)
+            input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
+            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
+
+            # metrics
+            predictions_full = torch.cat([input, predictions], dim=1)
+            targets_full = img_data
+            for name, (loss_fn, use_full_input, _) in losses.items():
+                pred = predictions_full if use_full_input else predictions
+                real = targets_full if use_full_input else targets
+                loss = loss_fn(pred, real).item()
+                all_losses[name].append(loss)
+            if model_losses is not None:
+                for loss_name, loss_value in model_losses.items():
+                    if loss_name in all_losses.keys():
+                        all_losses[loss_name].append(loss_value.item())
+                    else:
+                        all_losses[loss_name] = [loss_value.item()]
+
+    pred_model.train()
+
+    print("Validation losses:")
+    for key in all_losses.keys():
+        cur_losses = all_losses[key]
+        avg_loss = sum(cur_losses) / len(cur_losses)
+        print(f" - {key}: {avg_loss}")
+        all_losses[key] = avg_loss
+
+    return all_losses
+
+# ==============================================================================
 
 if __name__ == '__main__':
 
@@ -177,3 +209,5 @@ if __name__ == '__main__':
 
     cfg = parser.parse_args()
     main(cfg)
+
+

@@ -91,9 +91,9 @@ class ConvLSTMCell(nn.Module):
                 torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
 
 
-class SpatioTemporalLSTMCell(nn.Module):
+class STLSTMCell(nn.Module):
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
-        super(SpatioTemporalLSTMCell, self).__init__()
+        super(STLSTMCell, self).__init__()
 
         self.num_hidden = num_hidden
         self.padding = filter_size // 2
