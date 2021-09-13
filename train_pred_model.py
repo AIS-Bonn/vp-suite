@@ -127,10 +127,10 @@ def train_iter(loader, pred_model, device, video_in_length, video_pred_length, p
 
         # fwd
         img_data = data[cfg.pred_mode].to(device)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+        input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
         actions = data["actions"].to(device)
         actions = F.pad(actions, (0, 0, 1, 0, 0, 0))  # front-pad time dim with 0s -> [b, t, a]
 
-        input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
         predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
 
         # loss
@@ -166,8 +166,10 @@ def eval_iter(loader, pred_model, device, video_in_length, video_pred_length, pr
 
             # fwd
             img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
-            actions = data["actions"].to(device)
             input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
+            actions = data["actions"].to(device)
+            actions = F.pad(actions, (0, 0, 1, 0, 0, 0))  # front-pad time dim with 0s -> [b, t, a]
+
             predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
 
             # metrics
