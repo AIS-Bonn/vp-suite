@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from models.model_blocks import Autoencoder, STLSTMCell
+from models.prediction.st_lstm.model_blocks import STLSTMCell, Autoencoder
 from models.prediction.pred_model import VideoPredictionModel
 
 
@@ -45,13 +45,12 @@ class STLSTMModel(VideoPredictionModel):
     def pred_n(self, frames, pred_length=1, **kwargs):
 
         frames = frames.transpose(0, 1)  # [t, b, c, h, w]
-
         actions = kwargs.get("actions", None)
         if self.use_actions:
-            if actions is None or kwargs["actions"].shape[-1] != self.action_size:
+            if actions is None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
             else:
-                actions = F.pad(actions.transpose(0, 1), (0, 0, 0, 0, 1, 0))  # front-pad 1st dim with 0s -> [t, b, a]
+                actions = actions.transpose(0, 1)
 
         t_in, b, _, _, _ = frames.shape
         T = t_in + pred_length

@@ -50,7 +50,7 @@ def main(args):
     pred_model = get_pred_model(cfg, num_channels, VIDEO_IN_LENGTH, DEVICE)
     optimizer = None
     if not cfg.no_train:
-        optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=LEARNING_RATE)
+        optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
         optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.2, min_lr=1e-7)
 
     # LOSSES
@@ -100,9 +100,10 @@ def main(args):
             torch.save(pred_model, str((out_dir / 'best_model.pth').resolve()))
             print(f"Minimum indicator loss ({cfg.indicator_val_loss}) reduced -> model saved!")
 
-        # visualize model predictions using eval mode and validation data
-        print("Saving visualizations...")
-        visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
+        # visualize current model performance every nth epoch, using eval mode and validation data.
+        if epoch % 10 == 9:
+            print("Saving visualizations...")
+            visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
 
     # TESTING
     print("\nTraining done, testing best model...")
@@ -126,6 +127,7 @@ def train_iter(loader, pred_model, device, video_in_length, video_pred_length, p
         # fwd
         img_data = data[cfg.pred_mode].to(device)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
         actions = data["actions"].to(device)
+        actions = F.pad(actions, (0, 0, 1, 0, 0, 0))  # front-pad time dim with 0s -> [b, t, a]
 
         input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
         predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
@@ -209,6 +211,7 @@ if __name__ == '__main__':
                         help="Which kind of data to train/test on")
     parser.add_argument("--indicator-val-loss", type=str, choices=["mse", "fvd", "bce"], default="fvd",
                         help="Loss to use for determining if validated model has become 'better' and should be saved")
+    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
 
     cfg = parser.parse_args()
     main(cfg)

@@ -12,11 +12,11 @@ from models.prediction.phydnet.model_blocks import PhyCell, ConvLSTM, EncoderRNN
 
 class PhyDNet(VideoPredictionModel):
 
-    def __init__(self, img_size, img_channels, device):
+    def __init__(self, img_size, img_channels, action_size, device):
 
         super(PhyDNet, self).__init__()
-        self.encoder = EncoderRNN(img_size, img_channels, device)
 
+        self.encoder = EncoderRNN(img_size, img_channels, action_size, device)
         self.constraints = torch.zeros((49, 7, 7)).to(device)
         ind = 0
         for i in range(0, 7):
@@ -26,6 +26,8 @@ class PhyDNet(VideoPredictionModel):
 
         self.criterion = MSE()
         self.device = device
+        self.action_size = action_size
+        self.use_actions = self.action_size > 0
 
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)
@@ -33,19 +35,28 @@ class PhyDNet(VideoPredictionModel):
     # For PhyDNet, pred_n() is used for inference only (no training).
     def pred_n(self, frames, pred_length=1, **kwargs):
 
-        # frames: [b, t, c, h, w]
+        # shape: [b, t, c, ...]
         in_length = frames.shape[1]
         out_frames = []
 
+        empty_actions = torch.zeros(frames.shape[0], frames.shape[1], device=self.device)
+        actions = kwargs.get("actions", empty_actions)
+        if self.use_actions:
+            if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
+                raise ValueError("Given actions are None or of the wrong size!")
+
+        ac_index = 0
         for ei in range(in_length - 1):
-            encoder_output, encoder_hidden, output_image, _, _ = self.encoder(frames[:, ei, :, :, :], (ei == 0))
+            encoder_output, encoder_hidden, output_image, _, _ = self.encoder(frames[:, ei, :, :, :], actions[:, ac_index], (ei == 0))
+            ac_index += 1
 
         decoder_input = frames[:, -1, :, :, :]  # first decoder input = last image of input sequence
 
         for di in range(pred_length):
-            decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input)
+            decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input, actions[:, ac_index])
             out_frames.append(output_image)
             decoder_input = output_image
+            ac_index += 1
 
         out_frames = torch.stack(out_frames, dim=1)
         return out_frames, None
@@ -59,23 +70,31 @@ class PhyDNet(VideoPredictionModel):
 
             # fwd
             img_data = data[pred_mode].to(self.device)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
-            #actions = data["actions"].to(self.device)
             input_tensor, target_tensor = img_data[:, :video_in_length], img_data[:, video_in_length:]
+
+            actions = data["actions"].to(self.device)
+            empty_actions = torch.zeros(img_data.shape[0], img_data.shape[1], device=self.device)
+            if self.use_actions:
+                if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
+                    raise ValueError("Given actions are None or of the wrong size!")
 
             input_length = input_tensor.size(1)
             target_length = target_tensor.size(1)
             loss = 0
+            ac_index = 0
             for ei in range(input_length - 1):
-                encoder_output, encoder_hidden, output_image, _, _ = self.encoder(input_tensor[:, ei, :, :, :], (ei == 0))
+                encoder_output, encoder_hidden, output_image, _, _ = self.encoder(input_tensor[:, ei, :, :, :], actions[:, ac_index], (ei == 0))
                 loss += self.criterion(output_image, input_tensor[:, ei + 1, :, :, :])
+                ac_index += 1
 
             decoder_input = input_tensor[:, -1, :, :, :]  # first decoder input = last image of input sequence
 
             use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
             for di in range(target_length):
-                decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input)
+                decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input, actions[:, ac_index])
                 target = target_tensor[:, di, :, :, :]
                 loss += self.criterion(output_image, target)
+                ac_index += 1
                 if use_teacher_forcing:
                     decoder_input = target  # Teacher forcing
                 else:

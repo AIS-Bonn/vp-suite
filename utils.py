@@ -153,6 +153,7 @@ def save_vid_vis(out_fp, video_in_length, **trajs):
 
     anim = FuncAnimation(fig, update, frames=np.arange(T), interval=500)
     anim.save(out_fp, writer="imagemagick", dpi=200)
+    plt.close(fig)
 
 
 def colorize_semseg(input : np.ndarray, num_classes : int):

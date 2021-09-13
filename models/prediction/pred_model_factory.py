@@ -6,7 +6,7 @@ import torch
 from models.prediction.conv_lstm import LSTMModel
 from models.prediction.copy_last_frame import CopyLastFrameModel
 from models.prediction.phydnet.phydnet import PhyDNet
-from models.prediction.st_lstm import STLSTMModel
+from models.prediction.st_lstm.st_lstm import STLSTMModel
 from models.prediction.unet_3d import UNet3dModel
 
 from config import DEVICE
@@ -14,33 +14,35 @@ from config import DEVICE
 
 def get_pred_model(cfg, num_channels, video_in_length, device):
 
+    if cfg.include_actions:
+        action_size = cfg.action_size
+        print("using action-conditional video prediction if applicable")
+    else:
+        action_size = 0
+
     if cfg.model == "unet":
         print("prediction model: UNet3d")
-        pred_model = UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=video_in_length).to(device)
+        pred_model = UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=video_in_length)
 
     elif cfg.model == "lstm":
         print("prediction model: LSTM")
-        pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels).to(device)
+        pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels)
 
     elif cfg.model == "st_lstm":
-        if cfg.include_actions:
-            a_dim = cfg.action_size
-            print("prediction model: action-conditional ST-LSTM")
-        else:
-            a_dim = 0
-            print("prediction model: ST-LSTM")
-        pred_model = STLSTMModel(img_size=cfg.img_shape, img_channels=num_channels, action_size=a_dim, device=device)
+        print("prediction model: ST-LSTM")
+        pred_model = STLSTMModel(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
 
     elif cfg.model == "phy":
         print("prediction model: PhyDNet")
-        pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels, device=device)
+        pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
 
     else:
         print("prediction model: CopyLastFrame")
-        pred_model = CopyLastFrameModel().to(DEVICE)
+        pred_model = CopyLastFrameModel()
         cfg.no_train = True
 
-    return pred_model
+    print(f"Model parameters: {sum(p.numel() for p in pred_model.parameters() if p.requires_grad)}")
+    return pred_model.to(device)
 
 
 def test():
@@ -62,7 +64,8 @@ def test():
         LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE),
         STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
         STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size),
-        PhyDNet(img_size, img_channels=num_channels, device=DEVICE)
+        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
+        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size)
     ]
 
     for model in models:
