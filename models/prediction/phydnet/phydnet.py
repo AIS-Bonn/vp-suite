@@ -59,7 +59,7 @@ class PhyDNet(VideoPredictionModel):
             ac_index += 1
 
         out_frames = torch.stack(out_frames, dim=1)
-        return out_frames, None
+        return out_frames, None  # inference only -> no loss returned
 
 
     def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, losses, epoch):

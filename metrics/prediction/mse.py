@@ -6,7 +6,8 @@ class MSE(nn.Module):
 
     def __init__(self):
         super(MSE, self).__init__()
-        self.mse = torch.nn.MSELoss()
+        self.mse = torch.nn.MSELoss(reduction="none")
 
     def forward(self, pred: torch.Tensor, real : torch.Tensor):
-        return self.mse(pred, real)
+        mse = self.mse(pred, real)
+        return mse.sum(dim=(-1, -2)).mean()

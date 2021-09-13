@@ -41,7 +41,9 @@ def get_pred_model(cfg, num_channels, video_in_length, device):
         pred_model = CopyLastFrameModel()
         cfg.no_train = True
 
-    print(f"Model parameters: {sum(p.numel() for p in pred_model.parameters() if p.requires_grad)}")
+    total_params = sum(p.numel() for p in pred_model.parameters())
+    trainable_params = sum(p.numel() for p in pred_model.parameters() if p.requires_grad)
+    print(f"Model parameters (total / trainable): {total_params} / {trainable_params}")
     return pred_model.to(device)
 
 
