@@ -52,7 +52,7 @@ def get_pred_model(cfg, num_channels, video_in_length, device):
     return pred_model.to(device)
 
 
-def test():
+def test_all_models():
 
     import time
 
@@ -97,4 +97,4 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    test_all_models()
