@@ -8,12 +8,14 @@ from models.prediction.pred_model import VideoPredictionModel
 
 class STLSTMModel(VideoPredictionModel):
 
-    # MAGIC NUMBERZ
+    # hyperparameters
     enc_channels = 64
-    num_hidden = [64, 64, 64]
-    num_layers = len(num_hidden)
+    num_layers = 3
     action_linear_size = 3
     decouple_loss_scale = 1.0
+
+    # other parameters
+    num_hidden = [enc_channels] * num_layers
 
 
     def __init__(self, img_size, img_channels, action_size, device):

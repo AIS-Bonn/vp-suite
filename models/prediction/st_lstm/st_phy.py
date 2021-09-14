@@ -15,18 +15,19 @@ from models.prediction.phydnet.model_blocks import PhyCell_Cell, K2M
 
 class STPhy(VideoPredictionModel):
 
-    # MAGIC NUMBERZ
+    # hyperparameters
+    n_layers = 3
     enc_channels = 64
-    dim_st_hidden = [64]
-    dim_phy_hidden = [49]
-    if len(dim_st_hidden) != len(dim_phy_hidden):
-        raise ValueError("Number of layers need to be the same")
-    n_layers = len(dim_st_hidden)
+    phy_channels = 49
     action_linear_size = 3
     phy_kernel_size = (7, 7)
-    reconstruction_loss_scale = 1.0
-    decouple_loss_scale = 1.0
+    reconstruction_loss_scale = 0.1
+    decouple_loss_scale = 100.0
     moment_loss_scale = 1.0
+
+    # other parameters
+    dim_st_hidden = [enc_channels] * n_layers
+    dim_phy_hidden = [phy_channels] * n_layers
 
     def __init__(self, img_size, img_channels, action_size, device):
         super(STPhy, self).__init__()
@@ -179,22 +180,19 @@ class STPhy(VideoPredictionModel):
 
             # fwd
             img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
-            input_frames, target_frames = img_data[:, video_in_length], img_data[:, video_in_length:]
+            input_frames, target_frames = img_data[:, :video_in_length], img_data[:, video_in_length:]
             actions = data["actions"].to(self.device)
 
             pred_length = target_frames.shape[0]
-            reconstructions, predictions, model_losses \
+            predictions, model_losses \
                 = self.pred_n(input_frames, pred_length=pred_length, actions=actions,
                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
+
             # loss
-            predictions_full = torch.cat([reconstructions, predictions], dim=1)
-            targets_full = img_data[1:]
             loss = torch.tensor(0.0, device=self.device)
             for _, (loss_fn, use_full_input, scale) in losses.items():
                 if scale == 0: continue
-                pred = predictions_full if use_full_input else predictions
-                real = targets_full if use_full_input else targets
-                loss += scale * loss_fn(pred, real)
+                loss += scale * loss_fn(predictions, target_frames)
 
             loss += model_losses["reconstruction"] * self.reconstruction_loss_scale
             loss += model_losses["decouple"] * self.decouple_loss_scale

@@ -79,7 +79,7 @@ def test():
 
     for model in models:
         print("")
-        print(f"Checking {model.__class__.__name__}")
+        print(f"Checking {model.__class__.__name__} (action-conditional: {getattr(model, 'use_actions', False)})")
         print(f"Parameter count (total / learnable): {sum([p.numel() for p in model.parameters()])}"
               f" / {sum([p.numel() for p in model.parameters() if p.requires_grad])}")
 

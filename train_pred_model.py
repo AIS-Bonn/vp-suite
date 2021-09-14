@@ -206,8 +206,8 @@ if __name__ == '__main__':
     parser.add_argument("--in-path", type=str, help="Path to dataset directory")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true", help="use gripper deltas for action-conditional learning")
-    parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy", "phy"], default="unet",
-                        help="Which model arch to use")
+    parser.add_argument("--model", type=str, choices=["unet", "lstm", "st_lstm", "copy", "phy", "st_phy"],
+                        default="st_lstm", help="Which model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
     parser.add_argument("--indicator-val-loss", type=str, choices=["mse", "fvd", "bce"], default="fvd",
