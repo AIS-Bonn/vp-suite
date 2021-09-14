@@ -41,7 +41,7 @@ def prepare_synpick_img(cfg):
     test_rgbs, test_segs = list(zip(*test_r_s))
 
     all_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    out_path = Path("data").absolute() / f"vid_{path.stem}_{cfg.timestamp}"
+    out_path = Path("data").absolute() / f"img_{path.stem}_{cfg.timestamp}"
     out_path.mkdir(parents=True)
 
     copy_synpick_imgs(all_fps, out_path, cfg.resize_ratio)
