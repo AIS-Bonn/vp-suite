@@ -1,4 +1,8 @@
+import math
 import sys
+
+from torch import linalg as linalg
+
 sys.path.append(".")
 
 import torch
@@ -7,7 +11,6 @@ import torchvision.transforms.functional as TF
 
 from models.i3d.pytorch_i3d import InceptionI3d
 from config import DEVICE
-from utils import get_2_wasserstein_dist
 
 
 class FrechetVideoDistance(nn.Module):
@@ -15,7 +18,7 @@ class FrechetVideoDistance(nn.Module):
     INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
     '''
 
-    def __init__(self, num_frames, in_channels=3):
+    def __init__(self, num_frames, in_channels=3, device=DEVICE):
         super(FrechetVideoDistance, self).__init__()
 
         if num_frames < 9 or num_frames > 16:
@@ -26,7 +29,7 @@ class FrechetVideoDistance(nn.Module):
 
         self.i3d = InceptionI3d(num_classes=400, in_channels=in_channels)
         self.i3d.load_state_dict(torch.load("models/i3d/models/rgb_imagenet.pt"))
-        self.i3d.to(DEVICE)
+        self.i3d.to(device)
         self.i3d.eval()  # don't train the pre-trained I3D
 
 
@@ -54,12 +57,62 @@ class FrechetVideoDistance(nn.Module):
             logits_pred = logits_pred.unsqueeze(dim=0)
             logits_real = logits_real.unsqueeze(dim=0)
 
-        return get_2_wasserstein_dist(logits_pred, logits_real)
+        return calculate_2_wasserstein_dist(logits_pred, logits_real)
 
 
 if __name__ == '__main__':
     b, T, c, h, w = 5, 9, 3, 270, 480
-    a, b = torch.randn((b, T, c, h, w)).to(DEVICE), torch.randn((b, T, c, h, w)).to(DEVICE)
-    fvd = FrechetVideoDistance(num_frames=T)
+    a, b = torch.randn((b, T, c, h, w), device=DEVICE), torch.randn((b, T, c, h, w), device=DEVICE)
+    fvd = FrechetVideoDistance(num_frames=T, device=DEVICE)
     loss = fvd.get_distance(a, b)
     print(loss.item())
+
+
+def calculate_2_wasserstein_dist(pred, real):
+    '''
+    Calulates the two components of the 2-Wasserstein metric:
+    The general formula is given by: d(P_real, P_pred = min_{X, Y} E[|X-Y|^2]
+
+    For multivariate gaussian distributed inputs x_real ~ MN(mu_real, cov_real) and x_pred ~ MN(mu_pred, cov_pred),
+    this reduces to: d = |mu_real - mu_pred|^2 - Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
+
+    Fast method implemented according to following paper: https://arxiv.org/pdf/2009.14075.pdf
+
+    Input shape: [b = batch_size, n = num_features]
+    Output shape: scalar
+    '''
+
+    if pred.shape != real.shape:
+        raise ValueError("Expecting equal shapes for pred and real!")
+
+    # the following ops need some extra precision
+    pred, real = pred.transpose(0, 1).double(), real.transpose(0, 1).double()  # [n, b]
+    mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
+    n, b = pred.shape
+    fact = 1.0 if b < 2 else 1.0 / (b - 1)
+
+    # Cov. Matrix
+    E_pred = pred - mu_pred
+    E_real = real - mu_real
+    cov_pred = torch.matmul(E_pred, E_pred.t()) * fact  # [n, n]
+    cov_real = torch.matmul(E_real, E_real.t()) * fact
+
+    # calculate Tr((cov_real * cov_pred)^(1/2)). with the method proposed in https://arxiv.org/pdf/2009.14075.pdf
+    # The eigenvalues of the mm(cov_pred, cov_real) and therefore for M are real-valued.
+    C_pred = E_pred * math.sqrt(fact)  # [n, n], "root" of covariance
+    C_real = E_real * math.sqrt(fact)
+    M_l = torch.matmul(C_pred.t(), C_real)
+    M_r = torch.matmul(C_real.t(), C_pred)
+    M = torch.matmul(M_l, M_r)
+    S = linalg.eigvals(M) + 1e-15  # add small constant to avoid infinite gradients from sqrt(0)
+    sq_tr_cov = S.sqrt().abs().sum()
+
+    # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
+    trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
+
+    # |mu_real - mu_pred|^2
+    diff = mu_real - mu_pred  # [n, 1]
+    mean_term = torch.sum(torch.mul(diff, diff))  # scalar
+
+    # put it together
+    return (trace_term + mean_term).float()
