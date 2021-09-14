@@ -3,6 +3,7 @@ import os, time, json, math
 import albumentations as albu
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 import cv2
 
@@ -147,6 +148,8 @@ class SynpickVideoDataset(Dataset):
         frame_nums = [self.frame_num_from_id(self.image_ids[id_]) for id_ in idx]
         gripper_pos = [self.gripper_pos[ep_num][frame_num] for frame_num in frame_nums]
         actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()
+        # front-pad time dim with 0s -> 1st real action in 2nd entry (input together with 2nd frame)
+        actions = F.pad(actions, (0, 0, 1, 0))
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
         masks_ = [cv2.imread(self.mask_fps[id_], 0) for id_ in idx]

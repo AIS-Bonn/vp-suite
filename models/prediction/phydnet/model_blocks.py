@@ -38,6 +38,7 @@ class PhyCell_Cell(nn.Module):
             self.hidden_action_conv = nn.Conv2d(in_channels=self.input_dim+self.action_size,
                                                out_channels=self.input_dim, kernel_size=(1, 1))
 
+
     def forward(self, frame, action, hidden):  # x [batch_size, hidden_dim, height, width]
 
         if self.use_actions:
@@ -52,6 +53,7 @@ class PhyCell_Cell(nn.Module):
         K = torch.sigmoid(combined_conv)
         hidden_tilde = hidden + self.F(hidden)  # prediction
         next_hidden = hidden_tilde + K * (frame - hidden_tilde)  # correction , Haddamard product
+
         return next_hidden
 
 

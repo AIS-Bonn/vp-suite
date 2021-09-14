@@ -7,6 +7,7 @@ from models.prediction.conv_lstm import LSTMModel
 from models.prediction.copy_last_frame import CopyLastFrameModel
 from models.prediction.phydnet.phydnet import PhyDNet
 from models.prediction.st_lstm.st_lstm import STLSTMModel
+from models.prediction.st_lstm.st_phy import STPhy
 from models.prediction.unet_3d import UNet3dModel
 
 from config import DEVICE
@@ -35,6 +36,10 @@ def get_pred_model(cfg, num_channels, video_in_length, device):
     elif cfg.model == "phy":
         print("prediction model: PhyDNet")
         pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
+
+    elif cfg.model == "st_phy":
+        print("prediction model: ST-Phy")
+        pred_model = STPhy(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
 
     else:
         print("prediction model: CopyLastFrame")
@@ -67,7 +72,9 @@ def test():
         STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
         STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size),
         PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
-        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size)
+        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size),
+        STPhy(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
+        STPhy(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size)
     ]
 
     for model in models:
