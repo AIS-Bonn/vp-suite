@@ -6,59 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from PIL import Image
-import torch
-import torch.linalg as linalg
-
-def get_2_wasserstein_dist(pred, real):
-    '''
-    Calulates the two components of 2-Wasserstein metric:
-    The general formula is given by: d(P_real, P_pred = min_{X, Y} E[|X-Y|^2]
-
-    For multivariate gaussian distributed inputs x_real ~ MN(mu_real, cov_real) and x_pred ~ MN(mu_pred, cov_pred),
-    this reduces to: d = |mu_real - mu_pred|^2 - Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
-
-    Fast method: https://arxiv.org/pdf/2009.14075.pdf
-
-    Input shape: [b, n]
-    Output shape: scalar
-    '''
-
-    if pred.shape != real.shape:
-        raise ValueError("Expecting equal shapes for pred and real!")
-
-    # the following ops need some extra precision
-    pred, real = pred.transpose(0, 1).double(), real.transpose(0, 1).double()  # [n, b]
-    mu_pred, mu_real = torch.mean(pred, dim=1, keepdim=True), torch.mean(real, dim=1, keepdim=True)  # [n, 1]
-    n, b = pred.shape
-    fact = 1.0 if b < 2 else 1.0 / (b - 1)
-
-    # Cov. Matrix
-    E_pred = pred - mu_pred
-    E_real = real - mu_real
-    cov_pred = torch.matmul(E_pred, E_pred.t()) * fact  # [n, n]
-    cov_real = torch.matmul(E_real, E_real.t()) * fact
-
-    # calculate Tr((cov_real * cov_pred)^(1/2)). with the method proposed in https://arxiv.org/pdf/2009.14075.pdf
-    # The eigenvalues of the mm(cov_pred, cov_real) are real-valued, so for M, too.
-    #  TODO further dive into mathematical intuition about why the eigenvalues are guaranteed to be real-valued
-    C_pred = E_pred * math.sqrt(fact)  # [n, n], "root" of covariance
-    C_real = E_real * math.sqrt(fact)
-    M_l = torch.matmul(C_pred.t(), C_real)
-    M_r = torch.matmul(C_real.t(), C_pred)
-    M = torch.matmul(M_l, M_r)
-    S = linalg.eigvals(M) + 1e-15  # add small constant to avoid infinite gradients from sqrt(0)
-    sq_tr_cov = S.sqrt().abs().sum()
-
-    # plug the sqrt_trace_component into Tr(cov_real + cov_pred - 2(cov_real * cov_pred)^(1/2))
-    trace_term = torch.trace(cov_pred + cov_real) - 2.0 * sq_tr_cov  # scalar
-
-    # |mu_real - mu_pred|^2
-    diff = mu_real - mu_pred  # [n, 1]
-    mean_term = torch.sum(torch.mul(diff, diff))  # scalar
-
-    # put it together
-    return (trace_term + mean_term).float()
-
 
 def most(l: List[bool], factor=0.67):
     '''
