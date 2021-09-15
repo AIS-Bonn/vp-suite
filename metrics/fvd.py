@@ -3,7 +3,7 @@ import sys
 
 from torch import linalg as linalg
 
-sys.path.append(".")
+sys.path.append("prediction")
 
 import torch
 import torch.nn as nn
@@ -18,23 +18,49 @@ class FrechetVideoDistance(nn.Module):
     INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
     '''
 
+    min_T = 9
+    max_T = 16
+    i3d_in_shape = (224, 224)
+    i3d_num_classes = 400
+    input_chunks = 1
+    drop_last_chunk = False
+
     def __init__(self, num_frames, in_channels=3, device=DEVICE):
         super(FrechetVideoDistance, self).__init__()
 
-        if num_frames < 9 or num_frames > 16:
-            raise ValueError(f"The I3D Module used for FVD needs in between"
-                             f" 9 and 16 input frames (given: {num_frames})!")
+        if num_frames < self.min_T:
+            raise ValueError(f"The I3D Module used for FVD needs at least"
+                             f" 9 input frames (given: {num_frames})!")
+        elif num_frames > self.max_T:
+            self.determine_number_of_chunks(num_frames)
+            print(f"Warning: The I3D Module used for FVD handles at most 16 input frames (given: {num_frames})"
+                  f" -> input video will be chunked into {self.input_chunks} chunks!")
 
-        self.i3d_in_shape = (224, 224)
-
-        self.i3d = InceptionI3d(num_classes=400, in_channels=in_channels)
+        self.i3d = InceptionI3d(num_classes=self.i3d_num_classes, in_channels=in_channels)
         self.i3d.load_state_dict(torch.load("models/i3d/models/rgb_imagenet.pt"))
         self.i3d.to(device)
         self.i3d.eval()  # don't train the pre-trained I3D
 
 
-    def forward(self, pred, real):
+    def determine_number_of_chunks(self, n):
+        '''
+        If given input length is too large, this function returns a list of sequence lengths for chunks.
+        Each chunk is then used for a separate fvd calculation and combined afterwards.
+        '''
+        possible_chunk_l = range(self.max_T, self.min_T-1, -1)
+        for chunk_l in possible_chunk_l:
+            if n % chunk_l >= self.min_T:
+                self.input_chunks = n // chunk_l + 1
 
+        # loss-less chunking not possible -> get largest possible even chunk and drop last chunk
+        if self.input_chunks == None:
+            missed_frames = [n % chunk_l for chunk_l in possible_chunk_l]
+            best_chunk_l = sorted(zip(possible_chunk_l, missed_frames), key=lambda x: x[1])[-1]
+            self.drop_last_chunk = True
+            self.input_chunks = n // best_chunk_l + 1
+
+
+    def get_distance(self, pred, real):
         # input: [b, T, c, h, w]
         # output: scalar
 
@@ -50,22 +76,26 @@ class FrechetVideoDistance(nn.Module):
         pred = pred.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))  # [b, c, T, 224, 224]
         real = real.reshape(*vid_shape[:3], *self.i3d_in_shape).permute((0, 2, 1, 3, 4))
 
+        pred_chunked = torch.chunk(pred, self.input_chunks, dim=2)
+        real_chunked = torch.chunk(real, self.input_chunks, dim=2)
+
+        n_valid_chunks = self.input_chunks if not self.drop_last_chunk else self.input_chunks - 1
+        chunk_distances = [self.forward(pred_chunked[i], real_chunked[i]) for i in range(n_valid_chunks)]
+        return sum(chunk_distances) / n_valid_chunks  # mean
+
+    def forward(self, pred, real):
+
+        # input: [b, c, t, 224, 224] with t in suitable (chunked) size
+        # output: scalar
+
         logits_pred = self.i3d.extract_features(pred).squeeze()  # [b, n]
         logits_real = self.i3d.extract_features(real).squeeze()
 
-        if vid_shape[0] == 1:  # if batch size is 1, the prev. squeeze also removed the batch dim
+        if pred.shape[0] == 1:  # if batch size is 1, the prev. squeeze also removed the batch dim
             logits_pred = logits_pred.unsqueeze(dim=0)
             logits_real = logits_real.unsqueeze(dim=0)
 
         return calculate_2_wasserstein_dist(logits_pred, logits_real)
-
-
-if __name__ == '__main__':
-    b, T, c, h, w = 5, 9, 3, 270, 480
-    a, b = torch.randn((b, T, c, h, w), device=DEVICE), torch.randn((b, T, c, h, w), device=DEVICE)
-    fvd = FrechetVideoDistance(num_frames=T, device=DEVICE)
-    loss = fvd.get_distance(a, b)
-    print(loss.item())
 
 
 def calculate_2_wasserstein_dist(pred, real):
@@ -116,3 +146,12 @@ def calculate_2_wasserstein_dist(pred, real):
 
     # put it together
     return (trace_term + mean_term).float()
+
+
+
+if __name__ == '__main__':
+    b, T, c, h, w = 5, 9, 3, 270, 480
+    a, b = torch.randn((b, T, c, h, w), device=DEVICE), torch.randn((b, T, c, h, w), device=DEVICE)
+    fvd = FrechetVideoDistance(num_frames=T, device=DEVICE)
+    loss = fvd.get_distance(a, b)
+    print(loss.item())
