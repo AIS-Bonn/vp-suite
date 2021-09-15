@@ -4,46 +4,27 @@ sys.path.append(".")
 import torch
 import numpy as np
 
-from metrics.image_metrics import SSIM, PSNR, LPIPS, MSE, MAE
-from metrics.fvd import FrechetVideoDistance as FVD
-from config import DEVICE
+from metrics.image_perceptual import SSIM, PSNR, LPIPS, MSE, MAE
+from metrics.segmentation import Accuracy as ACC
+from losses.fvd import FrechetVideoDistance as FVD
 
-def get_image_metrics(pred, target):
+
+def get_segmentation_metrics(pred, target):
     '''
-    input type: torch.tensor (torch.float)
-    input shape: [b, t, c, h, w]
-    input range: [-1.0, 1.0]
+    input type: torch.tensor (torch.int)
+    input shape: [b, h, w]
+    input range: class labels starting from 0
     '''
 
-    # create zipper list of pred-target numpy array pairs, removing other dimensions
-    pred = pred.view(-1, *pred.shape[2:]).detach().cpu()
-    pred_torch, pred_numpy = list(pred), list(pred.numpy())
-    target = target.view(-1, *target.shape[2:]).detach().cpu()
-    target_torch, target_numpy = list(target), list(target.numpy())
+    pred_stacked = list(pred.detach().cpu())
+    target_stacked = list(target.detach().cpu())
 
     return {
-        "ssim": np.mean(np.stack([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]), axis=0),
-        "psnr": np.mean(np.stack([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]), axis=0),
-        "mse": np.mean(np.stack([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]), axis=0),
-        "mae": np.mean(np.stack([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]), axis=0),
-        "lpips": torch.mean(torch.stack([LPIPS(p, t) for p, t in zip(pred_torch, target_torch)]), axis=0).item(),
-    }
-
-def get_video_metrics(pred, target):
-    '''
-    input type: torch.tensor (torch.float)
-    input shape: [b, t, c, h, w]
-    input range: [-1.0, 1.0]
-    '''
-
-    _, t, c, _, _ = pred.shape
-
-    return {
-        "fvd": FVD(num_frames=t, in_channels=c, device=pred.device).get_distance(pred, target).item()
+        "accuracy": np.mean([ACC(p, t) for p, t in zip(pred_stacked, target_stacked)])
     }
 
 
-def get_metrics_for_video(pred, target):
+def get_prediction_metrics(pred, target):
     '''
     input type: torch.tensor (torch.float)
     input shape: [b, t, c, h, w]
@@ -52,17 +33,35 @@ def get_metrics_for_video(pred, target):
 
     if pred.shape != target.shape:
         raise ValueError("Output images and target images are of different shape!")
+    b, t, c, h, w = pred.shape
 
-    image_metrics = get_image_metrics(pred, target)
-    video_metrics = get_video_metrics(pred, target)
+    # for image-level losses: create zippable lists of pred-target numpy array pairs, removing other dimensions
+    pred_stacked = pred.view(-1, *pred.shape[2:]).detach().cpu()
+    pred_torch, pred_numpy = list(pred_stacked), list(pred_stacked.numpy())
+    target_stacked = target.view(-1, *target.shape[2:]).detach().cpu()
+    target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
 
-    return {**image_metrics, **video_metrics}
+    return {
+        "ssim": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "psnr": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "mse": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "mae": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "lpips": np.mean([LPIPS(p, t).item() for p, t in zip(pred_torch, target_torch)]),
+        "fvd": FVD(num_frames=t, in_channels=c, device=pred.device).get_distance(pred, target).item()
+    }
 
 
 if __name__ == '__main__':
+    from config import DEVICE
 
-    a, b = torch.rand(2, 50, 3, 93, 124).to(DEVICE), torch.rand(2, 50, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]
+    print("\nPrediction metrics:")
+    a, b = torch.rand(8, 16, 3, 93, 124).to(DEVICE), torch.rand(8, 16, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]
     a, b = 2*a-1, 2*b-1  # range: [-1.0, 1.0)
+    for metric, val in get_prediction_metrics(a, b).items():
+        print(f"{metric}: {val}")
 
-    for metric, val in get_metrics_for_video(a, b).items():
+    print("\nSegmentation metrics:")
+    x, y = torch.rand(8, 93, 124).to(DEVICE), torch.rand(8, 93, 124).to(DEVICE)  # [b, h, w]
+    x, y = (10*x).int(), (10*y).int()
+    for metric, val in get_segmentation_metrics(x, y).items():
         print(f"{metric}: {val}")

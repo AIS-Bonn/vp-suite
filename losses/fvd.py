@@ -3,7 +3,7 @@ import sys
 
 from torch import linalg as linalg
 
-sys.path.append("prediction")
+sys.path.append("../metrics/prediction")
 
 import torch
 import torch.nn as nn

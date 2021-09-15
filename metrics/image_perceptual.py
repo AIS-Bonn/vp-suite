@@ -13,8 +13,6 @@ from skimage.metrics import mean_squared_error as mse
 def SSIM(pred, target):
     '''
     input type: np.ndarray (np.float)
-    input shape: [c, h, w]
-    input range: [-1.0, 1.0]
     '''
     pred, target = pred.transpose((1, 2, 0)), target.transpose((1, 2, 0))  # color channel is needed as last dim
     # this parametrisazion matches Wang et al.: "Image quality assessment: From error visibility to structural similarity."
@@ -25,8 +23,6 @@ def SSIM(pred, target):
 def PSNR(pred, target):
     '''
     input type: np.ndarray (np.float)
-    input shape: [c, h, w]
-    input range: [-1.0, 1.0]
     '''
     return psnr(target, pred, data_range=2)
 
@@ -34,8 +30,6 @@ def PSNR(pred, target):
 def MSE(pred, target):
     '''
     input type: np.ndarray (np.float)
-    input shape: [c, h, w]
-    input range: [-1.0, 1.0]
     '''
     return np.mean((pred - target) ** 2, axis=0).sum()
 
@@ -43,8 +37,6 @@ def MSE(pred, target):
 def MAE(pred, target):
     '''
     input type: np.ndarray (np.float)
-    input shape: [c, h, w]
-    input range: [-1.0, 1.0]
     '''
     return np.mean(np.abs(pred - target), axis=0).sum()
 
@@ -53,7 +45,5 @@ lpips_alex = lpips.LPIPS(net='alex') # LPIPS ver. 0.1.4
 def LPIPS(pred, target):
     '''
     input type: torch.tensor (torch.float)
-    input shape: [c, h, w]
-    input range: [-1.0, 1.0]
     '''
     return lpips_alex(target, pred)
