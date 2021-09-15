@@ -20,7 +20,7 @@ def get_segmentation_metrics(pred, target):
     target_stacked = list(target.detach().cpu())
 
     return {
-        "accuracy": np.mean([ACC(p, t) for p, t in zip(pred_stacked, target_stacked)])
+        "accuracy (↑)": np.mean([ACC(p, t) for p, t in zip(pred_stacked, target_stacked)])
     }
 
 
@@ -42,12 +42,12 @@ def get_prediction_metrics(pred, target):
     target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
 
     return {
-        "ssim": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "psnr": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "mse": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "mae": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "lpips": np.mean([LPIPS(p, t).item() for p, t in zip(pred_torch, target_torch)]),
-        "fvd": FVD(num_frames=t, in_channels=c, device=pred.device).get_distance(pred, target).item()
+        "ssim (↑)": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "psnr (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "mse (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "mae (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        "lpips (↓)": np.mean([LPIPS(p, t).item() for p, t in zip(pred_torch, target_torch)]),
+        "fvd (↓)": FVD(num_frames=t, in_channels=c, device=pred.device).get_distance(pred, target).item()
     }
 
 

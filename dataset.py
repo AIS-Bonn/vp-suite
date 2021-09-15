@@ -1,4 +1,4 @@
-import os, time, json, math
+import sys, os, time, json, math
 
 import albumentations as albu
 import numpy as np
@@ -135,6 +135,13 @@ class SynpickVideoDataset(Dataset):
         #print(len(self.valid_idx))
         #exit(0)
 
+        #print("analyzing masks...")
+        #mum = sorted(zip([np.max(np.unique(cv2.imread(fp, 0))) for fp in self.mask_fps], self.mask_fps), key=lambda x: -1 * x[0])
+        #print(mum[0])
+        #np.set_printoptions(threshold=sys.maxsize)
+        #print(cv2.imread(mum[0][1], 0))
+        #exit(0)
+
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
@@ -153,6 +160,11 @@ class SynpickVideoDataset(Dataset):
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
         masks_ = [cv2.imread(self.mask_fps[id_], 0) for id_ in idx]
+        mum = [np.max(np.unique(mask)) for mask in masks_]
+        for id, m in zip(idx, mum):
+            if m > 22:
+                print(self.mask_fps[id])
+                raise ValueError("DALJDLSJDLKAJSKLDJA")
 
         imgs = [preprocess_img(img) for img in imgs_]
         masks = [preprocess_mask_inflate(np.expand_dims(mask, axis=2), self.num_classes) for mask in masks_]

@@ -2,12 +2,11 @@ import random
 
 from tqdm import tqdm
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from metrics.prediction.mse import MSE
+from losses.mse import MSE
 from models.prediction.pred_model import VideoPredictionModel
 from models.prediction.st_lstm.model_blocks import STLSTMCell, ActionConditionalSTLSTMCell, Autoencoder
 from models.prediction.phydnet.model_blocks import PhyCell_Cell, K2M

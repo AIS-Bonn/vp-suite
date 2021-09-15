@@ -4,12 +4,12 @@ from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 import torch
+import torch.nn
 from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickSegmentationDataset, synpick_seg_val_augmentation, synpick_seg_train_augmentation
 from models.segmentation.seg_model import UNet
-from metrics.segmentation.ce import CrossEntropyLoss
 from visualize import visualize_seg
 
 def main(cfg):
@@ -37,7 +37,7 @@ def main(cfg):
 
     # MODEL, LOSSES, OPTIMIZERS
     seg_model = UNet(in_channels=3, out_channels=num_classes).to(device)
-    loss_fn = CrossEntropyLoss()
+    loss_fn = nn.CrossEntropyLoss(reduction='mean')
     optimizer = torch.optim.Adam(params=seg_model.parameters(), lr=LEARNING_RATE)
 
     # PREPARATION pt. 2
@@ -90,7 +90,9 @@ def train_iter(loader, seg_model, optimizer, loss_fn, device):
         targets = targets.to(device)
 
         predictions = seg_model(data)
-        loss = loss_fn.get_loss(predictions, targets)
+        pred_ = predictions.permute((0, 2, 3, 1)).reshape(-1, predictions.shape[1])
+        targets_ = targets.view(-1).long()
+        loss = loss_fn(pred_, targets_)
 
         optimizer.zero_grad()
         loss.backward()

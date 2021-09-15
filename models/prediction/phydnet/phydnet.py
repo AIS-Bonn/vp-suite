@@ -4,10 +4,10 @@ import random
 
 from tqdm import tqdm
 
-from metrics.prediction.mse import MSE
+from losses.mse import MSE
 from models.prediction.pred_model import VideoPredictionModel
 
-from models.prediction.phydnet.model_blocks import PhyCell, ConvLSTM, EncoderRNN, K2M
+from models.prediction.phydnet.model_blocks import EncoderRNN, K2M
 
 
 class PhyDNet(VideoPredictionModel):

@@ -2,18 +2,16 @@ import os, time, argparse, random
 from pathlib import Path
 
 import numpy as np
-import torch
 import torch.nn
-import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from config import *
 from dataset import SynpickVideoDataset
 from models.prediction.pred_model_factory import get_pred_model
-from metrics.prediction.fvd import FrechetVideoDistance
-from metrics.prediction.mse import MSE
-from metrics.prediction.bce import BCELogits
+from losses.fvd import FrechetVideoDistance
+from losses.mse import MSE
+from losses.bce import BCELogits
 from visualize import visualize_vid
 
 def main(args):
