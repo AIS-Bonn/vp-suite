@@ -4,7 +4,7 @@ import random
 
 from tqdm import tqdm
 
-from losses.mse import MSE
+from losses.image_distance import MSE
 from models.prediction.pred_model import VideoPredictionModel
 
 from models.prediction.phydnet.model_blocks import EncoderRNN, K2M
@@ -62,7 +62,7 @@ class PhyDNet(VideoPredictionModel):
         return out_frames, None  # inference only -> no loss returned
 
 
-    def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, losses, epoch):
+    def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider, epoch):
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.003)
         loop = tqdm(data_loader)

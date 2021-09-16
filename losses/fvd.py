@@ -60,7 +60,7 @@ class FrechetVideoDistance(nn.Module):
             self.input_chunks = n // best_chunk_l + 1
 
 
-    def get_distance(self, pred, real):
+    def forward(self, pred, real):
         # input: [b, T, c, h, w]
         # output: scalar
 
@@ -80,10 +80,10 @@ class FrechetVideoDistance(nn.Module):
         real_chunked = torch.chunk(real, self.input_chunks, dim=2)
 
         n_valid_chunks = self.input_chunks if not self.drop_last_chunk else self.input_chunks - 1
-        chunk_distances = [self.forward(pred_chunked[i], real_chunked[i]) for i in range(n_valid_chunks)]
+        chunk_distances = [self.get_distance(pred_chunked[i], real_chunked[i]) for i in range(n_valid_chunks)]
         return sum(chunk_distances) / n_valid_chunks  # mean
 
-    def forward(self, pred, real):
+    def get_distance(self, pred, real):
 
         # input: [b, c, t, 224, 224] with t in suitable (chunked) size
         # output: scalar

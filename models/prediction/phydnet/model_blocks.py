@@ -41,6 +41,7 @@ class PhyCell_Cell(nn.Module):
 
     def forward(self, frame, action, hidden):  # x [batch_size, hidden_dim, height, width]
 
+
         if self.use_actions:
             inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *frame.shape[-2:])
             frame_action = torch.cat([frame, inflated_action], dim=1)  # concatenate along channel axis

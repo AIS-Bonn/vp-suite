@@ -113,11 +113,21 @@ def colorize_semseg(input : np.ndarray, num_classes : int):
     assert input.dtype == np.uint8
     input_shape = input.shape
 
+    # 1 value less since background is painted white
+    hues = [360.0*i / (num_classes-1) for i in range(num_classes-1)]
+    # arrange hue values in star pattern so that neighboring classes values lead to different hues
+    # e.g. [1, 2, 3, 4, 5, 6, 7] -> [1, 5, 2, 6, 3, 7, 4]
+    if len(hues) % 2 == 0:  # even length
+        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
+    else:  # odd length -> append element to make it even and remove that element after rearrangement
+        hues.append[None]
+        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
+        hues.pop()
+
     colors = np.zeros((num_classes, 3)).astype('uint8')
     colors[0] = [255, 255, 255]
     for i in range(1, num_classes):
-        hue = (i-1) * 360.0 / (num_classes-1)
-        rgb = hsluv.hsluv_to_rgb([hue, 100, 40])
+        rgb = hsluv.hsluv_to_rgb([hues[i-1], 100, 40])
         colors[i] = (np.array(rgb) * 255.0).astype('uint8')
 
     flattened = input.flatten()  # [-1]

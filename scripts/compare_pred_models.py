@@ -1,6 +1,7 @@
 import sys, os, argparse
 sys.path.append(".")
 
+from pathlib import Path
 from tqdm import tqdm
 import numpy as np
 
@@ -14,9 +15,11 @@ from models.prediction.copy_last_frame import CopyLastFrameModel
 from dataset import SynpickVideoDataset, postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate
 from config import *
 from metrics.main import get_prediction_metrics
+from visualize import visualize_vid
 
+copy_last_frame_id = "CopyLastFrame baseline"
 
-def evaluate_pred_models(cfg):
+def test_pred_models(cfg):
 
     # prep
     np.random.seed(cfg.seed)
@@ -25,7 +28,7 @@ def evaluate_pred_models(cfg):
 
     # MODELS
     pred_models = {model_path: (torch.load(model_path).to(DEVICE), []) for model_path in cfg.models}
-    pred_models["CopyLastFrame baseline"] = (CopyLastFrameModel().to(DEVICE), [])
+    pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(DEVICE), [])
 
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
@@ -56,6 +59,15 @@ def evaluate_pred_models(cfg):
         for (k, v) in mean_metric_dict.items():
             print(f"{k}: {v}")
 
+    print(f"Saving visualizations (except for {copy_last_frame_id})...")
+    num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
+    for model_path, (model, _) in pred_models.items():
+        if model_path != copy_last_frame_id:
+            model_dir = str(Path(model_path).parent.resolve())
+            print(model_path, model_dir)
+            visualize_vid(test_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, model, model_dir,
+                          (cfg.pred_mode, num_channels), num_vis=5, test=True)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Video Prediction Evaluation")
     parser.add_argument("--data-dir", type=str, help="Path to data dir")
@@ -67,4 +79,4 @@ if __name__ == '__main__':
     parser.add_argument("--models", nargs="*", type=str, default=[], help="Paths to prediction models")
 
     cfg = parser.parse_args()
-    evaluate_pred_models(cfg)
+    test_pred_models(cfg)

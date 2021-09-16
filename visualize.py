@@ -42,9 +42,10 @@ def visualize_seg(dataset, seg_model=None, out_dir=".", num_vis=5):
 
 
 def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, out_dir=".",
-                  vid_type=("rgb", 3), num_vis=5):
+                  vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
+    out_filename = "{}_test.gif" if test else "{}.gif"
 
     for i in range(num_vis):
         n = np.random.choice(len(dataset))
@@ -54,7 +55,6 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
         gt_rgb_vis = postprocess_img(data["rgb"])
         gt_colorized_vis = postprocess_img(data["colorized"])
         actions = data["actions"].to(DEVICE).unsqueeze(dim=0)
-
         in_traj = data[pred_mode]
 
         if pred_model is not None:
@@ -70,7 +70,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
                     pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=num_channels).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
 
                 save_vid_vis(
-                    out_fp=os.path.join(out_dir, "{}.gif".format(str(i))),
+                    out_fp=os.path.join(out_dir, out_filename.format(str(i))),
                     video_in_length=video_in_length,
                     true_trajectory=gt_rgb_vis,
                     true_colorized=gt_colorized_vis,
@@ -81,7 +81,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
 
         else:
             save_vid_vis(
-                out_fp=os.path.join(out_dir, "{}.gif".format(str(i))),
+                out_fp=os.path.join(out_dir, out_filename.format(str(i))),
                 video_in_length=video_in_length,
                 true_trajectory=gt_rgb_vis,
                 true_colorized=gt_colorized_vis

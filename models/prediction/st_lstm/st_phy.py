@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from losses.mse import MSE
+from losses.image_distance import MSE
 from models.prediction.pred_model import VideoPredictionModel
 from models.prediction.st_lstm.model_blocks import STLSTMCell, ActionConditionalSTLSTMCell, Autoencoder
 from models.prediction.phydnet.model_blocks import PhyCell_Cell, K2M
@@ -99,6 +99,8 @@ class STPhy(VideoPredictionModel):
 
         teacher_forcing_ratio = kwargs.get("teacher_forcing_ratio", 0)  # is non-zero during training only
         targets = kwargs.get("target_frames", None)
+        if targets is not None:
+            targets = targets.transpose(0, 1)
 
         # init ST and Phy
         st_h_t = []
@@ -120,6 +122,7 @@ class STPhy(VideoPredictionModel):
 
         # fwd prop thru time
         for t in range(T - 1):
+
             # get input, depending on training/inference stage
             if t < input_length:
                 next_cell_input = self.autoencoder.encode(frames[t])
@@ -158,9 +161,8 @@ class STPhy(VideoPredictionModel):
                 decouple_loss_ = torch.cosine_similarity(delta_c_list[i], delta_m_list[i], dim=2)
             decouple_loss.append(torch.mean(torch.abs(decouple_loss_)))
 
-        reconstructions, predictions = out_frames[:input_length-1], out_frames[input_length-1:]
-        reconstructions = torch.stack(reconstructions, dim=0).transpose(0, 1)
-        predictions = torch.stack(predictions, dim=0).transpose(0, 1)
+        out_frames = torch.stack(out_frames, dim=1)
+        reconstructions, predictions = out_frames.split([input_length-1, pred_length], dim=1)
 
         losses = {
             "reconstruction": self.criterion(reconstructions, input[:, 1:]),
@@ -171,7 +173,7 @@ class STPhy(VideoPredictionModel):
         return predictions, losses
 
 
-    def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, losses, epoch):
+    def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider, epoch):
 
         teacher_forcing_ratio = 0.8 ** epoch
         loop = tqdm(data_loader)
@@ -179,20 +181,16 @@ class STPhy(VideoPredictionModel):
 
             # fwd
             img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
-            input_frames, target_frames = img_data[:, :video_in_length], img_data[:, video_in_length:]
+            input_frames = img_data[:, :video_in_length]
+            target_frames = img_data[:, video_in_length:video_in_length+video_pred_length]
             actions = data["actions"].to(self.device)
 
-            pred_length = target_frames.shape[0]
             predictions, model_losses \
-                = self.pred_n(input_frames, pred_length=pred_length, actions=actions,
+                = self.pred_n(input_frames, pred_length=video_pred_length, actions=actions,
                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss
-            loss = torch.tensor(0.0, device=self.device)
-            for _, (loss_fn, use_full_input, scale) in losses.items():
-                if scale == 0: continue
-                loss += scale * loss_fn(predictions, target_frames)
-
+            _, loss = loss_provider.get_losses(predictions, target_frames)
             loss += model_losses["reconstruction"] * self.reconstruction_loss_scale
             loss += model_losses["decouple"] * self.decouple_loss_scale
             loss += model_losses["moment"] * self.moment_loss_scale
