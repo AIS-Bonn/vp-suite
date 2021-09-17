@@ -13,39 +13,50 @@ from models.prediction.unet_3d import UNet3dModel
 from run import DEVICE
 
 
-def get_pred_model(cfg, num_channels, video_in_length, device):
+def get_pred_model(cfg):
 
+    arch = cfg.pred_arch
     if cfg.include_actions:
         action_size = cfg.action_size
         print("using action-conditional video prediction if applicable")
     else:
         action_size = 0
 
-    if cfg.pred_arch == "unet":
+    if arch == "unet":
         print("prediction model: UNet3d")
-        pred_model = UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=video_in_length,
+        pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=num_channels, time_dim=cfg.video_in_length,
                                  features=cfg.pred_unet_features)
 
-    elif cfg.pred_arch == "lstm":
+    elif arch == "lstm":
         print("prediction model: LSTM")
         pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels)
 
-    elif cfg.pred_arch == "st_lstm":
+    elif arch == "st_lstm":
         print("prediction model: ST-LSTM")
         pred_model = STLSTMModel(img_size=cfg.img_shape, img_channels=num_channels,
                                  enc_channels=cfg.pred_st_enc_channels,
                                  num_layers=cfg.pred_st_num_layers, action_size=action_size,
                                  inflated_action_dim=cfg.pred_st_inflated_action_dim,
                                  decouple_loss_scale=cfg.pred_st_decouple_loss_scale,
-                                 reconstruction_loss_scale=cfg.pred_st_reconstruction_loss_scale, device=device)
+                                 reconstruction_loss_scale=cfg.pred_st_reconstruction_loss_scale, device=cfg.device)
 
-    elif cfg.pred_arch == "phy":
+    elif arch == "phy":
         print("prediction model: PhyDNet")
-        pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
+        pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels,
+                             phy_cell_channels=cfg.pred_phy_enc_channels, phy_kernel_size=cfg.pred_phy_kernel_size,
+                             moment_loss_scale=cfg.pred_phy_moment_loss_scale, action_size=action_size,
+                             device=cfg.device)
 
-    elif cfg.pred_arch == "st_phy":
+    elif arch == "st_phy":
         print("prediction model: ST-Phy")
-        pred_model = STPhy(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
+        pred_model = STPhy(img_size=cfg.img_shape, img_channels=num_channels,
+                           enc_channels=cfg.pred_st_enc_channels, phy_channels=cfg.pred_phy_enc_channels,
+                           num_layers=cfg.pred_st_num_layers, action_size=action_size,
+                           inflated_action_dim=cfg.pred_st_inflated_action_dim,
+                           phy_kernel_size=cfg.pred_phy_kernel_size,
+                           decouple_loss_scale=cfg.pred_st_decouple_loss_scale,
+                           reconstruction_loss_scale=cfg.pred_st_reconstruction_loss_scale,
+                           moment_loss_scale=cfg.pred_phy_moment_loss_scale, device=cfg.device)
 
     else:
         print("prediction model: CopyLastFrame")
@@ -58,32 +69,25 @@ def get_pred_model(cfg, num_channels, video_in_length, device):
     return pred_model.to(device)
 
 
-def test_all_models():
-
+def test_all_models(cfg):
     import time
+    from itertools import product
 
-    batch_size = 6
-    time_dim = 5
-    num_channels = 23
-    pred_length = 5
+    num_channels = cfg.dataset_classes+1 if cfg.include_actions else cfg.dataset_classes
     img_size = 135, 240
-    action_size = 3
+    cfg.action_size = 3
+
     # TODO
     raise NotImplementedError
-    x = torch.randn((batch_size, time_dim, num_channels, *img_size)).to(DEVICE)
-    a = torch.randn((batch_size, time_dim+pred_length, action_size)).to(DEVICE)
+    x = torch.randn((cfg.batch_size, cfg.vid_input_length, cfg.num_channels, *img_size)).to(cfg.device)
+    a = torch.randn((cfg.batch_size, cfg.vid_total_length, cfg.action_size)).to(cfg.device)
 
-    models = [
-        CopyLastFrameModel(),
-        UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=time_dim).to(DEVICE),
-        LSTMModel(in_channels=num_channels, out_channels=num_channels).to(DEVICE),
-        STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
-        STLSTMModel(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size),
-        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
-        PhyDNet(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size),
-        STPhy(img_size, img_channels=num_channels, device=DEVICE, action_size=0),
-        STPhy(img_size, img_channels=num_channels, device=DEVICE, action_size=action_size)
-    ]
+    arch = ["copy", "unet", "lstm", "st_lstm", "phy", "st_phy"]
+    models = []
+    for (include_actions, arch) in product([False, True], arch):
+        cfg.include_actions = include_actions
+        cfg.pred_arch = arch
+        models.append(get_pred_model(cfg))
 
     for model in models:
         print("")
@@ -96,13 +100,9 @@ def test_all_models():
         t_pred1 = round(time.time() - t_start, 6)
 
         t_start = time.time()
-        preds, _ = model.pred_n(x, pred_length, actions=a)
+        preds, _ = model.pred_n(x, cfg.video_pred_length, actions=a)
         t_preds = round(time.time() - t_start, 6)
 
-        print(f"Pred time (1 out frame / {pred_length} out frames): {t_pred1}s / {t_preds}s")
-        print(f"Shapes ({time_dim} in frames / 1 out frame / {pred_length} out frames): "
+        print(f"Pred time (1 out frame / {cfg.video_pred_length} out frames): {t_pred1}s / {t_preds}s")
+        print(f"Shapes ({cfg.video_input_length} in frames / 1 out frame / {cfg.video_pred_length} out frames): "
               f"{list(x.shape)} / {list(pred1.shape)} / {list(preds.shape)}")
-
-
-if __name__ == '__main__':
-    test_all_models()

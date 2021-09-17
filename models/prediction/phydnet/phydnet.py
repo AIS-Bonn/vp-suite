@@ -12,15 +12,19 @@ from models.prediction.phydnet.model_blocks import EncoderRNN, K2M
 
 class PhyDNet(VideoPredictionModel):
 
-    def __init__(self, img_size, img_channels, action_size, device):
+    def __init__(self, img_size, img_channels, phy_cell_channels, phy_kernel_size, moment_loss_scale, action_size, device):
 
         super(PhyDNet, self).__init__()
 
-        self.encoder = EncoderRNN(img_size, img_channels, action_size, device)
-        self.constraints = torch.zeros((49, 7, 7)).to(device)
+        self.phy_cell_channels = phy_cell_channels
+        self.phy_kernel_size = phy_kernel_size
+        self.moment_loss_scale = moment_loss_scale
+
+        self.encoder = EncoderRNN(img_size, img_channels, self.phy_cell_channels, self.phy_kernel_size, action_size, device)
+        self.constraints = torch.zeros((self.phy_cell_channels, *self.phy_kernel_size)).to(device)
         ind = 0
-        for i in range(0, 7):
-            for j in range(0, 7):
+        for i in range(0, self.phy_kernel_size[0]):
+            for j in range(0, self.phy_kernel_size[1]):
                 self.constraints[ind, i, j] = 1
                 ind += 1
 
@@ -64,7 +68,7 @@ class PhyDNet(VideoPredictionModel):
 
     def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider, epoch):
 
-        teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.003)
+        teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
         for batch_idx, data in enumerate(loop):
 
@@ -101,12 +105,12 @@ class PhyDNet(VideoPredictionModel):
                     decoder_input = output_image
 
             # Moment regularization  # encoder.phycell.cell_list[0].F.conv1.weight # size (nb_filters,in_channels,7,7)
-            k2m = K2M([7, 7]).to(self.device)
+            k2m = K2M(self.phy_kernel_size).to(self.device)
             for b in range(0, self.encoder.phycell.cell_list[0].input_dim):
                 filters = self.encoder.phycell.cell_list[0].F.conv1.weight[:, b, :, :]  # (nb_filters,7,7)
                 m = k2m(filters.double())
                 m = m.float()
-                loss += self.criterion(m, self.constraints)  # constraints is a precomputed matrix
+                loss += self.criterion(m, self.constraints) * self.moment_loss_scale  # constraints is a precomputed matrix
 
             optimizer.zero_grad()
             loss.backward()

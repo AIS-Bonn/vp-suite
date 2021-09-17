@@ -6,6 +6,7 @@ from train_pred_model import train_pred_model
 from train_seg_model import train_seg_model
 from scripts.compare_pred_models import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
+from models.prediction.pred_model_factory import test_all_models
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SYNPICK_CLASSES = 22
@@ -13,17 +14,19 @@ PROGRAMS = {
     "train_seg": train_seg_model,
     "train_pred": train_pred_model,
     "test_pred": test_pred_models,
-    "4way_vis": visualize_4_way
+    "4way_vis": visualize_4_way,
+    "test_factory": test_all_models
 }
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="SEMANTIC VIDEO PREDICTION")
     parser.add_argument("--program", type=str, default="train_pred",
-                        choices=["train_seg", "train_pred", "test_pred", "4way_vis"],
+                        choices=["train_seg", "train_pred", "test_pred", "4way_vis", "test_factory"],
                         help="Specifies the program to run: training a semantic segmentation model (train_seg), "
-                             "training a prediction model (train_pred), testing one or more prediction models (test_pred) ,"
-                             "doing a 4-way visualization comparison on trained seg. and pred. models (4way_vis)")
+                             "training a prediction model (train_pred), testing one or more prediction models (test_pred), "
+                             "doing a 4-way visualization comparison on trained seg. and pred. models (4way_vis), "
+                             "testing inference on all available model architectures (test_factory)")
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")

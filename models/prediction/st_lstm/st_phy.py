@@ -13,25 +13,24 @@ from models.prediction.phydnet.model_blocks import PhyCell_Cell, K2M
 
 
 class STPhy(VideoPredictionModel):
-
-    # hyperparameters
-    n_layers = 3
-    enc_channels = 64
-    phy_channels = 49
-    action_linear_size = 3
-    phy_kernel_size = (7, 7)
-    reconstruction_loss_scale = 0.1
-    decouple_loss_scale = 100.0
-    moment_loss_scale = 1.0
-
-    # other parameters
-    dim_st_hidden = [enc_channels] * n_layers
-    dim_phy_hidden = [phy_channels] * n_layers
-
-    def __init__(self, img_size, img_channels, action_size, device):
+    def __init__(self, img_size, img_channels, enc_channels, phy_channels, num_layers, action_size,
+                 inflated_action_dim, phy_kernel_size, decouple_loss_scale, reconstruction_loss_scale,
+                 moment_loss_scale, device):
         super(STPhy, self).__init__()
 
         img_height, img_width = img_size
+        self.enc_channels = enc_channels
+        self.phy_channels = phy_channels
+        self.n_layers = num_layers
+        self.dim_st_hidden = [self.enc_channels] * self.n_layers
+        self.dim_phy_hidden = [self.phy_channels] * self.n_layers
+        self.action_size = action_size
+        self.inflated_action_dim = inflated_action_dim
+        self.phy_kernel_size = phy_kernel_size
+        self.decouple_loss_scale = decouple_loss_scale
+        self.reconstruction_loss_scale = reconstruction_loss_scale
+        self.moment_loss_scale = moment_loss_scale
+        self.device = device
 
         self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
@@ -42,11 +41,11 @@ class STPhy(VideoPredictionModel):
         if self.use_actions:
             self.recurrent_cell = ActionConditionalSTLSTMCell
             self.action_inflate = nn.Linear(in_features=action_size,
-                                            out_features=self.action_linear_size * self.enc_h * self.enc_w,
+                                            out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
                                             bias=False)
-            self.action_conv_h = nn.Conv2d(in_channels=self.action_linear_size, out_channels=self.enc_channels,
+            self.action_conv_h = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
                                            kernel_size=(5, 1), padding=(2, 0), bias=False)
-            self.action_conv_w = nn.Conv2d(in_channels=self.action_linear_size, out_channels=self.enc_channels,
+            self.action_conv_w = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
                                            kernel_size=(1, 5), padding=(0, 2), bias=False)
 
         st_cells, phy_cells, hidden_convs = [], [], []
@@ -76,7 +75,6 @@ class STPhy(VideoPredictionModel):
                 ind += 1
         self.criterion = MSE()
 
-        self.device = device
         self.to(self.device)
 
     def forward(self, x, **kwargs):
@@ -139,7 +137,7 @@ class STPhy(VideoPredictionModel):
 
                 # st
                 if self.use_actions:
-                    ac = self.action_inflate(actions[t]).view(-1, self.action_linear_size, self.enc_h, self.enc_w)
+                    ac = self.action_inflate(actions[t]).view(-1, self.inflated_action_dim, self.enc_h, self.enc_w)
                     inflated_action = self.action_conv_h(ac) + self.action_conv_w(ac)
                     st_h_t[i], st_c_t[i], st_memory, delta_c, delta_m \
                         = st_cell(next_cell_input, st_h_t[i], st_c_t[i], st_memory, inflated_action)
@@ -175,7 +173,7 @@ class STPhy(VideoPredictionModel):
 
     def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider, epoch):
 
-        teacher_forcing_ratio = 0.8 ** epoch
+        teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
         for batch_idx, data in enumerate(loop):
 

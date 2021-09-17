@@ -289,7 +289,7 @@ class decoder_specific(nn.Module):
 
 class EncoderRNN(torch.nn.Module):
 
-    def __init__(self, img_size, img_channels, action_size, device):
+    def __init__(self, img_size, img_channels, phy_cell_channels, phy_kernel_size, action_size, device):
         super(EncoderRNN, self).__init__()
         self.encoder_E = encoder_E(nc=img_channels).to(device)
         self.encoder_Ep = encoder_specific().to(device)
@@ -304,8 +304,9 @@ class EncoderRNN(torch.nn.Module):
         self.decoder_Dr = decoder_specific().to(device)
         self.decoder_D = decoder_D(out_size=img_size, nc=img_channels).to(device)
 
-        self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=[49, 49, 49],
-                               n_layers=3, kernel_size=(7, 7), action_size=action_size, device=device)
+        phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
+        self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,
+                               n_layers=3, kernel_size=phy_kernel_size, action_size=action_size, device=device)
         self.phycell.to(device)
         self.convcell = ConvLSTM(input_shape=self.shape_Er[1:], input_dim=self.shape_Ep[0], hidden_dims=[128, 128, 64],
                                  n_layers=3, kernel_size=(3, 3), action_size=action_size, device=device)

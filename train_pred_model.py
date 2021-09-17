@@ -17,8 +17,8 @@ def train_pred_model(cfg):
     # PREPARATION pt. 1
     best_val_loss = float("inf")
     num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
-    num_channels = num_classes if cfg.pred_mode == "mask" else 3
-    vid_type = (cfg.pred_mode, num_channels)
+    cfg.num_channels = num_classes if cfg.pred_mode == "mask" else 3
+    vid_type = (cfg.pred_mode, cfg.num_channels)
 
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -42,7 +42,7 @@ def train_pred_model(cfg):
     cfg.img_shape = train_data.img_shape
 
     # MODEL AND OPTIMIZER
-    pred_model = get_pred_model(cfg, num_channels, cfg.vid_in_length, cfg.device)
+    pred_model = get_pred_model(cfg)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
@@ -51,7 +51,7 @@ def train_pred_model(cfg):
 
     # LOSSES
     loss_scales = {"mse": 1.0, "l1": 1.0, "smooth_l1": 0.0, "fvd": 0.0}
-    loss_provider = PredictionLossProvider(num_channels=num_channels, num_pred_frames=cfg.vid_pred_length,
+    loss_provider = PredictionLossProvider(num_channels=cfg.num_channels, num_pred_frames=cfg.vid_pred_length,
                                            device=cfg.device, loss_scales=loss_scales)
     # Check if indicator loss available
     if loss_scales[cfg.pred_val_criterion] <= 0.0 or cfg.pred_val_criterion not in loss_provider.losses.keys():
