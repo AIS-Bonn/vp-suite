@@ -21,7 +21,7 @@ class PredictionLossProvider(nn.Module):
         }
         # FVD loss only available for 2- or 3- channel input
         if num_channels in [2, 3]:
-            self.losses["fvd"] = (FVD(num_frames=num_pred_frames, in_channels=num_channels).to(device),
+            self.losses["fvd"] = (FVD(device=device, num_frames=num_pred_frames, in_channels=num_channels),
                                   loss_scales.get("fvd", 0.0))
 
     def get_losses(self, pred, target, eval=False):
@@ -46,13 +46,12 @@ class PredictionLossProvider(nn.Module):
 
 
 if __name__ == '__main__':
-    from run import DEVICE
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("\nPrediction losses (after item() call):")
-    a, b = torch.rand(8, 16, 3, 93, 124).to(DEVICE), torch.rand(8, 16, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]
+    a, b = torch.rand(8, 16, 3, 93, 124).to(device), torch.rand(8, 16, 3, 93, 124).to(device)  # [b, t, c, h, w]
     a, b = 2*a-1, 2*b-1  # range: [-1.0, 1.0)
 
-    loss_provider = PredictionLossProvider(num_channels=3, num_pred_frames=16, device=DEVICE)
+    loss_provider = PredictionLossProvider(num_channels=3, num_pred_frames=16, device=device)
     loss_values, total_loss = loss_provider.get_losses(a, b)
     for metric, val in loss_values.items():
         print(f"{metric}: {val.item()}")

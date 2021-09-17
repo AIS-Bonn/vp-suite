@@ -12,7 +12,7 @@ from models.prediction.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
 from visualize import visualize_vid
 
-def train_pred_model(cfg):
+def train(cfg):
 
     # PREPARATION pt. 1
     best_val_loss = float("inf")
@@ -92,7 +92,8 @@ def train_pred_model(cfg):
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if epoch % 10 == 9:
             print("Saving visualizations...")
-            visualize_vid(val_data, cfg.vid_in_length, cfg.vid_pred_length, pred_model, out_dir, vid_type, num_vis=10)
+            visualize_vid(val_data, cfg.vid_in_length, cfg.vid_pred_length, pred_model, cfg.device,
+                          out_dir, vid_type, num_vis=10)
 
     # TESTING
     print("\nTraining done, testing best model...")

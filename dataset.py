@@ -12,7 +12,7 @@ from utils import colorize_semseg, most
 
 class SynpickSegmentationDataset(Dataset):
 
-    def __init__(self, data_dir, augmentation=None, num_classes):
+    def __init__(self, data_dir, num_classes, augmentation=None):
 
         # searches for rgb and mask images in the given data dir
         images_dir = os.path.join(data_dir, 'rgb')

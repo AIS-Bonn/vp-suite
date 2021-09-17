@@ -2,8 +2,8 @@ import argparse, time
 from pathlib import Path
 import torch
 
-from train_pred_model import train_pred_model
-from train_seg_model import train_seg_model
+from train_pred import train as train_pred_model
+from train_seg import train as train_seg_model
 from scripts.compare_pred_models import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
 from models.prediction.pred_model_factory import test_all_models

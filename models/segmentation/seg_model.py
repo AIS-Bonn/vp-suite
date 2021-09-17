@@ -11,7 +11,7 @@ from models.model_blocks import DoubleConv2d
 
 class UNet(nn.Module):
 
-    def __init__(self, in_channels=3, out_channels=1, features):
+    def __init__(self, in_channels, out_channels, features):
         super(UNet, self).__init__()
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()

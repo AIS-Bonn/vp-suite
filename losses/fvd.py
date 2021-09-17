@@ -10,7 +10,6 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from models.i3d.pytorch_i3d import InceptionI3d
-from run import DEVICE
 
 
 class FrechetVideoDistance(nn.Module):
@@ -25,7 +24,7 @@ class FrechetVideoDistance(nn.Module):
     input_chunks = 1
     drop_last_chunk = False
 
-    def __init__(self, num_frames, in_channels=3, device=DEVICE):
+    def __init__(self, device, num_frames, in_channels=3):
         super(FrechetVideoDistance, self).__init__()
 
         if num_frames < self.min_T:
@@ -40,6 +39,7 @@ class FrechetVideoDistance(nn.Module):
         self.i3d.load_state_dict(torch.load("models/i3d/models/rgb_imagenet.pt"))
         self.i3d.to(device)
         self.i3d.eval()  # don't train the pre-trained I3D
+        self.to(device)
 
 
     def determine_number_of_chunks(self, n):
@@ -150,8 +150,9 @@ def calculate_2_wasserstein_dist(pred, real):
 
 
 if __name__ == '__main__':
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     b, T, c, h, w = 5, 9, 3, 270, 480
-    a, b = torch.randn((b, T, c, h, w), device=DEVICE), torch.randn((b, T, c, h, w), device=DEVICE)
-    fvd = FrechetVideoDistance(num_frames=T, device=DEVICE)
+    a, b = torch.randn((b, T, c, h, w), device=device), torch.randn((b, T, c, h, w), device=device)
+    fvd = FrechetVideoDistance(device=device, num_frames=T, in_channels=c)
     loss = fvd.get_distance(a, b)
     print(loss.item())

@@ -48,21 +48,20 @@ def get_prediction_metrics(pred, target):
         "mse (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         "mae (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         "lpips (↓)": np.mean([LPIPS(p, t).item() for p, t in zip(pred_torch, target_torch)]),
-        "fvd (↓)": FVD(num_frames=t, in_channels=c, device=pred.device).forward(pred, target).item()
+        "fvd (↓)": FVD(device=pred.device, num_frames=t, in_channels=c).forward(pred, target).item()
     }
 
 
 if __name__ == '__main__':
-    from run import DEVICE
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("\nPrediction metrics:")
-    a, b = torch.rand(8, 16, 3, 93, 124).to(DEVICE), torch.rand(8, 16, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]
+    a, b = torch.rand(8, 16, 3, 93, 124).to(device), torch.rand(8, 16, 3, 93, 124).to(device)  # [b, t, c, h, w]
     a, b = 2*a-1, 2*b-1  # range: [-1.0, 1.0)
     for metric, val in get_prediction_metrics(a, b).items():
         print(f"{metric}: {val}")
 
     print("\nSegmentation metrics:")
-    x, y = torch.rand(8, 93, 124).to(DEVICE), torch.rand(8, 93, 124).to(DEVICE)  # [b, h, w]
+    x, y = torch.rand(8, 93, 124).to(device), torch.rand(8, 93, 124).to(device)  # [b, h, w]
     x, y = (10*x).int(), (10*y).int()
     for metric, val in get_segmentation_metrics(x, y).items():
         print(f"{metric}: {val}")

@@ -3,12 +3,11 @@ import sys, os
 import numpy as np
 import torch
 
-from run import DEVICE
 from dataset import SynpickSegmentationDataset, postprocess_img, postprocess_mask, synpick_seg_val_augmentation
 from utils import save_seg_vis, save_vid_vis, colorize_semseg
 
 
-def visualize_seg(dataset, seg_model=None, device=DEVICE, out_dir=".", num_vis=5):
+def visualize_seg(dataset, seg_model, device, out_dir=".", num_vis=5):
 
     for i in range(num_vis):
         n = np.random.choice(len(dataset))
@@ -41,7 +40,7 @@ def visualize_seg(dataset, seg_model=None, device=DEVICE, out_dir=".", num_vis=5
             )
 
 
-def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, device=DEVICE,
+def visualize_vid(dataset, video_in_length, video_pred_length, pred_model, device,
                   out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
@@ -90,12 +89,15 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
 
 if __name__ == '__main__':
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    synpick_classes = 22
+
     data_dir = sys.argv[1]
     test_img_dir = os.path.join(data_dir, 'test', 'rgb')
     test_msk_dir = os.path.join(data_dir, 'test', 'masks')
-    test_dataset = SynpickSegmentationDataset(data_dir=os.path.join(data_dir, 'test'),
-                                              augmentation=synpick_seg_val_augmentation(), num_classes=SYNPICK_CLASSES)
+    test_dataset = SynpickSegmentationDataset(data_dir=os.path.join(data_dir, 'test'), num_classes=synpick_classes,
+                                              augmentation=synpick_seg_val_augmentation())
     if len(sys.argv) > 2:
         seg_model = torch.load(sys.argv[2])
         visualize_seg(test_dataset, seg_model)
-    visualize_seg(test_dataset)
+    visualize_seg(test_dataset, seg_model=None, device=device)

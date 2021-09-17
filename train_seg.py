@@ -11,7 +11,7 @@ from dataset import SynpickSegmentationDataset, synpick_seg_val_augmentation, sy
 from models.segmentation.seg_model import UNet
 from visualize import visualize_seg
 
-def train_seg_model(cfg):
+def train(cfg):
 
     # PREPARATION pt. 1
     num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
@@ -58,7 +58,7 @@ def train_seg_model(cfg):
             print('Model saved!')
 
         # visualize model predictions using eval mode and validation data
-        visualize_seg(val_data, seg_model, out_dir)
+        visualize_seg(val_data, seg_model, device=cfg.device, out_dir=out_dir)
 
         if i == 25:
             optimizer.param_groups[0]['lr'] *= 0.1
@@ -74,7 +74,7 @@ def train_seg_model(cfg):
     accuracy = eval_iter(test_loader, best_model, cfg.device)
     print("Accuracy = {}".format(accuracy))
 
-    visualize_seg(test_data, best_model, out_dir)
+    visualize_seg(test_data, best_model, device=cfg.device, out_dir=out_dir)
     print("Testing done, bye bye!")
 
 
