@@ -180,7 +180,7 @@ class STPhy(VideoPredictionModel):
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+            img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = vid_total_length
             input_frames = img_data[:, :video_in_length]
             target_frames = img_data[:, video_in_length:video_in_length+video_pred_length]
             actions = data["actions"].to(self.device)

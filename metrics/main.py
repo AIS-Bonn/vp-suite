@@ -53,7 +53,7 @@ def get_prediction_metrics(pred, target):
 
 
 if __name__ == '__main__':
-    from config import DEVICE
+    from run import DEVICE
 
     print("\nPrediction metrics:")
     a, b = torch.rand(8, 16, 3, 93, 124).to(DEVICE), torch.rand(8, 16, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]

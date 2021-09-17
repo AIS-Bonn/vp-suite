@@ -11,7 +11,7 @@ from models.model_blocks import DoubleConv2d
 
 class UNet(nn.Module):
 
-    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]):
+    def __init__(self, in_channels=3, out_channels=1, features):
         super(UNet, self).__init__()
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
@@ -59,7 +59,7 @@ class UNet(nn.Module):
 
 def test():
     x = torch.randn((8, 3, 256, 256))
-    model = UNet(in_channels=3, out_channels=21)
+    model = UNet(in_channels=3, out_channels=21, features=[64, 128, 256, 512])
     preds = model(x)
     print(x.shape, preds.shape)
 

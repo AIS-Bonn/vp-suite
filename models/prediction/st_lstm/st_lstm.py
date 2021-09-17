@@ -7,37 +7,34 @@ from models.prediction.pred_model import VideoPredictionModel
 
 
 class STLSTMModel(VideoPredictionModel):
-
-    # hyperparameters
-    enc_channels = 64
-    num_layers = 3
-    action_linear_size = 3
-    decouple_loss_scale = 1.0
-
-    # other parameters
-    num_hidden = [enc_channels] * num_layers
-
-
-    def __init__(self, img_size, img_channels, action_size, device):
+    def __init__(self, img_size, img_channels, enc_channels, num_layers, action_size, inflated_action_dim,
+                 decouple_loss_scale, reconstruction_loss_scale, device):
         super(STLSTMModel, self).__init__()
 
         img_height, img_width = img_size
+        self.enc_channels = enc_channels
+        self.num_layers = num_layers
+        self.num_hidden = [self.enc_channels] * self.num_layers
+        self.action_size = action_size
+        self.inflated_action_dim = inflated_action_dim
+        self.decouple_loss_scale = decouple_loss_scale
+        self.reconstruction_loss_scale = reconstruction_loss_scale
+        self.device = device
 
         self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
-        self.action_size = action_size
         self.use_actions = self.action_size > 0
         self.recurrent_cell = STLSTMCell
 
         if self.use_actions:
             self.recurrent_cell = ActionConditionalSTLSTMCell
             self.action_inflate = nn.Linear(in_features=action_size,
-                                            out_features=self.action_linear_size*self.enc_h*self.enc_w,
+                                            out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
                                             bias=False)
-            self.action_conv_h = nn.Conv2d(in_channels=self.action_linear_size, out_channels=self.enc_channels,
-                                          kernel_size=(5, 1), padding=(2, 0), bias=False)
-            self.action_conv_w = nn.Conv2d(in_channels=self.action_linear_size, out_channels=self.enc_channels,
-                                          kernel_size=(5, 1), padding=(2, 0), bias=False)
+            self.action_conv_h = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
+                                           kernel_size=(5, 1), padding=(2, 0), bias=False)
+            self.action_conv_w = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
+                                           kernel_size=(5, 1), padding=(2, 0), bias=False)
 
         cells = []
         for i in range(self.num_layers):
@@ -51,7 +48,6 @@ class STLSTMModel(VideoPredictionModel):
         adapter_num_hidden = self.num_hidden[0]
         self.adapter = nn.Conv2d(adapter_num_hidden, adapter_num_hidden, 1, stride=1, padding=0, bias=False)
 
-        self.device = device
         self.to(self.device)
 
     def forward(self, x, **kwargs):
@@ -89,7 +85,7 @@ class STLSTMModel(VideoPredictionModel):
 
             next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen
             if self.use_actions:
-                ac = self.action_inflate(actions[t]).view(-1, self.action_linear_size, self.enc_h, self.enc_w)
+                ac = self.action_inflate(actions[t]).view(-1, self.inflated_action_dim, self.enc_h, self.enc_w)
                 inflated_action = self.action_conv_h(ac) + self.action_conv_w(ac)
 
             for i in range(self.num_layers):

@@ -1,20 +1,18 @@
 import sys, os, time, json, math
 
+import cv2
 import albumentations as albu
 import numpy as np
 import torch
 import torch.nn.functional as F
-
-import cv2
-
 from torch.utils.data import Dataset
 
 from utils import colorize_semseg, most
-from config import SYNPICK_CLASSES
+
 
 class SynpickSegmentationDataset(Dataset):
 
-    def __init__(self, data_dir, augmentation=None, num_classes=SYNPICK_CLASSES):
+    def __init__(self, data_dir, augmentation=None, num_classes):
 
         # searches for rgb and mask images in the given data dir
         images_dir = os.path.join(data_dir, 'rgb')
@@ -54,14 +52,14 @@ class SynpickSegmentationDataset(Dataset):
 
 class SynpickVideoDataset(Dataset):
 
-    def __init__(self, data_dir, num_frames=8, step=1, allow_overlap=True, num_classes=SYNPICK_CLASSES):
+    def __init__(self, data_dir, num_frames, step, allow_overlap, num_classes, include_gripper):
         super(SynpickVideoDataset, self).__init__()
 
         images_dir = os.path.join(data_dir, 'rgb')
         masks_dir = os.path.join(data_dir, 'masks')
         scene_gt_dir = os.path.join(data_dir, 'scene_gt')
 
-        self.include_gripper = num_classes > SYNPICK_CLASSES
+        self.include_gripper = include_gripper
         self.check_gripper_movement = self.include_gripper and os.path.isdir(scene_gt_dir)
 
         self.image_ids = sorted(os.listdir(images_dir))

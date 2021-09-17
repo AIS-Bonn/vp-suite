@@ -10,7 +10,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from models.i3d.pytorch_i3d import InceptionI3d
-from config import DEVICE
+from run import DEVICE
 
 
 class FrechetVideoDistance(nn.Module):

@@ -46,7 +46,7 @@ class PredictionLossProvider(nn.Module):
 
 
 if __name__ == '__main__':
-    from config import DEVICE
+    from run import DEVICE
 
     print("\nPrediction losses (after item() call):")
     a, b = torch.rand(8, 16, 3, 93, 124).to(DEVICE), torch.rand(8, 16, 3, 93, 124).to(DEVICE)  # [b, t, c, h, w]

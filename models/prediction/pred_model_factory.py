@@ -10,7 +10,7 @@ from models.prediction.st_lstm.st_lstm import STLSTMModel
 from models.prediction.st_lstm.st_phy import STPhy
 from models.prediction.unet_3d import UNet3dModel
 
-from config import DEVICE
+from run import DEVICE
 
 
 def get_pred_model(cfg, num_channels, video_in_length, device):
@@ -21,23 +21,29 @@ def get_pred_model(cfg, num_channels, video_in_length, device):
     else:
         action_size = 0
 
-    if cfg.model == "unet":
+    if cfg.pred_arch == "unet":
         print("prediction model: UNet3d")
-        pred_model = UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=video_in_length)
+        pred_model = UNet3dModel(in_channels=num_channels, out_channels=num_channels, time_dim=video_in_length,
+                                 features=cfg.pred_unet_features)
 
-    elif cfg.model == "lstm":
+    elif cfg.pred_arch == "lstm":
         print("prediction model: LSTM")
         pred_model = LSTMModel(in_channels=num_channels, out_channels=num_channels)
 
-    elif cfg.model == "st_lstm":
+    elif cfg.pred_arch == "st_lstm":
         print("prediction model: ST-LSTM")
-        pred_model = STLSTMModel(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
+        pred_model = STLSTMModel(img_size=cfg.img_shape, img_channels=num_channels,
+                                 enc_channels=cfg.pred_st_enc_channels,
+                                 num_layers=cfg.pred_st_num_layers, action_size=action_size,
+                                 inflated_action_dim=cfg.pred_st_inflated_action_dim,
+                                 decouple_loss_scale=cfg.pred_st_decouple_loss_scale,
+                                 reconstruction_loss_scale=cfg.pred_st_reconstruction_loss_scale, device=device)
 
-    elif cfg.model == "phy":
+    elif cfg.pred_arch == "phy":
         print("prediction model: PhyDNet")
         pred_model = PhyDNet(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
 
-    elif cfg.model == "st_phy":
+    elif cfg.pred_arch == "st_phy":
         print("prediction model: ST-Phy")
         pred_model = STPhy(img_size=cfg.img_shape, img_channels=num_channels, action_size=action_size, device=device)
 
@@ -62,6 +68,8 @@ def test_all_models():
     pred_length = 5
     img_size = 135, 240
     action_size = 3
+    # TODO
+    raise NotImplementedError
     x = torch.randn((batch_size, time_dim, num_channels, *img_size)).to(DEVICE)
     a = torch.randn((batch_size, time_dim+pred_length, action_size)).to(DEVICE)
 

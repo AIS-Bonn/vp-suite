@@ -69,7 +69,7 @@ class PhyDNet(VideoPredictionModel):
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(self.device)  # [b, T, c, h, w], with T = VIDEO_TOT_LENGTH
+            img_data = data[pred_mode].to(self.device)  # [b, T, c, h, w], with T = vid_total_length
             input_tensor, target_tensor = img_data[:, :video_in_length], img_data[:, video_in_length:]
 
             actions = data["actions"].to(self.device)

@@ -3,12 +3,12 @@ import sys, os
 import numpy as np
 import torch
 
-from config import *
+from run import DEVICE
 from dataset import SynpickSegmentationDataset, postprocess_img, postprocess_mask, synpick_seg_val_augmentation
 from utils import save_seg_vis, save_vid_vis, colorize_semseg
 
 
-def visualize_seg(dataset, seg_model=None, out_dir=".", num_vis=5):
+def visualize_seg(dataset, seg_model=None, device=DEVICE, out_dir=".", num_vis=5):
 
     for i in range(num_vis):
         n = np.random.choice(len(dataset))
@@ -21,7 +21,7 @@ def visualize_seg(dataset, seg_model=None, out_dir=".", num_vis=5):
         if seg_model is not None:
             seg_model.eval()
             with torch.no_grad():
-                pr_mask = seg_model(image.to(DEVICE).unsqueeze(0))
+                pr_mask = seg_model(image.to(device).unsqueeze(0))
                 pr_mask_vis = postprocess_mask(pr_mask.argmax(dim=1).squeeze())
                 pr_mask_vis = colorize_semseg(pr_mask_vis, num_classes=dataset.num_classes)
 
@@ -41,8 +41,8 @@ def visualize_seg(dataset, seg_model=None, out_dir=".", num_vis=5):
             )
 
 
-def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, out_dir=".",
-                  vid_type=("rgb", 3), num_vis=5, test=False):
+def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, device=DEVICE,
+                  out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
     out_filename = "vis_{}_test.gif" if test else "vis_{}.gif"
@@ -54,13 +54,13 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
 
         gt_rgb_vis = postprocess_img(data["rgb"])
         gt_colorized_vis = postprocess_img(data["colorized"])
-        actions = data["actions"].to(DEVICE).unsqueeze(dim=0)
+        actions = data["actions"].to(device).unsqueeze(dim=0)
         in_traj = data[pred_mode]
 
         if pred_model is not None:
             pred_model.eval()
             with torch.no_grad():
-                in_traj = in_traj[:video_in_length].to(DEVICE).unsqueeze(dim=0)  # [1, in_l, c, h, w]
+                in_traj = in_traj[:video_in_length].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model.pred_n(in_traj, video_pred_length, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
                 if num_channels == 3:
@@ -93,7 +93,8 @@ if __name__ == '__main__':
     data_dir = sys.argv[1]
     test_img_dir = os.path.join(data_dir, 'test', 'rgb')
     test_msk_dir = os.path.join(data_dir, 'test', 'masks')
-    test_dataset = SynpickSegmentationDataset(data_dir=os.path.join(data_dir, 'test'), augmentation=synpick_seg_val_augmentation())
+    test_dataset = SynpickSegmentationDataset(data_dir=os.path.join(data_dir, 'test'),
+                                              augmentation=synpick_seg_val_augmentation(), num_classes=SYNPICK_CLASSES)
     if len(sys.argv) > 2:
         seg_model = torch.load(sys.argv[2])
         visualize_seg(test_dataset, seg_model)

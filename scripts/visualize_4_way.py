@@ -11,7 +11,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from dataset import SynpickVideoDataset, postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate
-from config import *
 from utils import colorize_semseg, save_vid_vis
 
 def visualize_4_way(cfg):
@@ -21,22 +20,22 @@ def visualize_4_way(cfg):
     torch.manual_seed(cfg.seed)
 
     # MODELS
-    seg_model = torch.load(cfg.seg)
-    pred_rgb_model = torch.load(cfg.pred_rgb)
-    pred_mask_model = torch.load(cfg.pred_mask)
-    pred_colorized_mask_model = torch.load(cfg.pred_colorized)
-
+    if len(cfg.models) != 4:
+        raise ValueError("4way_vis expects 4 models in this order: [seg, pred_rgb, pred_mask, pred_colorized]")
+    seg_model, pred_rgb_model, pred_mask_model, pred_colorized_model \
+        = [torch.load(model_path) for model_path in cfg.models]
     seg_model.eval()
     pred_rgb_model.eval()
     pred_mask_model.eval()
-    pred_colorized_mask_model.eval()
+    pred_colorized_model.eval()
 
-    dataset_classes = SYNPICK_CLASSES+1 if cfg.include_gripper else SYNPICK_CLASSES
+    dataset_classes = cfg.dataset_classes+1 if cfg.include_gripper else cfg.dataset_classes
 
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
-    test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=VIDEO_TOT_LENGTH,
-                                    step=2, allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=dataset_classes)
+    test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
+                                    allow_overlap=cfg.vid_allow_overlap, num_classes=dataset_classes,
+                                    include_gripper=cfg.include_gripper)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     iter_loader = iter(test_loader)
 
@@ -55,13 +54,13 @@ def visualize_4_way(cfg):
 
             data = next(iter_loader)
             imgs, colorized_masks, actions \
-                = data["rgb"].to(DEVICE), data["colorized"].to(DEVICE), data["actions"].to(DEVICE)  # [1, T, 3, h, w]
+                = data["rgb"].to(cfg.device), data["colorized"].to(cfg.device), data["actions"].to(cfg.device)  # [1, T, 3, h, w]
             
             gt_rgb_vis = postprocess_img(imgs.squeeze(dim=0))  # [T, h, w, 3]
             gt_colorized_vis = postprocess_img(colorized_masks.squeeze(dim=0))  # [T, h, w, 3]
-            input = imgs[:, :VIDEO_IN_LENGTH]  # [1, t, 3, h, w]
+            input = imgs[:, :cfg.vid_in_length]  # [1, t, 3, h, w]
 
-            pred_rgb, _ = pred_rgb_model.pred_n(input, pred_length=VIDEO_PRED_LENGTH, actions=actions)
+            pred_rgb, _ = pred_rgb_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
             pred_rgb = torch.cat([input, pred_rgb], dim=1)  # [1, T, 3, h, w]
             pred_rgb_vis = postprocess_img(pred_rgb.squeeze(dim=0))  # [T, 3, h, w]
 
@@ -71,8 +70,8 @@ def visualize_4_way(cfg):
 
             seg = torch.stack([seg_model(imgs[:, i]) for i in range(imgs.shape[1])], dim=1).argmax(dim=2)  # [1, T, 1, h, w]
             seg_input = torch.stack([(seg == i) for i in range(dataset_classes)], dim=2).float()  # [1, T, c, h, w] one-hot float
-            input_seg = seg_input[:, :VIDEO_IN_LENGTH]  # [1, t, c, h, w]
-            seg_then_pred, _ = pred_mask_model.pred_n(input_seg, pred_length=VIDEO_PRED_LENGTH, actions=actions)
+            input_seg = seg_input[:, :cfg.vid_in_length]  # [1, t, c, h, w]
+            seg_then_pred, _ = pred_mask_model.pred_n(input_seg, pred_length=cfg.vid_pred_length, actions=actions)
             seg_then_pred = seg_then_pred.argmax(dim=2)  # [1, n, 1, h, w]
             seg_then_pred = torch.cat([input_seg.argmax(dim=2), seg_then_pred], dim=1).squeeze()  # [T, h, w]
             seg_pred_color_vis = colorize_semseg(postprocess_mask(seg_then_pred), num_classes=dataset_classes).transpose(0, 3, 1, 2)  # [T, 3, h, w]
@@ -80,8 +79,8 @@ def visualize_4_way(cfg):
             seg_colorized = colorize_semseg(postprocess_mask(seg.squeeze()), num_classes=dataset_classes)
             seg_color_per_frame_vis = seg_colorized.transpose(0, 3, 1, 2)  # [T, 3, h, w]
 
-            input_colorized = preprocess_img(seg_colorized[:VIDEO_IN_LENGTH]).to(DEVICE).unsqueeze(dim=0)  # [b, t, 3, h, w]
-            seg_color_pred, _ = pred_colorized_mask_model.pred_n(input_colorized, pred_length=VIDEO_PRED_LENGTH, actions=actions)
+            input_colorized = preprocess_img(seg_colorized[:cfg.vid_in_length]).to(cfg.device).unsqueeze(dim=0)  # [b, t, 3, h, w]
+            seg_color_pred, _ = pred_colorized_model.pred_n(input_colorized, pred_length=cfg.vid_pred_length, actions=actions)
             seg_color_pred = torch.cat([input_colorized, seg_color_pred], dim=1).squeeze(dim=0)
             seg_color_pred_vis = postprocess_img(seg_color_pred)  # [T, 3, h, w]
 
@@ -92,7 +91,7 @@ def visualize_4_way(cfg):
 
             save_vid_vis(
                 out_fp=os.path.join(cfg.out_dir, "4way_vis_{}.gif".format(str(i))),
-                video_in_length=VIDEO_IN_LENGTH,
+                video_in_length=cfg.vid_in_length,
                 True_Trajectory_RGB=gt_rgb_vis,
                 True_Trajectory_Seg=gt_colorized_vis,
                 Framewise_Segmentation=seg_color_per_frame_vis,

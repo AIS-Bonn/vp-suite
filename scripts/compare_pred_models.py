@@ -13,7 +13,6 @@ from torch.utils.data import DataLoader
 
 from models.prediction.copy_last_frame import CopyLastFrameModel
 from dataset import SynpickVideoDataset, postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate
-from config import *
 from metrics.main import get_prediction_metrics
 from visualize import visualize_vid
 
@@ -24,33 +23,34 @@ def test_pred_models(cfg):
     # prep
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
-    dataset_classes = SYNPICK_CLASSES+1 if cfg.include_gripper else SYNPICK_CLASSES
+    dataset_classes = cfg.dataset_classes+1 if cfg.include_gripper else cfg.dataset_classes
 
     # MODELS
-    pred_models = {model_path: (torch.load(model_path).to(DEVICE), []) for model_path in cfg.models}
-    pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(DEVICE), [])
+    pred_models = {model_path: (torch.load(model_path).to(cfg.device), []) for model_path in cfg.models}
+    pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
 
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
-    test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=VIDEO_TOT_LENGTH, step=VID_STEP,
-                                    allow_overlap=VID_DATA_ALLOW_OVERLAP, num_classes=dataset_classes)
+    test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
+                                    allow_overlap=cfg.vid_allow_overlap, num_classes=dataset_classes,
+                                    include_gripper=cfg.include_gripper)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     iter_loader = iter(test_loader)
-    eval_length = len(iter_loader) if cfg.full_evaluation else 10
+    eval_length = len(iter_loader) if cfg.full_test else 10
 
     with torch.no_grad():
         for i in tqdm(range(eval_length)):
             data = next(iter_loader)
-            img_data = data[cfg.pred_mode].to(DEVICE)
-            input = img_data[:, :VIDEO_IN_LENGTH]
-            target = img_data[:, VIDEO_IN_LENGTH:VIDEO_IN_LENGTH+VIDEO_PRED_LENGTH]
-            actions = data["actions"].to(DEVICE)
+            img_data = data[cfg.pred_mode].to(cfg.device)
+            input = img_data[:, :cfg.vid_in_length]
+            target = img_data[:, cfg.vid_in_length:cfg.vid_total_length]
+            actions = data["actions"].to(cfg.device)
 
             for (model, metric_dicts) in pred_models.values():
                 if getattr(model, "use_actions", False):
-                    pred, _ = model.pred_n(input, pred_length=VIDEO_PRED_LENGTH, actions=actions)
+                    pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
                 else:
-                    pred, _ = model.pred_n(input, pred_length=VIDEO_PRED_LENGTH)
+                    pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length)
                 metric_dicts.append(get_prediction_metrics(pred, target))
 
     for model_desc, (_, metric_dicts) in pred_models.items():
@@ -65,7 +65,7 @@ def test_pred_models(cfg):
         if model_path != copy_last_frame_id:
             model_dir = str(Path(model_path).parent.resolve())
             print(model_path, model_dir)
-            visualize_vid(test_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, model, model_dir,
+            visualize_vid(test_data, cfg.vid_in_length, cfg.vid_pred_length, model, model_dir,
                           (cfg.pred_mode, num_channels), num_vis=5, test=True)
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-import sys, os, time, random, argparse
+import os, time, random
 from pathlib import Path
 
 import numpy as np
@@ -7,16 +7,14 @@ import torch
 import torch.nn
 from torch.utils.data import DataLoader
 
-from config import *
 from dataset import SynpickSegmentationDataset, synpick_seg_val_augmentation, synpick_seg_train_augmentation
 from models.segmentation.seg_model import UNet
 from visualize import visualize_seg
 
-def main(cfg):
+def train_seg_model(cfg):
 
     # PREPARATION pt. 1
-    num_classes = SYNPICK_CLASSES + 1 if cfg.include_gripper else SYNPICK_CLASSES
-    device = DEVICE
+    num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -32,13 +30,13 @@ def main(cfg):
     val_data = SynpickSegmentationDataset(data_dir=val_dir, num_classes=num_classes)
     val_data.augmentation = synpick_seg_val_augmentation(img_h=val_data.img_h)
 
-    train_loader = DataLoader(train_data, batch_size=SEG_BATCH_SIZE, shuffle=True, num_workers=12)
+    train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=12)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4)
 
     # MODEL, LOSSES, OPTIMIZERS
-    seg_model = UNet(in_channels=3, out_channels=num_classes).to(device)
+    seg_model = UNet(in_channels=3, out_channels=num_classes, features=cfg.seg_unet_features).to(cfg.device)
     loss_fn = nn.CrossEntropyLoss(reduction='mean')
-    optimizer = torch.optim.Adam(params=seg_model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(params=seg_model.parameters(), lr=cfg.lr)
 
     # PREPARATION pt. 2
     max_accuracy = 0
@@ -47,10 +45,10 @@ def main(cfg):
     out_dir.mkdir(parents=True)
 
     # MAIN LOOP
-    for i in range(0, NUM_EPOCHS):
+    for i in range(0, cfg.epochs):
 
         train_iter(train_loader, seg_model, optimizer, loss_fn)
-        accuracy = eval_iter(valid_loader, seg_model, device)
+        accuracy = eval_iter(valid_loader, seg_model, cfg.device)
 
         # save model if last epoch improved acc.
         print("Accuracy = {}".format(accuracy))
@@ -73,7 +71,7 @@ def main(cfg):
     test_data.augmentation = synpick_seg_val_augmentation(img_h=test_data.img_h)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
-    accuracy = eval_iter(test_loader, best_model, device)
+    accuracy = eval_iter(test_loader, best_model, cfg.device)
     print("Accuracy = {}".format(accuracy))
 
     visualize_seg(test_data, best_model, out_dir)
@@ -118,16 +116,3 @@ def eval_iter(loader, seg_model, device):
     seg_model.train()
 
     return 100.0 * num_correct / num_pixels
-
-
-# ==============================================================================
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description="Semantic Segmentation Model Training")
-    parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
-    parser.add_argument("--in-path", type=str, help="Path to dataset directory")
-    parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
-
-    cfg = parser.parse_args()
-    main(cfg)
