@@ -63,7 +63,6 @@ def main(args):
 
     # MAIN LOOP
     for epoch in range(0, NUM_EPOCHS):
-        visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
 
         # train
         print(f'\nTraining (epoch: {epoch+1} of {NUM_EPOCHS})')
