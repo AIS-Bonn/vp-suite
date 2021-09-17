@@ -45,7 +45,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model=None, 
                   vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
-    out_filename = "{}_test.gif" if test else "{}.gif"
+    out_filename = "vis_{}_test.gif" if test else "vis_{}.gif"
 
     for i in range(num_vis):
         n = np.random.choice(len(dataset))

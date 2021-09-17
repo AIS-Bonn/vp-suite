@@ -4,7 +4,7 @@ from torch import nn as nn
 
 # APPLIES TO ALL LOSSES:
 # expected data type: torch.tensor (torch.float)
-# expected shape: [..., c, h, w]
+# expected shape: [..., h, w]
 # expected value range: [-1.0, 1.0]
 
 class MSE(nn.Module):

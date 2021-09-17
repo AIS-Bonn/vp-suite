@@ -49,13 +49,13 @@ def main(args):
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
-        optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.2,
+        optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
                                                                          min_lr=1e-6, verbose=True)
 
     # LOSSES
     loss_scales = {"mse": 1.0, "l1": 1.0, "smooth_l1": 0.0, "fvd": 0.0}
-    loss_provider = PredictionLossProvider(num_channels=num_channels, num_pred_frames=VIDEO_PRED_LENGTH, device=DEVICE,
-                                           loss_scales=loss_scales)
+    loss_provider = PredictionLossProvider(num_channels=num_channels, num_pred_frames=VIDEO_PRED_LENGTH,
+                                           device=DEVICE, loss_scales=loss_scales)
     # Check if indicator loss available
     if loss_scales[cfg.indicator_val_loss] <= 0.0 or cfg.indicator_val_loss not in loss_provider.losses.keys():
         cfg.indicator_val_loss = "mse"
@@ -63,6 +63,7 @@ def main(args):
 
     # MAIN LOOP
     for epoch in range(0, NUM_EPOCHS):
+        visualize_vid(val_data, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH, pred_model, out_dir, vid_type, num_vis=10)
 
         # train
         print(f'\nTraining (epoch: {epoch+1} of {NUM_EPOCHS})')
@@ -77,16 +78,16 @@ def main(args):
         else:
             print("Skipping trianing loop.")
 
-        # eval.
+        # eval
         print("Validating...")
         val_losses, indicator_loss = eval_iter(valid_loader, pred_model, DEVICE, VIDEO_IN_LENGTH, VIDEO_PRED_LENGTH,
                                                cfg.pred_mode, loss_provider, cfg.indicator_val_loss)
         optimizer_scheduler.step(indicator_loss)
-        print("Validation losses (mean over val. set):")
+        print("Validation losses (mean over entire validation set):")
         for k, v in val_losses.items():
             print(f" - {k}: {v}")
 
-        # save model if last epoch improved acc.
+        # save model if last epoch improved indicator loss
         cur_val_loss = indicator_loss.item()
         if best_val_loss > cur_val_loss:
             best_val_loss = cur_val_loss

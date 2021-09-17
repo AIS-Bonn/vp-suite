@@ -44,8 +44,8 @@ class FrechetVideoDistance(nn.Module):
 
     def determine_number_of_chunks(self, n):
         '''
-        If given input length is too large, this function returns a list of sequence lengths for chunks.
-        Each chunk is then used for a separate fvd calculation and combined afterwards.
+        If given input length is too large, this function returns the number of chunks.
+        Each chunk is then used for a separate fvd calculation, and their results are combined afterwards.
         '''
         possible_chunk_l = range(self.max_T, self.min_T-1, -1)
         for chunk_l in possible_chunk_l:
