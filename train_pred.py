@@ -50,11 +50,9 @@ def train(cfg):
                                                                          min_lr=1e-6, verbose=True)
 
     # LOSSES
-    loss_scales = {"mse": 1.0, "l1": 1.0, "smooth_l1": 0.0, "fvd": 0.0}
-    loss_provider = PredictionLossProvider(num_channels=cfg.num_channels, num_pred_frames=cfg.vid_pred_length,
-                                           device=cfg.device, loss_scales=loss_scales)
+    loss_provider = PredictionLossProvider(cfg)
     # Check if indicator loss available
-    if loss_scales[cfg.pred_val_criterion] <= 0.0 or cfg.pred_val_criterion not in loss_provider.losses.keys():
+    if loss_provider.losses.get(cfg.pred_val_criterion, (None, 0.0))[1] <= 0.0:
         cfg.pred_val_criterion = "mse"
 
     # MAIN LOOP
@@ -65,18 +63,15 @@ def train(cfg):
         if not cfg.no_train:
             # use prediction model's own training loop if available
             if callable(getattr(pred_model, "train_iter", None)):
-                pred_model.train_iter(train_loader, cfg.vid_input_length, cfg.vid_pred_length, cfg.pred_mode,
-                                      optimizer, loss_provider, epoch)
+                pred_model.train_iter(cfg, train_loader, optimizer, loss_provider, epoch)
             else:
-                train_iter(train_loader, pred_model, cfg.device, cfg.vid_input_length, cfg.vid_pred_length, cfg.pred_mode,
-                           optimizer, loss_provider)
+                train_iter(cfg, train_loader, pred_model, optimizer, loss_provider)
         else:
             print("Skipping trianing loop.")
 
         # eval
         print("Validating...")
-        val_losses, indicator_loss = eval_iter(valid_loader, pred_model, cfg.device, cfg.vid_input_length, cfg.vid_pred_length,
-                                               cfg.pred_mode, loss_provider, cfg.pred_val_criterion)
+        val_losses, indicator_loss = eval_iter(cfg, valid_loader, pred_model, loss_provider)
         optimizer_scheduler.step(indicator_loss)
         print("Validation losses (mean over entire validation set):")
         for k, v in val_losses.items():
@@ -86,18 +81,18 @@ def train(cfg):
         cur_val_loss = indicator_loss.item()
         if best_val_loss > cur_val_loss:
             best_val_loss = cur_val_loss
-            torch.save(pred_model, str((out_dir / 'best_model.pth').resolve()))
+            torch.save(pred_model, str((Path(cfg.out_dir) / 'best_model.pth').resolve()))
             print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if epoch % 10 == 9:
             print("Saving visualizations...")
             visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model, cfg.device,
-                          out_dir, vid_type, num_vis=10)
+                          cfg.out_dir, vid_type, num_vis=10)
 
     # TESTING
     print("\nTraining done, testing best model...")
-    best_model_path = str((out_dir / 'best_model.pth').resolve())
+    best_model_path = str((cfg.out_dir / 'best_model.pth').resolve())
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
     test_pred_models(cfg)
@@ -106,18 +101,18 @@ def train(cfg):
 
 # ==============================================================================
 
-def train_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pred_mode, optimizer, loss_provider):
+def train_iter(cfg, loader, pred_model, optimizer, loss_provider):
 
     loop = tqdm(loader)
     for batch_idx, data in enumerate(loop):
 
         # input
-        img_data = data[cfg.pred_mode].to(device)  # [b, T, c, h, w], with T = cfg.vid_total_length
-        input, targets = img_data[:, :vid_input_length], img_data[:, vid_input_length:]
-        actions = data["actions"].to(device)
+        img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, c, h, w], with T = cfg.vid_total_length
+        input, targets = img_data[:, :cfg.vid_input_length], img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+        actions = data["actions"].to(cfg.device)  # [b, T-1, a]. Action t corresponds to what happens after frame t
 
         # fwd
-        predictions, model_losses = pred_model.pred_n(input, pred_length=vid_pred_length, actions=actions)
+        predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
 
         # loss
         _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -136,7 +131,7 @@ def train_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pr
         # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
 
-def eval_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pred_mode, loss_provider, indicator_loss):
+def eval_iter(cfg, loader, pred_model, loss_provider):
 
     pred_model.eval()
     loop = tqdm(loader)
@@ -147,11 +142,11 @@ def eval_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pre
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = vid_total_length
-            input, targets = img_data[:, :vid_input_length], img_data[:, vid_input_length:]
-            actions = data["actions"].to(device)
+            img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, h, w], with T = vid_total_length
+            input, targets = img_data[:, :cfg.vid_input_length], img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+            actions = data["actions"].to(cfg.device)
 
-            predictions, model_losses = pred_model.pred_n(input, pred_length=vid_pred_length, actions=actions)
+            predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
 
             # metrics
             loss_values, _ = loss_provider.get_losses(predictions, targets, eval=True)
@@ -159,7 +154,7 @@ def eval_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pre
                 for k, v in model_losses.items():
                     loss_values[k] = v
             all_losses.append(loss_values)
-            indicator_losses.append(loss_values[indicator_loss])
+            indicator_losses.append(loss_values[cfg.pred_val_criterion])
 
     indicator_loss = torch.stack(indicator_losses).mean()
     all_losses = {

@@ -2,6 +2,7 @@ import random
 
 from tqdm import tqdm
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -118,7 +119,7 @@ class STPhy(VideoPredictionModel):
 
         st_memory = torch.zeros([batch_size, self.dim_st_hidden[0], self.enc_h, self.enc_w]).to(self.device)
 
-        # fwd prop thru time
+        # fwd prop through time
         for t in range(T - 1):
 
             # get input, depending on training/inference stage
@@ -171,20 +172,20 @@ class STPhy(VideoPredictionModel):
         return predictions, losses
 
 
-    def train_iter(self, data_loader, vid_input_length, vid_pred_length, pred_mode, optimizer, loss_provider, epoch):
+    def train_iter(self, cfg, data_loader, optimizer, loss_provider, epoch):
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = vid_total_length
-            input_frames = img_data[:, :vid_input_length]
-            target_frames = img_data[:, vid_input_length:vid_input_length+vid_pred_length]
+            img_data = data[cfg.pred_mode].to(self.device) # [b, T, c, h, w], with T = vid_total_length
+            input_frames = img_data[:, :cfg.vid_input_length]
+            target_frames = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \
-                = self.pred_n(input_frames, pred_length=vid_pred_length, actions=actions,
+                = self.pred_n(input_frames, pred_length=cfg.vid_pred_length, actions=actions,
                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss

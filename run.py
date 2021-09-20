@@ -36,8 +36,6 @@ if __name__ == '__main__':
                         default="st_lstm", help="Which prediction model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
-    parser.add_argument("--pred-val-criterion", type=str, choices=["mse", "fvd", "bce"], default="fvd",
-                        help="Loss to use for determining if validated model has become 'better' and should be saved")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -54,6 +52,15 @@ if __name__ == '__main__':
     parser.add_argument("--vid-pred-length", type=int, default=10, help="Number of frames predicted from input")
     parser.add_argument("--models", type=str, nargs="*", default=[], help="Pred. test only: path to pred. models")
     parser.add_argument("--full-test", action="store_true", help="If specified, tests models on the whole test set")
+
+    parser.add_argument("--mse-loss-scale", type=float, default=1.0)
+    parser.add_argument("--l1-loss-scale", type=float, default=1.0)
+    parser.add_argument("--smoothl1-loss-scale", type=float, default=0.0)
+    parser.add_argument("--fvd-loss-scale", type=float, default=0.0)
+    parser.add_argument("--calc-zero-loss-scales", action="store_true", help="if specified, also calculates loss scores"
+                                                                             "for those losses not used for backprop")
+    parser.add_argument("--pred-val-criterion", type=str, choices=["mse", "fvd", "bce"], default="fvd",
+                        help="Loss to use for determining if validated model has become 'better' and should be saved")
 
     # model-specific hyperparameters
     # seg.UNet
@@ -76,8 +83,8 @@ if __name__ == '__main__':
     cfg = parser.parse_args()
     if cfg.out_dir is None:
         timestamp = int(1000000 * time.time())
-        out_dir = Path(f"out/{timestamp}_{cfg.program}")
-        out_dir.mkdir(parents=True, exist_ok=True)
+        cfg.out_dir = f"out/{timestamp}_{cfg.program}"
+    Path(cfg.out_dir).mkdir(parents=True, exist_ok=True)
     cfg.vid_total_length = cfg.vid_input_length + cfg.vid_pred_length
 
     # run the specified program

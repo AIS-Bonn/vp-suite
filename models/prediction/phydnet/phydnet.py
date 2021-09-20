@@ -66,15 +66,16 @@ class PhyDNet(VideoPredictionModel):
         return out_frames, None  # inference only -> no loss returned
 
 
-    def train_iter(self, data_loader, vid_input_length, vid_pred_length, pred_mode, optimizer, loss_provider, epoch):
+    def train_iter(self, cfg, data_loader, optimizer, loss_provider, epoch):
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(self.device)  # [b, T, c, h, w], with T = vid_total_length
-            input_tensor, target_tensor = img_data[:, :vid_input_length], img_data[:, vid_input_length:]
+            img_data = data[cfg.pred_mode].to(self.device)  # [b, T, c, h, w], with T = vid_total_length
+            input_tensor = img_data[:, :cfg.vid_input_length]
+            target_tensor = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
 
             actions = data["actions"].to(self.device)
             empty_actions = torch.zeros(img_data.shape[0], img_data.shape[1], device=self.device)

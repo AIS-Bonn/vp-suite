@@ -81,7 +81,7 @@ class STLSTMModel(VideoPredictionModel):
 
         memory = torch.zeros([b, self.num_hidden[0], self.enc_h, self.enc_w]).to(self.device)
 
-        for t in range(T):
+        for t in range(T-1):
 
             next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen
             if self.use_actions:
@@ -107,7 +107,7 @@ class STLSTMModel(VideoPredictionModel):
                 decouple_loss_ = torch.cosine_similarity(delta_c_list[i], delta_m_list[i], dim=2)
                 decouple_loss.append(torch.mean(torch.abs(decouple_loss_)))
 
-        predictions = torch.stack(next_frames[t_in:], dim=0).transpose(0, 1)
+        predictions = torch.stack(next_frames[t_in-1:], dim=0).transpose(0, 1)
 
         decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0)) * self.decouple_loss_scale
 

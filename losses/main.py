@@ -1,6 +1,3 @@
-import sys
-sys.path.append(".")
-
 import torch
 import torch.nn as nn
 import numpy as np
@@ -10,19 +7,20 @@ from losses.fvd import FrechetVideoDistance as FVD
 
 
 class PredictionLossProvider(nn.Module):
-    def __init__(self, num_channels, num_pred_frames, device, loss_scales:dict={}, ignore_zero_scales=True):
+    def __init__(self, cfg):
 
-        self.ignore_zero_scales = ignore_zero_scales
-        self.device = device
+        self.ignore_zero_scales = not cfg.calc_zero_loss_scales
+        self.device = cfg.device
         self.losses = {
-            "mse": (MSE().to(device), loss_scales.get("mse", 1.0)),
-            "l1": (L1().to(device), loss_scales.get("l1", 1.0)),
-            "smooth_l1": (SmoothL1().to(device), loss_scales.get("smooth_l1", 0.0))
+            "mse": (MSE().to(self.device), cfg.mse_loss_scale),
+            "l1": (L1().to(self.device), cfg.l1_loss_scale),
+            "smooth_l1": (SmoothL1().to(self.device), cfg.smoothl1_loss_scale)
         }
         # FVD loss only available for 2- or 3- channel input
-        if num_channels in [2, 3]:
-            self.losses["fvd"] = (FVD(device=device, num_frames=num_pred_frames, in_channels=num_channels),
-                                  loss_scales.get("fvd", 0.0))
+        if cfg.num_channels in [2, 3]:
+            self.losses["fvd"] = (FVD(device=self.device, num_frames=cfg.vid_pred_length,
+                                      in_channels=cfg.num_channels),
+                                  cfg.fvd_loss_scale)
 
     def get_losses(self, pred, target, eval=False):
         '''
@@ -30,10 +28,8 @@ class PredictionLossProvider(nn.Module):
         input shape: [b, t, c, h, w]
         input range: [-1.0, 1.0]
         '''
-
         if pred.shape != target.shape:
             raise ValueError("Output images and target images are of different shape!")
-        b, t, c, h, w = pred.shape
 
         loss_values, total_loss = {}, torch.tensor(0.0, device=self.device)
         for key, (loss, scale) in self.losses.items():
@@ -43,16 +39,3 @@ class PredictionLossProvider(nn.Module):
             total_loss += val * scale
 
         return loss_values, total_loss
-
-
-if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("\nPrediction losses (after item() call):")
-    a, b = torch.rand(8, 16, 3, 93, 124).to(device), torch.rand(8, 16, 3, 93, 124).to(device)  # [b, t, c, h, w]
-    a, b = 2*a-1, 2*b-1  # range: [-1.0, 1.0)
-
-    loss_provider = PredictionLossProvider(num_channels=3, num_pred_frames=16, device=device)
-    loss_values, total_loss = loss_provider.get_losses(a, b)
-    for metric, val in loss_values.items():
-        print(f"{metric}: {val.item()}")
-    print(f"TOTAL LOSS (incl. scale): {total_loss.item()}")

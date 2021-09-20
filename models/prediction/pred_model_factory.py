@@ -53,7 +53,6 @@ def get_pred_model(cfg):
                            inflated_action_dim=cfg.pred_st_inflated_action_dim,
                            phy_kernel_size=cfg.pred_phy_kernel_size,
                            decouple_loss_scale=cfg.pred_st_decouple_loss_scale,
-                           reconstruction_loss_scale=cfg.pred_st_rec_loss_scale,
                            moment_loss_scale=cfg.pred_phy_moment_loss_scale, device=cfg.device)
 
     else:
