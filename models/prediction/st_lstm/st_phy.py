@@ -171,7 +171,7 @@ class STPhy(VideoPredictionModel):
         return predictions, losses
 
 
-    def train_iter(self, data_loader, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider, epoch):
+    def train_iter(self, data_loader, vid_input_length, vid_pred_length, pred_mode, optimizer, loss_provider, epoch):
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
@@ -179,12 +179,12 @@ class STPhy(VideoPredictionModel):
 
             # fwd
             img_data = data[pred_mode].to(self.device) # [b, T, c, h, w], with T = vid_total_length
-            input_frames = img_data[:, :video_in_length]
-            target_frames = img_data[:, video_in_length:video_in_length+video_pred_length]
+            input_frames = img_data[:, :vid_input_length]
+            target_frames = img_data[:, vid_input_length:vid_input_length+vid_pred_length]
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \
-                = self.pred_n(input_frames, pred_length=video_pred_length, actions=actions,
+                = self.pred_n(input_frames, pred_length=vid_pred_length, actions=actions,
                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss

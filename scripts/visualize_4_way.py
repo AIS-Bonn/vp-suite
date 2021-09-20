@@ -58,7 +58,7 @@ def visualize_4_way(cfg):
             
             gt_rgb_vis = postprocess_img(imgs.squeeze(dim=0))  # [T, h, w, 3]
             gt_colorized_vis = postprocess_img(colorized_masks.squeeze(dim=0))  # [T, h, w, 3]
-            input = imgs[:, :cfg.vid_in_length]  # [1, t, 3, h, w]
+            input = imgs[:, :cfg.vid_input_length]  # [1, t, 3, h, w]
 
             pred_rgb, _ = pred_rgb_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
             pred_rgb = torch.cat([input, pred_rgb], dim=1)  # [1, T, 3, h, w]
@@ -70,7 +70,7 @@ def visualize_4_way(cfg):
 
             seg = torch.stack([seg_model(imgs[:, i]) for i in range(imgs.shape[1])], dim=1).argmax(dim=2)  # [1, T, 1, h, w]
             seg_input = torch.stack([(seg == i) for i in range(dataset_classes)], dim=2).float()  # [1, T, c, h, w] one-hot float
-            input_seg = seg_input[:, :cfg.vid_in_length]  # [1, t, c, h, w]
+            input_seg = seg_input[:, :cfg.vid_input_length]  # [1, t, c, h, w]
             seg_then_pred, _ = pred_mask_model.pred_n(input_seg, pred_length=cfg.vid_pred_length, actions=actions)
             seg_then_pred = seg_then_pred.argmax(dim=2)  # [1, n, 1, h, w]
             seg_then_pred = torch.cat([input_seg.argmax(dim=2), seg_then_pred], dim=1).squeeze()  # [T, h, w]
@@ -79,7 +79,7 @@ def visualize_4_way(cfg):
             seg_colorized = colorize_semseg(postprocess_mask(seg.squeeze()), num_classes=dataset_classes)
             seg_color_per_frame_vis = seg_colorized.transpose(0, 3, 1, 2)  # [T, 3, h, w]
 
-            input_colorized = preprocess_img(seg_colorized[:cfg.vid_in_length]).to(cfg.device).unsqueeze(dim=0)  # [b, t, 3, h, w]
+            input_colorized = preprocess_img(seg_colorized[:cfg.vid_input_length]).to(cfg.device).unsqueeze(dim=0)  # [b, t, 3, h, w]
             seg_color_pred, _ = pred_colorized_model.pred_n(input_colorized, pred_length=cfg.vid_pred_length, actions=actions)
             seg_color_pred = torch.cat([input_colorized, seg_color_pred], dim=1).squeeze(dim=0)
             seg_color_pred_vis = postprocess_img(seg_color_pred)  # [T, 3, h, w]
@@ -91,7 +91,7 @@ def visualize_4_way(cfg):
 
             save_vid_vis(
                 out_fp=os.path.join(cfg.out_dir, "4way_vis_{}.gif".format(str(i))),
-                video_in_length=cfg.vid_in_length,
+                vid_input_length=cfg.vid_input_length,
                 True_Trajectory_RGB=gt_rgb_vis,
                 True_Trajectory_Seg=gt_colorized_vis,
                 Framewise_Segmentation=seg_color_per_frame_vis,

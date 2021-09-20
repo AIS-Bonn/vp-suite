@@ -42,8 +42,8 @@ def test_pred_models(cfg):
         for i in tqdm(range(eval_length)):
             data = next(iter_loader)
             img_data = data[cfg.pred_mode].to(cfg.device)
-            input = img_data[:, :cfg.vid_in_length]
-            target = img_data[:, cfg.vid_in_length:cfg.vid_total_length]
+            input = img_data[:, :cfg.vid_input_length]
+            target = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
             actions = data["actions"].to(cfg.device)
 
             for (model, metric_dicts) in pred_models.values():
@@ -65,7 +65,7 @@ def test_pred_models(cfg):
         if model_path != copy_last_frame_id:
             model_dir = str(Path(model_path).parent.resolve())
             print(model_path, model_dir)
-            visualize_vid(test_data, cfg.vid_in_length, cfg.vid_pred_length, model, cfg.device, model_dir,
+            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
                           (cfg.pred_mode, num_channels), num_vis=5, test=True)
 
 if __name__ == '__main__':

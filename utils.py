@@ -70,10 +70,10 @@ def add_border_around_vid(vid, c_and_l, b_width=10):
     return vid
 
 
-def save_vid_vis(out_fp, video_in_length, **trajs):
+def save_vid_vis(out_fp, vid_input_length, **trajs):
 
     T, _, h, w = list(trajs.values())[0].shape
-    T_in, T_pred = video_in_length, T-video_in_length
+    T_in, T_pred = vid_input_length, T-vid_input_length
     for key, traj in trajs.items():
         if "true_" in key.lower() or "gt_" in key.lower():
             trajs[key] = add_border_around_vid(traj, [("green", T)], b_width=16)

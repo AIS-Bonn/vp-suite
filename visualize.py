@@ -40,7 +40,7 @@ def visualize_seg(dataset, seg_model, device, out_dir=".", num_vis=5):
             )
 
 
-def visualize_vid(dataset, video_in_length, video_pred_length, pred_model, device,
+def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device,
                   out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
@@ -59,8 +59,8 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model, devic
         if pred_model is not None:
             pred_model.eval()
             with torch.no_grad():
-                in_traj = in_traj[:video_in_length].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
-                pr_traj, _ = pred_model.pred_n(in_traj, video_pred_length, actions=actions)  # [1, pred_l, c, h, w]
+                in_traj = in_traj[:vid_input_length].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
+                pr_traj, _ = pred_model.pred_n(in_traj, vid_pred_length, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
                 if num_channels == 3:
                     pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
@@ -70,7 +70,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model, devic
 
                 save_vid_vis(
                     out_fp=os.path.join(out_dir, out_filename.format(str(i))),
-                    video_in_length=video_in_length,
+                    vid_input_length=vid_input_length,
                     true_trajectory=gt_rgb_vis,
                     true_colorized=gt_colorized_vis,
                     pred_trajectory=pr_traj_vis
@@ -81,7 +81,7 @@ def visualize_vid(dataset, video_in_length, video_pred_length, pred_model, devic
         else:
             save_vid_vis(
                 out_fp=os.path.join(out_dir, out_filename.format(str(i))),
-                video_in_length=video_in_length,
+                vid_input_length=vid_input_length,
                 true_trajectory=gt_rgb_vis,
                 true_colorized=gt_colorized_vis
             )

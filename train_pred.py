@@ -65,17 +65,17 @@ def train(cfg):
         if not cfg.no_train:
             # use prediction model's own training loop if available
             if callable(getattr(pred_model, "train_iter", None)):
-                pred_model.train_iter(train_loader, cfg.vid_in_length, cfg.vid_pred_length, cfg.pred_mode,
+                pred_model.train_iter(train_loader, cfg.vid_input_length, cfg.vid_pred_length, cfg.pred_mode,
                                       optimizer, loss_provider, epoch)
             else:
-                train_iter(train_loader, pred_model, cfg.device, cfg.vid_in_length, cfg.vid_pred_length, cfg.pred_mode,
+                train_iter(train_loader, pred_model, cfg.device, cfg.vid_input_length, cfg.vid_pred_length, cfg.pred_mode,
                            optimizer, loss_provider)
         else:
             print("Skipping trianing loop.")
 
         # eval
         print("Validating...")
-        val_losses, indicator_loss = eval_iter(valid_loader, pred_model, cfg.device, cfg.vid_in_length, cfg.vid_pred_length,
+        val_losses, indicator_loss = eval_iter(valid_loader, pred_model, cfg.device, cfg.vid_input_length, cfg.vid_pred_length,
                                                cfg.pred_mode, loss_provider, cfg.pred_val_criterion)
         optimizer_scheduler.step(indicator_loss)
         print("Validation losses (mean over entire validation set):")
@@ -92,7 +92,7 @@ def train(cfg):
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if epoch % 10 == 9:
             print("Saving visualizations...")
-            visualize_vid(val_data, cfg.vid_in_length, cfg.vid_pred_length, pred_model, cfg.device,
+            visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model, cfg.device,
                           out_dir, vid_type, num_vis=10)
 
     # TESTING
@@ -106,18 +106,18 @@ def train(cfg):
 
 # ==============================================================================
 
-def train_iter(loader, pred_model, device, video_in_length, video_pred_length, pred_mode, optimizer, loss_provider):
+def train_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pred_mode, optimizer, loss_provider):
 
     loop = tqdm(loader)
     for batch_idx, data in enumerate(loop):
 
         # input
         img_data = data[cfg.pred_mode].to(device)  # [b, T, c, h, w], with T = cfg.vid_total_length
-        input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
+        input, targets = img_data[:, :vid_input_length], img_data[:, vid_input_length:]
         actions = data["actions"].to(device)
 
         # fwd
-        predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
+        predictions, model_losses = pred_model.pred_n(input, pred_length=vid_pred_length, actions=actions)
 
         # loss
         _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -136,7 +136,7 @@ def train_iter(loader, pred_model, device, video_in_length, video_pred_length, p
         # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
 
-def eval_iter(loader, pred_model, device, video_in_length, video_pred_length, pred_mode, loss_provider, indicator_loss):
+def eval_iter(loader, pred_model, device, vid_input_length, vid_pred_length, pred_mode, loss_provider, indicator_loss):
 
     pred_model.eval()
     loop = tqdm(loader)
@@ -147,11 +147,11 @@ def eval_iter(loader, pred_model, device, video_in_length, video_pred_length, pr
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = video_tot_length
-            input, targets = img_data[:, :video_in_length], img_data[:, video_in_length:]
+            img_data = data[pred_mode].to(device)  # [b, T, h, w], with T = vid_total_length
+            input, targets = img_data[:, :vid_input_length], img_data[:, vid_input_length:]
             actions = data["actions"].to(device)
 
-            predictions, model_losses = pred_model.pred_n(input, pred_length=video_pred_length, actions=actions)
+            predictions, model_losses = pred_model.pred_n(input, pred_length=vid_pred_length, actions=actions)
 
             # metrics
             loss_values, _ = loss_provider.get_losses(predictions, targets, eval=True)
