@@ -14,7 +14,7 @@ from models.prediction.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
 from visualize import visualize_vid
 
-def train(cfg):
+def train(trial=None, cfg=None):
 
     # PREPARATION pt. 1
     best_val_loss = float("inf")
@@ -44,9 +44,20 @@ def train(cfg):
     cfg.action_size = train_data.action_size
     cfg.img_shape = train_data.img_shape
 
+    # Optuna
+    if cfg.use_optuna:
+        cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
+        cfg.mse_loss_scale = trial.suggest_float("mse_loss_scale", 1e-7, 1.0)
+        cfg.l1_loss_scale = trial.suggest_float("l1_loss_scale", 1e-7, 1.0)
+        cfg.smoothl1_loss_scale = trial.suggest_float("smoothl1_loss_scale", 1e-7, 1.0)
+        cfg.lpips_loss_scale = trial.suggest_float("lpips_loss_scale", 1e-7, 1000.0)
+        cfg.fvd_loss_scale = trial.suggest_float("fvd_loss_scale", 1e-7, 1.0)
+        cfg.pred_st_decouple_loss_scale = trial.suggest_float("pred_st_decouple_loss_scale", 1e-7, 10000.0, log=True)
+        cfg.pred_st_rec_loss_scale = trial.suggest_float("pred_st_rec_loss_scale", 1e-7, 1.0, log=True)
+        cfg.pred_phy_moment_loss_scale = trial.suggest_float("pred_phy_moment_loss_scale", 1e-7, 10.0, log=True)
+
     # WandB
-    wandb.init(project="sem_vp_train_pred", config=cfg)
-    cfg = wandb.config
+    wandb.init(config=cfg, project="sem_vp_train_pred", reinit=cfg.use_optuna)
 
     # MODEL AND OPTIMIZER
     pred_model = get_pred_model(cfg)
@@ -59,10 +70,11 @@ def train(cfg):
     # LOSSES
     loss_provider = PredictionLossProvider(cfg)
     # Check if indicator loss available
-    if loss_provider.losses.get(cfg.pred_val_criterion, (None, 0.0))[1] <= 0.0:
+    if loss_provider.losses.get(cfg.pred_val_criterion, (None, 0.0))[1] <= 1e-7:
         cfg.pred_val_criterion = "mse"
 
     # MAIN LOOP
+    val_losses = {k: 0 for k in loss_provider.losses.keys()}
     for epoch in range(0, cfg.epochs):
 
         # train
@@ -92,7 +104,7 @@ def train(cfg):
             print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
-        if epoch % 10 == 9:
+        if epoch % 10 == 9 and not cfg.no_vis:
             print("Saving visualizations...")
             out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
                                           cfg.device, cfg.out_dir, vid_type, num_vis=10)
@@ -101,16 +113,18 @@ def train(cfg):
             wandb.log(log_vids, commit=False)
 
         # final bookkeeping
-        wandb.log({"sweep_loss": val_losses["mse"]}, commit=False)
         wandb.log(val_losses, commit=True)
 
     # TESTING
     print("\nTraining done, testing best model...")
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
-    test_pred_models(cfg)
+    test_metrics = test_pred_models(cfg)
+    wandb.log(test_metrics, commit=True)
+    wandb.finish()
 
     print("Testing done, bye bye!")
+    return test_metrics["fvd (↓)"], test_metrics["mse (↓)"]
 
 # ==============================================================================
 

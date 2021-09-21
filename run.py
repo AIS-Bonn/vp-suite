@@ -1,6 +1,7 @@
 import argparse, time
 from pathlib import Path
 import torch
+import optuna
 
 from train_pred import train as train_pred_model
 from train_seg import train as train_seg_model
@@ -28,6 +29,7 @@ if __name__ == '__main__':
                              "doing a 4-way visualization comparison on trained seg. and pred. models (4way_vis), "
                              "testing inference on all available model architectures (test_factory)")
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")
+    parser.add_argument("--no-vis", action="store_true", help="If specified, the visualization loops are skipped")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true",
@@ -79,6 +81,8 @@ if __name__ == '__main__':
     parser.add_argument("--pred-phy-enc-channels", type=int, default=49)
     parser.add_argument("--pred-phy-moment-loss-scale", type=float, default=1.0)
 
+    parser.add_argument("--use-optuna", action="store_true")
+
 
     # parse args and adjust as needed
     cfg = parser.parse_args()
@@ -90,4 +94,10 @@ if __name__ == '__main__':
 
     # run the specified program
     program = PROGRAMS[cfg.program]
-    program(cfg)
+    if cfg.use_optuna:
+        from functools import partial
+        optuna_program = partial(program, cfg=cfg)
+        study = optuna.create_study(directions=["minimize", "minimize"])
+        study.optimize(optuna_program, n_trials=30)
+    else:
+        program(cfg=cfg)

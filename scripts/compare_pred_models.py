@@ -27,7 +27,8 @@ def test_pred_models(cfg):
 
     # MODELS
     pred_models = {model_path: (torch.load(model_path).to(cfg.device), []) for model_path in cfg.models}
-    pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
+    if not cfg.use_optuna:
+        pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
 
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
@@ -59,6 +60,10 @@ def test_pred_models(cfg):
         for (k, v) in mean_metric_dict.items():
             print(f"{k}: {v}")
 
+        # optuna is used -> return metrics for optimization
+        if cfg.use_optuna:
+            return mean_metric_dict
+
     print(f"Saving visualizations (except for {copy_last_frame_id})...")
     num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
     for model_path, (model, _) in pred_models.items():
@@ -67,16 +72,3 @@ def test_pred_models(cfg):
             print(model_path, model_dir)
             visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
                           (cfg.pred_mode, num_channels), num_vis=5, test=True)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Video Prediction Evaluation")
-    parser.add_argument("--data-dir", type=str, help="Path to data dir")
-    parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
-    parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
-                        help="Which kind of data to test on")
-    parser.add_argument("--include-gripper", action="store_true")
-    parser.add_argument("--full-test", action="store_true", help="If specified, checks the whole test set")
-    parser.add_argument("--models", nargs="*", type=str, default=[], help="Paths to prediction models")
-
-    cfg = parser.parse_args()
-    test_pred_models(cfg)
