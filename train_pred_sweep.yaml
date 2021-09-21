@@ -1,0 +1,55 @@
+program: run.py
+method: bayes
+metric:
+  name: sweep_loss
+  goal: minimize
+parameters:
+  program:
+    values: ["train_pred"]
+  seed:
+    values: [42]
+  include_gripper:
+    values: [True]
+  include_actions:
+    values: [True]
+  pred_arch:
+    values: ["st_phy"]
+  pred_mode:
+    values: ["rgb"]
+  lr:
+    min: 0.00005
+    max: 0.005
+  epochs:
+    values: [100]
+  batch_size:
+    values: [4]
+  data_dir:
+    values: ["data/vid_synpick_gripper"]
+  vid_input_length:
+    values: [7]
+  vid_pred_length:
+    values: [9]
+  mse_loss_scale:
+    min: 0.0
+    max: 1.0
+  l1_loss_scale:
+    min: 0.0
+    max: 1.0
+  smoothl1_loss_scale:
+    min: 0.0
+    max: 1.0
+  lpips_loss_scale:
+    min: 0.0
+    max: 1000.0
+  fvd_loss_scale:
+    min: 0.0
+    max: 1.0
+  pred_st_decouple_loss_scale:
+    min: 0.0
+    max: 10000.0
+  pred_st_rec_loss_scale:
+    min: 0.0
+    max: 1.0
+  pred_phy_moment_loss_scale:
+    min: 0.0
+    max: 10.0

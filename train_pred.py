@@ -44,7 +44,9 @@ def train(cfg):
     cfg.action_size = train_data.action_size
     cfg.img_shape = train_data.img_shape
 
+    # WandB
     wandb.init(project="sem_vp_train_pred", config=cfg)
+    cfg = wandb.config
 
     # MODEL AND OPTIMIZER
     pred_model = get_pred_model(cfg)
@@ -99,6 +101,7 @@ def train(cfg):
             wandb.log(log_vids, commit=False)
 
         # final bookkeeping
+        wandb.log({"sweep_loss": val_losses["mse"]}, commit=False)
         wandb.log(val_losses, commit=True)
 
     # TESTING

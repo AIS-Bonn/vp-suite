@@ -5,8 +5,8 @@ import torch
 import numpy as np
 
 from metrics.image_distance import SSIM, PSNR, MSE, MAE
-from metrics.image_perceptual import LPIPS
 from metrics.segmentation import Accuracy as ACC
+from losses.image_perceptual import LPIPS
 from losses.fvd import FrechetVideoDistance as FVD
 
 
@@ -47,7 +47,7 @@ def get_prediction_metrics(pred, target):
         "psnr (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         "mse (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         "mae (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "lpips (↓)": np.mean([LPIPS(p, t).item() for p, t in zip(pred_torch, target_torch)]),
+        "lpips (↓)": LPIPS(device=pred.device).forward(pred, target).item(),
         "fvd (↓)": FVD(device=pred.device, num_frames=t, in_channels=c).forward(pred, target).item()
     }
 
