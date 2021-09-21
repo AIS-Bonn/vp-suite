@@ -1,6 +1,8 @@
 import os, time, random
 from pathlib import Path
 
+import wandb
+
 import numpy as np
 import torch.nn
 from tqdm import tqdm
@@ -16,6 +18,7 @@ def train(cfg):
 
     # PREPARATION pt. 1
     best_val_loss = float("inf")
+    best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
     num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
     cfg.num_channels = num_classes if cfg.pred_mode == "mask" else 3
     vid_type = (cfg.pred_mode, cfg.num_channels)
@@ -40,6 +43,8 @@ def train(cfg):
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
     cfg.action_size = train_data.action_size
     cfg.img_shape = train_data.img_shape
+
+    wandb.init(project="sem_vp_train_pred", config=cfg)
 
     # MODEL AND OPTIMIZER
     pred_model = get_pred_model(cfg)
@@ -81,18 +86,23 @@ def train(cfg):
         cur_val_loss = indicator_loss.item()
         if best_val_loss > cur_val_loss:
             best_val_loss = cur_val_loss
-            torch.save(pred_model, str((Path(cfg.out_dir) / 'best_model.pth').resolve()))
+            torch.save(pred_model, best_model_path)
             print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if epoch % 10 == 9:
             print("Saving visualizations...")
-            visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model, cfg.device,
-                          cfg.out_dir, vid_type, num_vis=10)
+            out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
+                                          cfg.device, cfg.out_dir, vid_type, num_vis=10)
+
+            log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="gif") for i, out_fn in enumerate(out_filenames)}
+            wandb.log(log_vids, commit=False)
+
+        # final bookkeeping
+        wandb.log(val_losses, commit=True)
 
     # TESTING
     print("\nTraining done, testing best model...")
-    best_model_path = str((cfg.out_dir / 'best_model.pth').resolve())
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
     test_pred_models(cfg)

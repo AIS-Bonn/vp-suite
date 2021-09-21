@@ -44,11 +44,14 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                   out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False):
 
     pred_mode, num_channels = vid_type
-    out_filename = "vis_{}_test.gif" if test else "vis_{}.gif"
+    out_fn_template = "vis_{}_test.gif" if test else "vis_{}.gif"
+    out_filenames = []
 
     for i in range(num_vis):
-        n = np.random.choice(len(dataset))
 
+        out_filename = os.path.join(out_dir, out_fn_template.format(str(i)))
+        out_filenames.append(out_filename)
+        n = np.random.choice(len(dataset))
         data = dataset[n] # [in_l + pred_l, c, h, w]
 
         gt_rgb_vis = postprocess_img(data["rgb"])
@@ -62,30 +65,23 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                 in_traj = in_traj[:vid_input_length].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model.pred_n(in_traj, vid_pred_length, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
+
                 if num_channels == 3:
                     pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
                 else:
                     pr_traj_vis = postprocess_mask(pr_traj.argmax(dim=2).squeeze())  # [in_l + pred_l, h, w]
                     pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=num_channels).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
 
-                save_vid_vis(
-                    out_fp=os.path.join(out_dir, out_filename.format(str(i))),
-                    vid_input_length=vid_input_length,
-                    true_trajectory=gt_rgb_vis,
-                    true_colorized=gt_colorized_vis,
-                    pred_trajectory=pr_traj_vis
-                )
+                save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
+                    true_colorized=gt_colorized_vis, pred_trajectory=pr_traj_vis)
 
             pred_model.train()
 
         else:
-            save_vid_vis(
-                out_fp=os.path.join(out_dir, out_filename.format(str(i))),
-                vid_input_length=vid_input_length,
-                true_trajectory=gt_rgb_vis,
-                true_colorized=gt_colorized_vis
-            )
+            save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
+                true_colorized=gt_colorized_vis)
 
+    return out_filenames
 
 if __name__ == '__main__':
 

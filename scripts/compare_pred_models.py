@@ -75,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to test on")
     parser.add_argument("--include-gripper", action="store_true")
-    parser.add_argument("--full-evaluation", action="store_true", help="If specified, checks the whole test set")
+    parser.add_argument("--full-test", action="store_true", help="If specified, checks the whole test set")
     parser.add_argument("--models", nargs="*", type=str, default=[], help="Paths to prediction models")
 
     cfg = parser.parse_args()
