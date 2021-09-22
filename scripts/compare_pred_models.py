@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from models.prediction.copy_last_frame import CopyLastFrameModel
-from dataset import SynpickVideoDataset, postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate
+from dataset.synpick_vid import SynpickVideoDataset
 from metrics.main import get_prediction_metrics
 from visualize import visualize_vid
 

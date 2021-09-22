@@ -9,7 +9,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from scripts.compare_pred_models import test_pred_models
-from dataset import SynpickVideoDataset
+from dataset.synpick_vid import SynpickVideoDataset
 from models.prediction.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
 from visualize import visualize_vid
@@ -120,6 +120,8 @@ def train(trial=None, cfg=None):
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
     test_metrics = test_pred_models(cfg)
+    print(type(test_metrics))
+    print(test_metrics)
     wandb.log(test_metrics, commit=True)
     wandb.finish()
 

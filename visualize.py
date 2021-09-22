@@ -3,7 +3,8 @@ import sys, os
 import numpy as np
 import torch
 
-from dataset import SynpickSegmentationDataset, postprocess_img, postprocess_mask, synpick_seg_val_augmentation
+from dataset.synpick_seg import SynpickSegmentationDataset
+from dataset.dataset_utils import postprocess_img, postprocess_mask, synpick_seg_val_augmentation
 from utils import save_seg_vis, save_vid_vis, colorize_semseg
 
 

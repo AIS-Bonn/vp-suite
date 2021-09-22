@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument("--out-dir", type=str, default=None, help="Output path for results (models, visualizations...)")
     parser.add_argument("--dataset-classes", type=int, default=SYNPICK_CLASSES,
                         help="Number of object classes in dataset (applies to semantic segmentation/prediction only)")
-    parser.add_argument("--vid-step", type=int, default=2, help="For video datasets, use only every nth frame")
+    parser.add_argument("--vid-step", type=int, default=2, help="For video dataset, use only every nth frame")
     parser.add_argument("--vid-allow-overlap", action="store_true",
                         help="If specified, allows frames to appear in multiple valid video sequence datapoints")
     parser.add_argument("--vid-input-length", type=int, default=10, help="Number of input frames for predictor")
