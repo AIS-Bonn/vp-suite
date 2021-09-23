@@ -1,4 +1,4 @@
-from models.prediction.pred_model import VideoPredictionModel
+from models.vid_pred.pred_model import VideoPredictionModel
 
 
 class CopyLastFrameModel(VideoPredictionModel):

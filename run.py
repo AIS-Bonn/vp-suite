@@ -5,15 +5,17 @@ import optuna
 
 from scripts.train_pred import train as train_pred_model
 from scripts.train_seg import train as train_seg_model
+from scripts.train_graph import train as train_graph_model
 from scripts.test_pred import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
-from models.prediction.pred_model_factory import test_all_models
+from models.vid_pred.pred_model_factory import test_all_models
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SYNPICK_CLASSES = 22
 PROGRAMS = {
     "train_seg": train_seg_model,
     "train_pred": train_pred_model,
+    "train_graph": train_graph_model,
     "test_pred": test_pred_models,
     "4way_vis": visualize_4_way,
     "test_factory": test_all_models

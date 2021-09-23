@@ -3,7 +3,7 @@ from torch import nn as nn
 from torchvision.transforms import functional as TF
 
 from models.model_blocks import ConvLSTMCell
-from models.prediction.pred_model import VideoPredictionModel
+from models.vid_pred.pred_model import VideoPredictionModel
 
 
 class LSTMModel(VideoPredictionModel):

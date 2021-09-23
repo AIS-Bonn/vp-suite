@@ -60,8 +60,6 @@ class SynpickGraphDataset(GraphDataset):
                 else:
                     next_available_idx = start_frame + self.sequence_length
 
-        #print(self.valid_frames)
-
         if len(self.valid_frames) < 1:
             raise ValueError("No valid indices in generated dataset! "
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")

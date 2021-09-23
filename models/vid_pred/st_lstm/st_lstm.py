@@ -2,8 +2,8 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from models.prediction.st_lstm.model_blocks import STLSTMCell, ActionConditionalSTLSTMCell, Autoencoder
-from models.prediction.pred_model import VideoPredictionModel
+from models.vid_pred.st_lstm.model_blocks import STLSTMCell, ActionConditionalSTLSTMCell, Autoencoder
+from models.vid_pred.pred_model import VideoPredictionModel
 
 
 class STLSTMModel(VideoPredictionModel):

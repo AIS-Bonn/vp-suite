@@ -3,12 +3,12 @@ sys.path.append(".")
 
 import torch
 
-from models.prediction.conv_lstm import LSTMModel
-from models.prediction.copy_last_frame import CopyLastFrameModel
-from models.prediction.phydnet.phydnet import PhyDNet
-from models.prediction.st_lstm.st_lstm import STLSTMModel
-from models.prediction.st_lstm.st_phy import STPhy
-from models.prediction.unet_3d import UNet3dModel
+from models.vid_pred.conv_lstm import LSTMModel
+from models.vid_pred.copy_last_frame import CopyLastFrameModel
+from models.vid_pred.phydnet.phydnet import PhyDNet
+from models.vid_pred.st_lstm.st_lstm import STLSTMModel
+from models.vid_pred.st_lstm.st_phy import STPhy
+from models.vid_pred.unet_3d import UNet3dModel
 
 
 def get_pred_model(cfg):

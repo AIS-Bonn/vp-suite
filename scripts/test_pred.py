@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from models.prediction.copy_last_frame import CopyLastFrameModel
+from models.vid_pred.copy_last_frame import CopyLastFrameModel
 from dataset.synpick_vid import SynpickVideoDataset
 from metrics.main import get_prediction_metrics
 from visualize import visualize_vid
