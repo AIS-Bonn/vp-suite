@@ -3,9 +3,9 @@ from pathlib import Path
 import torch
 import optuna
 
-from train_pred import train as train_pred_model
-from train_seg import train as train_seg_model
-from scripts.compare_pred_models import test_pred_models
+from scripts.train_pred import train as train_pred_model
+from scripts.train_seg import train as train_seg_model
+from scripts.test_pred import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
 from models.prediction.pred_model_factory import test_all_models
 
@@ -30,6 +30,7 @@ if __name__ == '__main__':
                              "testing inference on all available model architectures (test_factory)")
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")
     parser.add_argument("--no-vis", action="store_true", help="If specified, the visualization loops are skipped")
+    parser.add_argument("--no-wandb", action="store_true", help="If specified, skips usage of WandB for logging")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true",

@@ -9,6 +9,29 @@ import random
 
 TRAIN_VAL_SPLIT = (7/8)  # train:val  7:1
 
+def prepare_synpick_graph(cfg):
+
+    path = Path(cfg.in_path)
+    seed = cfg.seed
+    random.seed(seed)
+
+    train_path = path / "train"
+    test_path = path / "test"
+
+    # get all training/validation FPs, split randomly by episode
+    scene_gts = list(train_path.glob("*/scene_gt.json"))
+    random.shuffle(scene_gts)
+    cut = int(len(scene_gts) * TRAIN_VAL_SPLIT)
+    train_scene_gts, val_scene_gts = sorted(scene_gts[:cut]), sorted(scene_gts[cut:])
+
+    # get all testing FPs
+    test_scene_gts = sorted(test_path.glob("*/scene_gt.json"))
+
+    all_scene_gts = [train_scene_gts, val_scene_gts, test_scene_gts]
+    out_path = Path("data").absolute() / f"graph_{path.stem}_{cfg.timestamp}"
+    out_path.mkdir(parents=True)
+    copy_synpick_scene_gts(all_scene_gts, out_path)
+
 def prepare_synpick_img(cfg):
 
     path = Path(cfg.in_path)
@@ -98,6 +121,7 @@ def prepare_synpick_vid(cfg):
     copy_synpick_imgs(all_img_fps, out_path, cfg.resize_ratio)
     copy_synpick_scene_gts(all_scene_gts, out_path)
 
+
 def copy_synpick_imgs(all_fps, out_path, resize_ratio):
 
     # prepare and execute file copying
@@ -117,6 +141,7 @@ def copy_synpick_imgs(all_fps, out_path, resize_ratio):
             ep_number = ''.join(filter(str.isdigit, fp.parent.parent.stem)).zfill(6)
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
+
 
 def copy_synpick_scene_gts(all_fps, out_path):
 
@@ -140,20 +165,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="prepare_synpick")
     parser.add_argument("--in-path", type=str, help="directory for synpick data")
     parser.add_argument("--seed", type=int, default=42, help="rng seed for train/val split")
-    parser.add_argument("--img", action="store_true", help="Generate segmentation dataset only")
-    parser.add_argument("--vid", action="store_true", help="Generate video pred. dataset only")
+    parser.add_argument("--all", action="store_true", help="prepare data for all datasets")
+    parser.add_argument("--graph", action="store_true", help="prepare data for graph dataset")
+    parser.add_argument("--img", action="store_true", help="prepare data for image dataset")
+    parser.add_argument("--vid", action="store_true", help="prepare data for video dataset")
     parser.add_argument("--resize-ratio", type=float, default=0.25, help="Scale frame sizes by this amount")
 
     cfg = parser.parse_args()
     cfg.timestamp = int(time.time())
 
-    if cfg.img == cfg.vid:
-        print("Preparing both image and video dataset")
+    if cfg.all:
+        cfg.graph = cfg.img = cfg.vid = True
+    if cfg.graph:
+        print("Preparing graph dataset...")
+        prepare_synpick_graph(cfg)
+    if cfg.img:
+        print("Preparing image dataset...")
         prepare_synpick_img(cfg)
-        prepare_synpick_vid(cfg)
-    elif cfg.img:
-        print("Preparing image dataset only")
-        prepare_synpick_img(cfg)
-    elif cfg.vid:
-        print("Preparing video dataset only")
+    if cfg.vid:
+        print("Preparing video dataset...")
         prepare_synpick_vid(cfg)

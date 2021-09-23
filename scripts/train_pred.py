@@ -8,7 +8,7 @@ import torch.nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
-from scripts.compare_pred_models import test_pred_models
+from scripts.test_pred import test_pred_models
 from dataset.synpick_vid import SynpickVideoDataset
 from models.prediction.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
@@ -57,7 +57,8 @@ def train(trial=None, cfg=None):
         cfg.pred_phy_moment_loss_scale = trial.suggest_float("pred_phy_moment_loss_scale", 1e-7, 10.0, log=True)
 
     # WandB
-    wandb.init(config=cfg, project="sem_vp_train_pred", reinit=cfg.use_optuna)
+    if not cfg.no_wandb:
+        wandb.init(config=cfg, project="sem_vp_train_pred", reinit=cfg.use_optuna)
 
     # MODEL AND OPTIMIZER
     pred_model = get_pred_model(cfg)
@@ -109,21 +110,22 @@ def train(trial=None, cfg=None):
             out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
                                           cfg.device, cfg.out_dir, vid_type, num_vis=10)
 
-            log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="gif") for i, out_fn in enumerate(out_filenames)}
-            wandb.log(log_vids, commit=False)
+            if not cfg.no_wandb:
+                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="gif") for i, out_fn in enumerate(out_filenames)}
+                wandb.log(log_vids, commit=False)
 
         # final bookkeeping
-        wandb.log(val_losses, commit=True)
+        if not cfg.no_wandb:
+            wandb.log(val_losses, commit=True)
 
     # TESTING
     print("\nTraining done, testing best model...")
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
     test_metrics = test_pred_models(cfg)
-    print(type(test_metrics))
-    print(test_metrics)
-    wandb.log(test_metrics, commit=True)
-    wandb.finish()
+    if not cfg.no_wandb:
+        wandb.log(test_metrics, commit=True)
+        wandb.finish()
 
     print("Testing done, bye bye!")
     return test_metrics["fvd (↓)"], test_metrics["mse (↓)"]

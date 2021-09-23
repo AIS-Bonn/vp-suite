@@ -27,7 +27,7 @@ def test_pred_models(cfg):
 
     # MODELS
     pred_models = {model_path: (torch.load(model_path).to(cfg.device), []) for model_path in cfg.models}
-    if not cfg.use_optuna:
+    if cfg.program == "test_pred":
         pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
 
     # DATASET
@@ -61,7 +61,7 @@ def test_pred_models(cfg):
             print(f"{k}: {v}")
 
         # optuna is used -> return metrics for optimization
-        if cfg.use_optuna:
+        if cfg.program != "test_pred":
             return mean_metric_dict
 
     print(f"Saving visualizations (except for {copy_last_frame_id})...")
