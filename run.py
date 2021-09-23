@@ -41,7 +41,7 @@ if __name__ == '__main__':
                         help="Which kind of data to train/test on")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--epochs", type=int, default=300)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--batch-size", type=int, default=32, help="Recommended: 32 for seg, 8 for pred, 32 for graph")
     parser.add_argument("--load-existing-model", action="store_true")
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"], default=DEVICE)
     parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
@@ -82,7 +82,8 @@ if __name__ == '__main__':
     parser.add_argument("--pred-phy-enc-channels", type=int, default=49)
     parser.add_argument("--pred-phy-moment-loss-scale", type=float, default=1.0)
 
-    parser.add_argument("--use-optuna", action="store_true")
+    parser.add_argument("--use-optuna", action="store_true",
+                        help="If specified, starts a hyperparameter optimization of 30 trials using optuna.")
 
 
     # parse args and adjust as needed

@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument("--graph", action="store_true", help="prepare data for graph dataset")
     parser.add_argument("--img", action="store_true", help="prepare data for image dataset")
     parser.add_argument("--vid", action="store_true", help="prepare data for video dataset")
-    parser.add_argument("--resize-ratio", type=float, default=0.25, help="Scale frame sizes by this amount")
+    parser.add_argument("--resize-ratio", type=float, default=0.125, help="Scale frame sizes by this amount")
 
     cfg = parser.parse_args()
     cfg.timestamp = int(time.time())
