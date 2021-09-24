@@ -25,9 +25,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="SEMANTIC VIDEO PREDICTION")
     parser.add_argument("--program", type=str, default="train_pred",
-                        choices=["train_seg", "train_pred", "test_pred", "4way_vis", "test_factory"],
+                        choices=["train_seg", "train_pred", "train_graph", "test_pred", "4way_vis", "test_factory"],
                         help="Specifies the program to run: training a semantic segmentation model (train_seg), "
                              "training a prediction model (train_pred), testing one or more prediction models (test_pred), "
+                             "training a GNN for predicting object-centric and -relational information (test_graph), "
                              "doing a 4-way visualization comparison on trained seg. and pred. models (4way_vis), "
                              "testing inference on all available model architectures (test_factory)")
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")

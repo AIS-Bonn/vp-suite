@@ -8,11 +8,10 @@ from scipy.spatial.transform import Rotation as R
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from torch_geometric.data import Data as GraphData
-from torch_geometric.data import Dataset as GraphDataset
 from torch_geometric.utils.convert import to_networkx
+from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
 
-class SynpickGraphDataset(GraphDataset):
+class SynpickGraphDataset(object):
     def __init__(self, data_dir, num_frames, step, allow_overlap):
         super(SynpickGraphDataset, self).__init__()
 
@@ -73,44 +72,45 @@ class SynpickGraphDataset(GraphDataset):
         gripper_pos_deltas = np.stack([new - old for old, new in zip(gripper_pos, gripper_pos[1:])], axis=0)
         gripper_actions = F.pad(torch.from_numpy(gripper_pos_deltas), (0, 0, 0, 1))  # last graph gets padded action
 
-        # one graph per frame
-        seq_graph_data = []
+        edge_indices, edge_weights, node_features, targets = [], [], [], []
         for frame_info, action in zip(frame_list, gripper_actions):
             all_instance_ids = [obj_info["ins_id"] for obj_info in frame_info]
-            node_features = []
-            node_pos = []
-            node_classes = []
-            edges = []
+            edge_indices_t, node_features_t, targets_t = [], [], []
             for obj_info in frame_info:
 
                 # assemble node feature vector
                 rotmat = obj_info["cam_R_m2c"]
-                r_quat = torch.from_numpy(R.from_matrix([rotmat[i:i+3] for i in [0, 3, 6]]).as_quat())  # rotation in quaternions
-                t_vec = torch.tensor(obj_info["cam_t_m2c"])
-                class_id = torch.tensor([obj_info["obj_id"]])  # object's class id in tensor shape
-                obj_feature = torch.cat([r_quat, t_vec, class_id])  # object's feature vector
-                node_features.append(obj_feature)
-
-                # additional features
-                node_pos.append(torch.tensor(obj_info["cam_t_m2c"][:2]))
-                node_classes.append(class_id)
+                r_quat = R.from_matrix([rotmat[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
+                t_vec = np.array(obj_info["cam_t_m2c"])
+                class_id = np.array([obj_info["obj_id"]])  # object's class id in tensor shape
+                obj_feature = np.concatenate([r_quat, t_vec, class_id])  # object's feature vector
+                obj_target = np.concatenate([r_quat, t_vec])  # object's feature vector
+                node_features_t.append(obj_feature)
+                targets_t.append(obj_target)
 
                 # assemble outgoing edges
                 instance_idx = obj_info["ins_id"]  # object's instance idx
                 node_idx = all_instance_ids.index(instance_idx)
                 touches = obj_info.get("touches", [idx for idx in all_instance_ids if idx != instance_idx])  # list of instance idx this object touches
                 touched_node_idx = [all_instance_ids.index(t) for t in touches]
-                edges.extend([torch.LongTensor([node_idx, touch_idx]) for touch_idx in touched_node_idx])
+                edge_indices_t.extend([np.array([node_idx, touch_idx]) for touch_idx in touched_node_idx])
 
-            # assemble and append graph G = (V, E)
-            data = GraphData(x = torch.stack(node_features, dim=0),  # shape: [|V|, feat_dim]
-                             edge_index = torch.stack(edges, dim=1),  # shape: [2, |E|]
-                             pos = torch.stack(node_pos, dim=0),  # [|V|, 2]
-                             obj_class = torch.stack(node_classes, dim=0),  # [|V|, 1]
-                             action = action)
-            seq_graph_data.append(data)
+            node_features.append(np.stack(node_features_t, axis=0))  # shape: [|V|, feat_dim]
+            edge_indices_t = np.stack(edge_indices_t, axis=1)
+            edge_indices.append(edge_indices_t)  # shape: [2, |E|]
+            edge_weights.append(np.ones(edge_indices_t.shape[1]))  # shape: [|E|]
+            targets.append(np.stack(targets_t, axis=0))  # shape: [|V|, feat_dim-1 (no class info)]
 
-        return seq_graph_data
+        # sequence consists of T-1 graphs with the labels being the features from the following graph
+        return DynamicGraphTemporalSignal(
+            edge_indices = edge_indices[:-1],
+            edge_weights = edge_weights[:-1],
+            features = node_features[:-1],
+            targets = targets[1:]
+        )
+
+    def get_dataset(self):
+        return self.__getitem__(0)
 
     # TODO heterogeneous graph with node_type = class_id?
 
@@ -128,7 +128,7 @@ class SynpickGraphDataset(GraphDataset):
         return [ep_dict[str(frame)] for frame in sequence_frames]
 
 
-def draw_synpick_graph(graph_data : GraphData, out_fp : str):
+def draw_synpick_graph(graph_data, out_fp):
     fig = plt.figure(1, figsize=(16, 9))
     G = to_networkx(graph_data, to_undirected=True, node_attrs=["pos", "obj_class"])
     num_nodes = len(G.nodes)
@@ -148,10 +148,9 @@ def draw_synpick_graph(graph_data : GraphData, out_fp : str):
 
 if __name__ == '__main__':
     import sys, os
-    data_dir, out_dir = sys.argv[1], sys.argv[2]
+    data_dir = sys.argv[1]
     test_dir = os.path.join(data_dir, 'test')
     test_data = SynpickGraphDataset(data_dir=test_dir, num_frames=16, step=2, allow_overlap=False)
-
-    data = test_data[0]
-    for i, frame_graph in enumerate(data):
-        draw_synpick_graph(frame_graph, os.path.join(out_dir, f"graph_{i}.png"))
+    graph_sequence = test_data[0]
+    for t, data in enumerate(graph_sequence):
+        print(t, data)
