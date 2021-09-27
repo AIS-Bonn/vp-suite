@@ -1,10 +1,10 @@
-from typing import Union, List
+from typing import Union, List, Optional
 
 from collections.abc import Mapping, Sequence
 
 import torch.utils.data
 from torch.utils.data.dataloader import default_collate
-from torch_geometric.data import Batch
+from torch_geometric.data import Data, HeteroData, Dataset, Batch
 from torch_geometric_temporal.signal import StaticGraphTemporalSignal as SGTS
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 from torch_geometric_temporal.signal import DynamicGraphStaticSignal as DGSS
@@ -15,7 +15,7 @@ from torch_geometric_temporal.signal import DynamicGraphStaticSignalBatch as DGS
 
 def collate_temporal_signal(
         signal_list: List[Union[SGTS, DGTS, DGSS]],
-        signal_batch_class: Union[SGTSBatch, DGTSBatch, DGSSBatch]
+        signal_batch_class: Union[SGTSBatch, DGTSBatch, DGSSBatch],
         follow_batch: Optional[Union[List[str]]] = None,
         exclude_keys: Optional[Union[List[str]]] = None,
 ):
@@ -47,11 +47,11 @@ def collate_temporal_signal(
 
     # assemble signal of batched graphs
     return signal_batch_type(
-        edge_indices = [batch["edge_index"] for batch in batches_by_timestep],
-        edge_weights = [batch["edge_attr"] for batch in batches_by_timestep],
-        features = [batch["x"] for batch in batches_by_timestep],
-        targets = [batch["y"] for batch in batches_by_timestep],
-        batch = batches_by_timestep
+        edge_indices = [batch["edge_index"].numpy() for batch in batches_by_timestep],
+        edge_weights = [batch["edge_attr"].numpy() for batch in batches_by_timestep],
+        features = [batch["x"].numpy() for batch in batches_by_timestep],
+        targets = [batch["y"].numpy() for batch in batches_by_timestep],
+        batches = [batch["batch"].numpy() for batch in batches_by_timestep]
     )
 
 class PYGTCollater(object):

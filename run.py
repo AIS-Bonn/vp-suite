@@ -54,7 +54,7 @@ if __name__ == '__main__':
     parser.add_argument("--vid-step", type=int, default=2, help="For video dataset, use only every nth frame")
     parser.add_argument("--vid-allow-overlap", action="store_true",
                         help="If specified, allows frames to appear in multiple valid video sequence datapoints")
-    parser.add_argument("--vid-input-length", type=int, default=10, help="Number of input frames for predictor")
+    parser.add_argument("--vid-input-length", type=int, default=8, help="Number of input frames for predictor")
     parser.add_argument("--vid-pred-length", type=int, default=10, help="Number of frames predicted from input")
     parser.add_argument("--models", type=str, nargs="*", default=[], help="Pred. test only: path to pred. models")
     parser.add_argument("--full-test", action="store_true", help="If specified, tests models on the whole test set")

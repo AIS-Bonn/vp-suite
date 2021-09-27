@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation as R
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from torch_geometric.data import Data
 from torch_geometric.utils.convert import to_networkx
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
 
@@ -16,7 +17,8 @@ class SynpickGraphDataset(object):
         super(SynpickGraphDataset, self).__init__()
 
         scene_dir = os.path.join(data_dir, 'scene_gt')
-        self.scene_fps = [os.path.join(scene_dir, scene_fp) for scene_fp in sorted(os.listdir(scene_dir))]
+        self.scene_ids = {int(scene_fp[-20:-14]): os.path.join(scene_dir, scene_fp)
+                          for scene_fp in sorted(os.listdir(scene_dir))}
 
         self.skip_first_n = 72
         self.step = step  # if >1, (step - 1) frames are skipped between each frame
@@ -31,8 +33,7 @@ class SynpickGraphDataset(object):
         # determine which dataset indices are valid for given sequence length T
         self.n_total_frames = 0
         self.valid_frames = []
-        for scene_fp in self.scene_fps:
-
+        for ep, scene_fp in self.scene_ids.items():
             ep = int(scene_fp[-20:-14])
             with open(scene_fp, "r") as scene_json_file:
                 scene_dict = json.load(scene_json_file)
@@ -122,15 +123,17 @@ class SynpickGraphDataset(object):
         '''
         This function assumes that all given ep-frame combinations exist!
         '''
-        with open(self.scene_fps[ep], "r") as scene_json_file:
+        with open(self.scene_ids[ep], "r") as scene_json_file:
             ep_dict = json.load(scene_json_file)
         sequence_frames = [start_frame + offset for offset in self.frame_offsets]
         return [ep_dict[str(frame)] for frame in sequence_frames]
 
 
 def draw_synpick_graph(graph_data, out_fp):
-    fig = plt.figure(1, figsize=(16, 9))
-    G = to_networkx(graph_data, to_undirected=True, node_attrs=["pos", "obj_class"])
+    graph_dict = graph_data.to_dict()
+    graph_dict["pos"] = graph_dict["x"][:, 4:6]
+    graph_dict["obj_class"] = graph_dict["x"][:, 7]
+    G = to_networkx(Data.from_dict(graph_dict), to_undirected=True, node_attrs=["pos", "obj_class"])
     num_nodes = len(G.nodes)
     # add invisible border nodes so that, over time, unchanging obj. positions result in unchanging vis. positions
     G.add_node(num_nodes, pos=(-320, -180), obj_class=24)
@@ -140,11 +143,12 @@ def draw_synpick_graph(graph_data, out_fp):
 
     # color range for object classes
     colors = [G.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
+
+    fig = plt.figure(1, figsize=(16, 9))
     nx.draw(G, pos=nx.get_node_attributes(G, "pos"), cmap=plt.get_cmap("gist_ncar"),
             node_size=500, linewidths=1, node_color=colors, with_labels=False)
     plt.savefig(out_fp)
     plt.clf()
-
 
 if __name__ == '__main__':
     import sys, os

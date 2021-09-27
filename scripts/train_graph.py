@@ -7,8 +7,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from dataset.graph.synpick_graph import SynpickGraphDataset
+from dataset.graph.synpick_graph import SynpickGraphDataset, draw_synpick_graph
 from dataset.graph.pygt_loader import DataLoader
+from torch_geometric.data import Data as GraphData
 from models.graph_pred.rgcn import RecurrentGCN
 
 def train(trial=None, cfg=None):
@@ -31,6 +32,7 @@ def train(trial=None, cfg=None):
                                      allow_overlap=cfg.vid_allow_overlap)
     val_data = SynpickGraphDataset(data_dir=val_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
                                      allow_overlap=cfg.vid_allow_overlap)
+    print(f"len of training data: {len(train_data)}")
     train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.batch_size,
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
@@ -61,7 +63,7 @@ def train(trial=None, cfg=None):
         print("Validating...")
         eval_loss = eval_iter(cfg, valid_loader, pred_model, mse_loss)
         optimizer_scheduler.step(eval_loss)
-        eval_loss = indicator_loss.item()
+        eval_loss = eval_loss.item()
         print(f"Validation loss (mean over entire validation set): {eval_loss}")
 
         # save model if last epoch improved indicator loss
@@ -105,13 +107,14 @@ def train(trial=None, cfg=None):
 def train_iter(cfg, loader, pred_model, optimizer, mse_loss):
 
     loop = tqdm(loader)
-    for _, graph_temporal_signal in enumerate(loop):
+    for _, data in enumerate(loop):
 
         loss = 0
-        for i, cur_graph in enumerate(graph_temporal_signal):
-            cur_graph = cur_graph.to(cfg.device)
-            predicted_feat = pred_model(cur_graph)
-            loss += mse_loss(predicted_feat, cur_graph["y"])
+        for _, snapshot in enumerate(data):
+
+            # TODO devices, GPU?
+            y_hat = pred_model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
+            loss += mse_loss(y_hat, snapshot.y)
 
         # bwd
         optimizer.zero_grad()
@@ -132,14 +135,14 @@ def eval_iter(cfg, loader, pred_model, mse_loss):
 
     with torch.no_grad():
 
-        for _, frame_graphs in enumerate(loop):
+        for _, data in enumerate(loop):
 
-            frame_graphs = [graph.to(cfg.device) for graph in frame_graphs]
             loss = 0
-            for i in range(len(frame_graphs) - 1):
-                cur_graph, next_graph = frame_graphs[i], frame_graphs[i + 1]
-                predicted_feat = pred_model(cur_graph)
-                loss += mse_loss(predicted_feat["features"], next_graph["features"][:-1]).detach()
+            for _, snapshot in enumerate(data):
+
+                # TODO devices, GPU?
+                y_hat = pred_model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
+                loss += mse_loss(y_hat, snapshot.y).detach()
 
             eval_losses.append(loss)
             loop.set_postfix(loss=loss.item())
