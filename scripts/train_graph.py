@@ -7,9 +7,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from torch_geometric.loader import DataLoader
-
 from dataset.graph.synpick_graph import SynpickGraphDataset
+from dataset.graph.pygt_loader import DataLoader
 from models.graph_pred.rgcn import RecurrentGCN
 
 def train(trial=None, cfg=None):

@@ -4,82 +4,67 @@ from collections.abc import Mapping, Sequence
 
 import torch.utils.data
 from torch.utils.data.dataloader import default_collate
-from torch_geometric.data import Data, HeteroData, Dataset, Batch
+from torch_geometric.data import Batch
 from torch_geometric_temporal.signal import StaticGraphTemporalSignal as SGTS
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 from torch_geometric_temporal.signal import DynamicGraphStaticSignal as DGSS
+from torch_geometric_temporal.signal import StaticGraphTemporalSignalBatch as SGTSBatch
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignalBatch as DGTSBatch
-from dataset.graph.dgts_batch import from_data_list as DGTSBatch_from_data_list
+from torch_geometric_temporal.signal import DynamicGraphStaticSignalBatch as DGSSBatch
 
 
-def collate_DGTS(
-        data_list: List[DGTS],
-        increment: bool = True,
-        add_batch: bool = True,
+def collate_temporal_signal(
+        signal_list: List[Union[SGTS, DGTS, DGSS]],
+        signal_batch_class: Union[SGTSBatch, DGTSBatch, DGSSBatch]
         follow_batch: Optional[Union[List[str]]] = None,
         exclude_keys: Optional[Union[List[str]]] = None,
-) -> Tuple[BaseData, Mapping, Mapping]:
+):
 
-    follow_batch = set(follow_batch or [])
-    exclude_keys = set(exclude_keys or [])
+    # check for inconsistent input signal types
+    if len(set([type(signal) for signal in signal_list])) > 1:
+        raise ValueError("Given Signal objects are of differing type!")
 
-    # TODO indices, increments?
+    # determine output type
+    in_type = type(signal_list[0])
+    signal_batch_type = None
+    if in_type == SGTS:
+        signal_batch_type = SGTSBatch
+    elif in_type == DGTS:
+        signal_batch_type = DGTSBatch
+    elif in_type == DGSS:
+        signal_batch_type = DGSSBatch
 
-    all_graphs = [[g for g in iter(signal)] for signal in data_list]  # list (samples) of list(temporal) of torch_geometric Data
-    if len(set([len(sample_list) for sample_list in all_graphs])) > 1:  # check for consistent sequence lengths
+    # create list(samples) of list(temporal sequence) of torch_geometric.Data/HeteroData
+    all_graphs = [[g for g in iter(signal)] for signal in signal_list]
+
+    # check for inconsistent sequence lengths
+    if len(set([len(sample_list) for sample_list in all_graphs])) > 1:
         raise ValueError("Batch Samples of differing sequence length are currently not supported.")
-    batched_edge_indices = []
-    batched_edge_weights = []
-    batched_node_features = []
-    batched_targets = []
 
-    for t in range(len(all_graphs[0])):  # collate features of graphs of the same timestep
-        batched_edge_indices.append(torch.cat([signal[t]["edge_index"] for signal in all_graphs], dim=1))
-        batched_edge_weights.append(torch.cat([signal[t]["edge_attr"] for signal in all_graphs], dim=0))
-        batched_node_features.append(torch.cat([signal[t]["x"] for signal in all_graphs], dim=0))
-        batched_targets.append(torch.cat([signal[t]["y"] for signal in all_graphs], dim=0))
+    # create diagonalized torch_geometric.Batch objects by timestep
+    batches_by_timestep = [Batch.from_data_list([sample[t] for sample in all_graphs], follow_batch, exclude_keys)
+                    for t in range(len(all_graphs[0]))]
 
-    return DynamicGraphTemporalSignal(
-        edge_indices=batched_edge_indices,
-        edge_weights=batched_edge_weights,
-        features=batched_node_features,
-        targets=batched_targets
+    # assemble signal of batched graphs
+    return signal_batch_type(
+        edge_indices = [batch["edge_index"] for batch in batches_by_timestep],
+        edge_weights = [batch["edge_attr"] for batch in batches_by_timestep],
+        features = [batch["x"] for batch in batches_by_timestep],
+        targets = [batch["y"] for batch in batches_by_timestep],
+        batch = batches_by_timestep
     )
 
-# TODO de-batch?
-
-
-def DGTSBatch_from_list(data_list: Union[List[Data], List[HeteroData]],
-                        follow_batch: Optional[List[str]] = None,
-                        exclude_keys: Optional[List[str]] = None):
-    batch, slice_dict, inc_dict = collate_DGTS(
-        data_list=data_list,
-        increment=True,
-        add_batch=True,
-        follow_batch=follow_batch,
-        exclude_keys=exclude_keys,
-    )
-
-    batch._num_graphs = len(data_list)
-    batch._slice_dict = slice_dict
-    batch._inc_dict = inc_dict
-
-    return batch
-
-
-class Collater(object):
+class PYGTCollater(object):
     def __init__(self, follow_batch, exclude_keys):
         self.follow_batch = follow_batch
         self.exclude_keys = exclude_keys
 
     def collate(self, batch):
         elem = batch[0]
-        if isinstance(elem, SGTS):
-            raise NotImplementedError  # TODO
-        elif isinstance(elem, DGTS):
-            return DGTSBatch_from_list(batch, self.follow_batch, self.exclude_keys)
-        elif isinstance(elem, DGSS):
-            raise NotImplementedError  # TODO
+        if isinstance(elem, SGTS) or isinstance(elem, DGTS) or isinstance(elem, DGSS):
+            return collate_temporal_signal(batch, self.follow_batch, self.exclude_keys)
+        elif isinstance(elem, Data) or isinstance(elem, HeteroData):
+            return Batch.from_data_list(batch, self.follow_batch, self.exclude_keys)
         elif isinstance(elem, torch.Tensor):
             return default_collate(batch)
         elif isinstance(elem, float):
@@ -100,13 +85,11 @@ class Collater(object):
     def __call__(self, batch):
         return self.collate(batch)
 
-
-[docs]
 class DataLoader(torch.utils.data.DataLoader):
 
     def __init__(
         self,
-        dataset: object,  # TODO
+        dataset: Union[Dataset, List[Data], List[HeteroData], List[SGTS], List[DGTS], List[DGSS]],
         batch_size: int = 1,
         shuffle: bool = False,
         follow_batch: List[str] = [],
@@ -122,4 +105,4 @@ class DataLoader(torch.utils.data.DataLoader):
         self.exclude_keys = exclude_keys
 
         super().__init__(dataset, batch_size, shuffle,
-                         collate_fn=Collater(follow_batch, exclude_keys), **kwargs)
+                         collate_fn=PYGTCollater(follow_batch, exclude_keys), **kwargs)
