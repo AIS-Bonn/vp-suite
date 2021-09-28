@@ -1,4 +1,4 @@
-import os, json
+import os, json, time
 
 import numpy as np
 import torch
@@ -8,9 +8,10 @@ from scipy.spatial.transform import Rotation as R
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from torch_geometric.data import Data
+from torch_geometric.data import Data as GraphData
 from torch_geometric.utils.convert import to_networkx
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
+
 
 class SynpickGraphDataset(object):
     def __init__(self, data_dir, num_frames, step, allow_overlap):
@@ -37,10 +38,16 @@ class SynpickGraphDataset(object):
             ep = int(scene_fp[-20:-14])
             with open(scene_fp, "r") as scene_json_file:
                 scene_dict = json.load(scene_json_file)
+
+            # discard episode if it includes objects that fell out of the bin (-> obj. height exceeds max_height)
+            ep_obj_pos = [obj_dict["cam_t_m2c"] for frame_list in scene_dict.values() for obj_dict in frame_list]
+            if any([outside_tote(pos) for pos in ep_obj_pos]):
+                print(f"skipping episode {ep} because an object is outside the tote")
+                continue
+
             frames = sorted([int(frame_str) for frame_str in scene_dict.keys()])
             self.n_total_frames += len(frames)
             next_available_idx = 0
-
             for i in range(self.skip_first_n, len(frames)):
 
                 start_frame = frames[i]
@@ -64,6 +71,7 @@ class SynpickGraphDataset(object):
             raise ValueError("No valid indices in generated dataset! "
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
+
     def __getitem__(self, i):
 
         ep, start_frame = self.valid_frames[i]  # only consider valid indices
@@ -82,10 +90,10 @@ class SynpickGraphDataset(object):
                 # assemble node feature vector
                 rotmat = obj_info["cam_R_m2c"]
                 r_quat = R.from_matrix([rotmat[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
-                t_vec = np.array(obj_info["cam_t_m2c"])
+                t_vec = normalize_t(obj_info["cam_t_m2c"])
                 class_id = np.array([obj_info["obj_id"]])  # object's class id in tensor shape
-                obj_feature = np.concatenate([r_quat, t_vec, class_id])  # object's feature vector
-                obj_target = np.concatenate([r_quat, t_vec])  # object's feature vector
+                obj_feature = np.concatenate([r_quat, t_vec, class_id])  # object's feature (x) vector
+                obj_target = t_vec[0:2]  # object's target (y) vector
                 node_features_t.append(obj_feature)
                 targets_t.append(obj_target)
 
@@ -102,6 +110,13 @@ class SynpickGraphDataset(object):
             edge_weights.append(np.ones(edge_indices_t.shape[1]))  # shape: [|E|]
             targets.append(np.stack(targets_t, axis=0))  # shape: [|V|, feat_dim-1 (no class info)]
 
+        '''
+        for nf in node_features:
+            for nfc in list(nf):
+                if nfc[6] > 2000 or nfc[6] < 1800:
+                    print(nfc[4:7])
+        '''
+
         # sequence consists of T-1 graphs with the labels being the features from the following graph
         return DynamicGraphTemporalSignal(
             edge_indices = edge_indices[:-1],
@@ -113,7 +128,7 @@ class SynpickGraphDataset(object):
     def get_dataset(self):
         return self.__getitem__(0)
 
-    # TODO heterogeneous graph with node_type = class_id?
+
 
     def __len__(self):
         return len(self.valid_frames)
@@ -129,17 +144,37 @@ class SynpickGraphDataset(object):
         return [ep_dict[str(frame)] for frame in sequence_frames]
 
 
+tote_min_coord = [-300, -200, 1500]
+tote_max_coord = [ 300,  200, 2000]
+
+def outside_tote(pos):
+    return pos[0] < tote_min_coord[0]\
+           or pos[1] < tote_min_coord[1]\
+           or pos[2] < tote_min_coord[2]\
+           or pos[0] > tote_max_coord[0]\
+           or pos[1] > tote_max_coord[1]\
+           or pos[2] > tote_max_coord[2]
+
+def normalize_t(pos):
+    return 2 * np.divide(np.array(pos) - tote_min_coord, np.array(tote_max_coord) - tote_min_coord) - 1
+
+def denormalize_t(pos):
+    pos_dim = pos.shape[1]
+    max_c = tote_max_coord[0:pos_dim]
+    min_c = tote_min_coord[0:pos_dim]
+    return ((np.array(pos) + 1) / 2) * (np.array(max_c) - min_c) + min_c
+
 def draw_synpick_graph(graph_data, out_fp):
     graph_dict = graph_data.to_dict()
-    graph_dict["pos"] = graph_dict["x"][:, 4:6]
+    graph_dict["pos"] = list(denormalize_t(graph_dict["x"][:, 4:6]))
     graph_dict["obj_class"] = graph_dict["x"][:, 7]
-    G = to_networkx(Data.from_dict(graph_dict), to_undirected=True, node_attrs=["pos", "obj_class"])
+    G = to_networkx(GraphData.from_dict(graph_dict), to_undirected=True, node_attrs=["pos", "obj_class"])
     num_nodes = len(G.nodes)
     # add invisible border nodes so that, over time, unchanging obj. positions result in unchanging vis. positions
-    G.add_node(num_nodes, pos=(-320, -180), obj_class=24)
-    G.add_node(num_nodes+1, pos=(320, -180), obj_class=24)
-    G.add_node(num_nodes+2, pos=(-320, 180), obj_class=24)
-    G.add_node(num_nodes+3, pos=(320, 180), obj_class=24)
+    G.add_node(num_nodes, pos=(-300, -200), obj_class=24)
+    G.add_node(num_nodes+1, pos=(300, -200), obj_class=24)
+    G.add_node(num_nodes+2, pos=(-300, 200), obj_class=24)
+    G.add_node(num_nodes+3, pos=(300, 200), obj_class=24)
 
     # color range for object classes
     colors = [G.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
@@ -150,11 +185,34 @@ def draw_synpick_graph(graph_data, out_fp):
     plt.savefig(out_fp)
     plt.clf()
 
-if __name__ == '__main__':
-    import sys, os
-    data_dir = sys.argv[1]
-    test_dir = os.path.join(data_dir, 'test')
-    test_data = SynpickGraphDataset(data_dir=test_dir, num_frames=16, step=2, allow_overlap=False)
-    graph_sequence = test_data[0]
-    for t, data in enumerate(graph_sequence):
-        print(t, data)
+def draw_synpick_pred_and_gt(graph, y_pred, out_fp):
+    g_dict = graph.to_dict()
+    g_dict.update({"obj_class": g_dict["x"][:, 7]})
+    y_pred = y_pred.cpu().numpy()
+    y_target = g_dict["y"].cpu().numpy()
+
+    G_pred = to_networkx(GraphData.from_dict({**g_dict, "pos": denormalize_t(y_pred)}),
+                         to_undirected=True, node_attrs=["pos", "obj_class"])
+    G_target = to_networkx(GraphData.from_dict({**g_dict, "pos": denormalize_t(y_target)}),
+                           to_undirected=True, node_attrs=["pos", "obj_class"])
+
+    # add invisible border nodes so that, over time, unchanging obj. positions result in unchanging vis. positions
+    num_nodes = len(G_pred.nodes)
+    G_pred.add_node(num_nodes, pos=np.array([-300, -200]), obj_class=24)
+    G_pred.add_node(num_nodes+1, pos=np.array([-300, 200]), obj_class=24)
+    G_pred.add_node(num_nodes+2, pos=np.array([300, -200]), obj_class=24)
+    G_pred.add_node(num_nodes+3, pos=np.array([300, 200]), obj_class=24)
+
+    # color range for object classes
+    colors_pred = [G_pred.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
+    colors_target = [G_target.nodes[i]["obj_class"] / 24 for i in range(num_nodes)]
+
+    # create plot and save
+    plt.figure(1, figsize=(16, 9))
+    nx.draw(G_pred, pos=nx.get_node_attributes(G_pred, "pos"), cmap=plt.get_cmap("gist_ncar"),
+            node_size=500, linewidths=1, node_color=colors_pred, with_labels=False, alpha=1.0)
+    nx.draw(G_target, pos=nx.get_node_attributes(G_target, "pos"), cmap=plt.get_cmap("gist_ncar"),
+            node_size=500, linewidths=1, node_color=colors_target, with_labels=False, alpha=0.15)
+    plt.savefig(out_fp)
+    plt.clf()
+
