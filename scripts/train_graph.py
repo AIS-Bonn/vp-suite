@@ -90,7 +90,7 @@ def train(trial=None, cfg=None):
     test_data = SynpickGraphDataset(data_dir=test_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
                                      allow_overlap=cfg.vid_allow_overlap)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
-    test_loss = eval_iter(test_loader, pred_model, mse_loss).item()
+    test_loss = eval_iter(cfg, test_loader, pred_model, mse_loss).item()
     print(f"Test loss: {test_loss}")
     if not cfg.no_wandb:
         wandb.log({"test_mse": test_loss}, commit=True)
