@@ -58,6 +58,7 @@ if __name__ == '__main__':
     parser.add_argument("--vid-pred-length", type=int, default=10, help="Number of frames predicted from input")
     parser.add_argument("--models", type=str, nargs="*", default=[], help="Pred. test only: path to pred. models")
     parser.add_argument("--full-test", action="store_true", help="If specified, tests models on the whole test set")
+    parser.add_argument("--vis-every-n", type=int, default=10, help="visualize predictions after every Nth epoch")
 
     parser.add_argument("--mse-loss-scale", type=float, default=1.0)
     parser.add_argument("--l1-loss-scale", type=float, default=1.0)

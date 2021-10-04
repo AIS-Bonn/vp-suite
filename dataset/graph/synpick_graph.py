@@ -84,7 +84,7 @@ class SynpickGraphDataset(object):
         edge_indices, edge_weights, node_features, targets = [], [], [], []
         for frame_info, action in zip(frame_list, gripper_actions):
             all_instance_ids = [obj_info["ins_id"] for obj_info in frame_info]
-            edge_indices_t, node_features_t, targets_t = [], [], []
+            edge_indices_t, node_features_t = [], []
             for obj_info in frame_info:
 
                 # assemble node feature vector
@@ -93,9 +93,7 @@ class SynpickGraphDataset(object):
                 t_vec = normalize_t(obj_info["cam_t_m2c"])
                 class_id = np.array([obj_info["obj_id"]])  # object's class id in tensor shape
                 obj_feature = np.concatenate([r_quat, t_vec, class_id])  # object's feature (x) vector
-                obj_target = t_vec[0:2]  # object's target (y) vector
                 node_features_t.append(obj_feature)
-                targets_t.append(obj_target)
 
                 # assemble outgoing edges
                 instance_idx = obj_info["ins_id"]  # object's instance idx
@@ -108,21 +106,15 @@ class SynpickGraphDataset(object):
             edge_indices_t = np.stack(edge_indices_t, axis=1)
             edge_indices.append(edge_indices_t)  # shape: [2, |E|]
             edge_weights.append(np.ones(edge_indices_t.shape[1]))  # shape: [|E|]
-            targets.append(np.stack(targets_t, axis=0))  # shape: [|V|, feat_dim-1 (no class info)]
+            targets.append(None)
+            # TODO actions as global features
 
-        '''
-        for nf in node_features:
-            for nfc in list(nf):
-                if nfc[6] > 2000 or nfc[6] < 1800:
-                    print(nfc[4:7])
-        '''
-
-        # sequence consists of T-1 graphs with the labels being the features from the following graph
+        # sequence consists of T graphs with the labels being the features from the following graph
         return DynamicGraphTemporalSignal(
-            edge_indices = edge_indices[:-1],
-            edge_weights = edge_weights[:-1],
-            features = node_features[:-1],
-            targets = targets[1:]
+            edge_indices = edge_indices,
+            edge_weights = edge_weights,
+            features = node_features,
+            targets = targets
         )
 
     def get_dataset(self):
@@ -188,8 +180,8 @@ def draw_synpick_graph(graph_data, out_fp):
 def draw_synpick_pred_and_gt(graph, y_pred, out_fp):
     g_dict = graph.to_dict()
     g_dict.update({"obj_class": g_dict["x"][:, 7]})
-    y_pred = y_pred.cpu().numpy()
-    y_target = g_dict["y"].cpu().numpy()
+    y_pred = y_pred.cpu().numpy()[:, 4:6]
+    y_target = g_dict["x"].cpu().numpy()[:, 4:6]
 
     G_pred = to_networkx(GraphData.from_dict({**g_dict, "pos": denormalize_t(y_pred)}),
                          to_undirected=True, node_attrs=["pos", "obj_class"])
