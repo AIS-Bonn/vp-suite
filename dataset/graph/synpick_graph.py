@@ -156,36 +156,19 @@ def denormalize_t(pos):
     min_c = tote_min_coord[0:pos_dim]
     return ((np.array(pos) + 1) / 2) * (np.array(max_c) - min_c) + min_c
 
-def draw_synpick_graph(graph_data, out_fp):
-    graph_dict = graph_data.to_dict()
-    graph_dict["pos"] = list(denormalize_t(graph_dict["x"][:, 4:6]))
-    graph_dict["obj_class"] = graph_dict["x"][:, 7]
-    G = to_networkx(GraphData.from_dict(graph_dict), to_undirected=True, node_attrs=["pos", "obj_class"])
-    num_nodes = len(G.nodes)
-    # add invisible border nodes so that, over time, unchanging obj. positions result in unchanging vis. positions
-    G.add_node(num_nodes, pos=(-300, -200), obj_class=24)
-    G.add_node(num_nodes+1, pos=(300, -200), obj_class=24)
-    G.add_node(num_nodes+2, pos=(-300, 200), obj_class=24)
-    G.add_node(num_nodes+3, pos=(300, 200), obj_class=24)
 
-    # color range for object classes
-    colors = [G.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
+def draw_synpick_pred_and_gt(graph_pred, graph_target, out_fp):
 
-    fig = plt.figure(1, figsize=(16, 9))
-    nx.draw(G, pos=nx.get_node_attributes(G, "pos"), cmap=plt.get_cmap("gist_ncar"),
-            node_size=500, linewidths=1, node_color=colors, with_labels=False)
-    plt.savefig(out_fp)
-    plt.clf()
+    graph_pred_dict = graph_pred.to_dict()
+    graph_pred_dict.update({"obj_class": graph_pred_dict["x"][:, 7]})
+    graph_target_dict = graph_target.to_dict()
+    graph_target_dict.update({"obj_class": graph_target_dict["x"][:, 7]})
 
-def draw_synpick_pred_and_gt(graph, y_pred, out_fp):
-    g_dict = graph.to_dict()
-    g_dict.update({"obj_class": g_dict["x"][:, 7]})
-    y_pred = y_pred.cpu().numpy()[:, 4:6]
-    y_target = g_dict["x"].cpu().numpy()[:, 4:6]
-
-    G_pred = to_networkx(GraphData.from_dict({**g_dict, "pos": denormalize_t(y_pred)}),
-                         to_undirected=True, node_attrs=["pos", "obj_class"])
-    G_target = to_networkx(GraphData.from_dict({**g_dict, "pos": denormalize_t(y_target)}),
+    y_pred = graph_pred_dict["x"].cpu().numpy()[:, 4:6]
+    y_target = graph_target_dict["x"].cpu().numpy()[:, 4:6]
+    G_pred = to_networkx(GraphData.from_dict({**graph_pred_dict, "pos": denormalize_t(y_pred)}),
+                         to_undirected=True, node_attrs=["pos", "obj_class"], edge_attrs=["edge_attr"])
+    G_target = to_networkx(GraphData.from_dict({**graph_target_dict, "pos": denormalize_t(y_target)}),
                            to_undirected=True, node_attrs=["pos", "obj_class"])
 
     # add invisible border nodes so that, over time, unchanging obj. positions result in unchanging vis. positions
@@ -195,16 +178,20 @@ def draw_synpick_pred_and_gt(graph, y_pred, out_fp):
     G_pred.add_node(num_nodes+2, pos=np.array([300, -200]), obj_class=24)
     G_pred.add_node(num_nodes+3, pos=np.array([300, 200]), obj_class=24)
 
-    # color range for object classes
+
+
+    # color range for object classes (target graph does not include edges)
     colors_pred = [G_pred.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
+    edge_weights_pred = [min(w, 0.5) for _, _, w in G_pred.edges.data("edge_attr")]
     colors_target = [G_target.nodes[i]["obj_class"] / 24 for i in range(num_nodes)]
 
     # create plot and save
     plt.figure(1, figsize=(16, 9))
-    nx.draw(G_pred, pos=nx.get_node_attributes(G_pred, "pos"), cmap=plt.get_cmap("gist_ncar"),
-            node_size=500, linewidths=1, node_color=colors_pred, with_labels=False, alpha=1.0)
     nx.draw(G_target, pos=nx.get_node_attributes(G_target, "pos"), cmap=plt.get_cmap("gist_ncar"),
-            node_size=500, linewidths=1, node_color=colors_target, with_labels=False, alpha=0.15)
+            node_size=500, linewidths=1, node_color=colors_target, with_labels=False, alpha=0.3, edgelist=[])
+    nx.draw(G_pred, pos=nx.get_node_attributes(G_pred, "pos"), cmap=plt.get_cmap("gist_ncar"),
+            node_size=500, linewidths=1, node_color=colors_pred, with_labels=False, alpha=1.0,
+            edge_color=edge_weights_pred, edge_cmap=plt.get_cmap("Greys"), edge_vmin=0.0, edge_vmax=1.0)
     plt.savefig(out_fp)
     plt.clf()
 

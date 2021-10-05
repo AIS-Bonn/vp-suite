@@ -1,4 +1,4 @@
-import os, time, random
+import os, random
 from pathlib import Path
 
 import wandb
@@ -7,9 +7,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from dataset.graph.synpick_graph import SynpickGraphDataset, draw_synpick_pred_and_gt
+from dataset.graph.synpick_graph import SynpickGraphDataset
 from dataset.graph.pygt_loader import DataLoader
 from models.graph_pred.rgcn import RecurrentGCN
+from models.graph_pred.rgcn_noedge import ObjectPoseEstimator
+from visualize import visualize_graph
+
 
 def train(trial=None, cfg=None):
 
@@ -39,7 +42,8 @@ def train(trial=None, cfg=None):
         wandb.init(config=cfg, project="sem_vp_train_graph", reinit=False)
 
     # MODEL AND OPTIMIZER
-    pred_model = RecurrentGCN(node_features=8, out_features=2).to(cfg.device)
+    pred_model = ObjectPoseEstimator(node_features=8, out_features=2).to(cfg.device)
+    #pred_model = RecurrentGCN(node_features=8, out_features=2).to(cfg.device)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
@@ -55,7 +59,10 @@ def train(trial=None, cfg=None):
 
         # eval
         print("Validating...")
-        eval_loss = eval_iter(cfg, valid_loader, pred_model)
+        vis_idx = [-1]
+        if (epoch + 1) % cfg.vis_every_n == 0 and not cfg.no_vis:
+            vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + vis_idx
+        eval_loss, vis_pairs = eval_iter(cfg, valid_loader, pred_model, vis_idx)
         optimizer_scheduler.step(eval_loss)
         eval_loss = eval_loss.item()
         print(f"Validation loss (mean over entire validation set): {eval_loss}")
@@ -67,12 +74,13 @@ def train(trial=None, cfg=None):
             print(f"Minimum indicator loss reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
-        if (epoch+1) % cfg.vis_every_n == 0 and not cfg.no_vis:
+        if vis_pairs != []:
             print("Saving visualizations...")
-            out_filenames = vis_iter(cfg, val_data, pred_model)
+            out_filenames = visualize_graph(cfg, vis_pairs)
 
             if not cfg.no_wandb:
-                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=3,format="gif") for i, out_fn in enumerate(out_filenames)}
+                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=3,format="gif")
+                            for i, out_fn in enumerate(out_filenames)}
                 wandb.log(log_vids, commit=False)
 
         # final bookkeeping
@@ -86,7 +94,10 @@ def train(trial=None, cfg=None):
     test_data = SynpickGraphDataset(data_dir=test_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
                                      allow_overlap=cfg.vid_allow_overlap)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
-    test_loss = eval_iter(cfg, test_loader, pred_model).item()
+    vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + [-1]
+    test_loss, _ = eval_iter(cfg, test_loader, pred_model, vis_idx)
+    test_loss = test_loss.item()
+
     print(f"Test loss: {test_loss}")
     if not cfg.no_wandb:
         wandb.log({"test_loss": test_loss}, commit=True)
@@ -115,60 +126,30 @@ def train_iter(cfg, loader, pred_model, optimizer):
         #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
 
-def eval_iter(cfg, loader, pred_model):
+def eval_iter(cfg, loader, pred_model, vis_idx):
 
     pred_model.eval()
     loop = tqdm(loader)
     eval_losses = []
 
+    next_vis_idx = vis_idx.pop(0)
+    vis_pairs = []
+
     with torch.no_grad():
 
-        for _, signal_in in enumerate(loop):
+        for idx, signal_in in enumerate(loop):
 
-            _, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length)
+            signal_pred, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length)
 
             eval_losses.append(loss)
             loop.set_postfix(loss=loss.item())
             #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
+            if idx == next_vis_idx:
+                vis_pairs.append((signal_pred, signal_in))
+                next_vis_idx = vis_idx.pop(0)
+
     eval_loss = torch.stack(eval_losses).mean()
     pred_model.train()
 
-    return eval_loss
-
-
-def vis_iter(cfg, dataset, pred_model, num_vis=10, test=False):
-
-    from moviepy.editor import ImageSequenceClip
-
-    out_fn_template = "vis_{}_test.gif" if test else "vis_{}.gif"
-    out_fn_g_template = "vis_{}_t{}_test.png" if test else "vis_{}_t{}.png"
-    out_filenames = []
-
-    pred_model.eval()
-    vis_idx = np.random.choice(len(dataset), num_vis, replace=False)
-
-    with torch.no_grad():
-        for g, idx in enumerate(vis_idx):
-
-            signal_in = dataset[idx]
-            signal_pred, _ = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length)
-            out_g_filenames = []
-
-            for t, (snap_in, snap_pred) in enumerate(zip(signal_in, signal_pred)):
-                #print(f"vis {t}: pred: {snap_pred.x[0:3, 4:6]}")
-                y_pred = snap_pred.x
-                out_g_fn = os.path.join(cfg.out_dir, out_fn_g_template.format(g, t))
-                out_g_filenames.append(out_g_fn)
-                draw_synpick_pred_and_gt(snap_in, y_pred, out_g_fn)
-
-            clip = ImageSequenceClip(out_g_filenames, fps=3)
-            out_fn = os.path.join(cfg.out_dir, out_fn_template.format(g))
-            out_filenames.append(out_fn)
-            clip.write_gif(out_fn, fps=3)
-            for out_g_fn in out_g_filenames:
-                os.remove(out_g_fn)
-
-    pred_model.train()
-
-    return out_filenames
+    return eval_loss, vis_pairs

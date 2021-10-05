@@ -3,6 +3,7 @@ import sys, os
 import numpy as np
 import torch
 
+from dataset.graph.synpick_graph import draw_synpick_pred_and_gt
 from dataset.synpick_seg import SynpickSegmentationDataset
 from dataset.dataset_utils import postprocess_img, postprocess_mask, synpick_seg_val_augmentation
 from utils import save_seg_vis, save_vid_vis, colorize_semseg
@@ -83,6 +84,32 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                 true_colorized=gt_colorized_vis)
 
     return out_filenames
+
+
+def visualize_graph(cfg, vis_pairs, test=False):
+
+    from moviepy.editor import ImageSequenceClip
+
+    out_fname_template = "vis_{}_test.gif" if test else "vis_{}.gif"
+    out_fname_g_template = "vis_{}_t{}_test.png" if test else "vis_{}_t{}.png"
+    out_filenames = []
+
+    for g, (signal_pred, signal_in) in enumerate(vis_pairs):
+        out_g_filenames = []
+        for t, (snap_pred, snap_target) in enumerate(zip(signal_pred, signal_in)):
+            out_g_fname = os.path.join(cfg.out_dir, out_fname_g_template.format(g, t))
+            out_g_filenames.append(out_g_fname)
+            draw_synpick_pred_and_gt(snap_pred, snap_target, out_g_fname)
+
+        clip = ImageSequenceClip(out_g_filenames, fps=3)
+        out_fname = os.path.join(cfg.out_dir, out_fname_template.format(g))
+        out_filenames.append(out_fname)
+        clip.write_gif(out_fname, fps=3)
+        for out_g_fname in out_g_filenames:
+            os.remove(out_g_fname)
+
+    return out_filenames
+
 
 if __name__ == '__main__':
 
