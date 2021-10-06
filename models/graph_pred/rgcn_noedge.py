@@ -3,6 +3,8 @@ from itertools import permutations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions.categorical import Categorical
+
 from torch_geometric.data import Data as GraphData, Batch as GraphBatch
 from torch_geometric_temporal.nn.recurrent import DCRNN
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
@@ -13,31 +15,48 @@ class NodeToEdge(nn.Module):
         super(NodeToEdge, self).__init__()
         self.edge_final = nn.Sequential(
             nn.Linear(2 * in_features, 2 * in_features),
-            nn.Linear(2 * in_features, 1),
-            nn.ReLU() # capped to 1?
+            nn.ReLU(),
+            nn.Linear(2 * in_features, 2), # num edge types (incl. "type" non-edge)
+            nn.Softmax(dim=-1)
         )
 
     def forward(self, node_feat, batch_idx, device):
 
-        #  TODO optimize for performance! -> Remove for-loop and list?
-        sliced_node_x = [node_feat[batch_idx == i] for i in batch_idx.unique()]
-        combined_node_idx, combined_node_x = [], []
-        node_start_idx = 0
+        #  TODO optimize for performance! -> Sparse tensors?
 
-        for node_x in sliced_node_x:
-            node_count = node_x.shape[0]
-            node_idx = torch.arange(node_start_idx, node_start_idx + node_count, device=device).unsqueeze(dim=-1)
-            comb_node_idx = torch.stack([torch.cat(p, 0) for p in permutations(node_idx, 2)])
-            comb_node_x = torch.stack([torch.cat(p, 0) for p in permutations(node_x, 2)])
-            combined_node_idx.append(comb_node_idx)
-            combined_node_x.append(comb_node_x)
-            node_start_idx += node_count
+        # create block-diagonal matrix with ones for all node indices that could be linked by an edge
+        possible_edge_diag = torch.block_diag(*[torch.ones(v, v, device=device) for v in torch.bincount(batch_idx)])  # [|V|, |V|]
+        possible_edge_diag -= torch.eye(possible_edge_diag.shape[0], device=device)  # self-edges get special treatment
 
-        edge_index = torch.cat(combined_node_idx, 0).t()  # [2, |E|]
-        combined_node_x = torch.cat(combined_node_x, 0)  # [|V|, 2*dim]
-        edge_weights = self.edge_final(combined_node_x).squeeze(dim=-1)
+        # create concat combinations of all node pairs
+        node_feat_L, node_feat_R = node_feat.unsqueeze(1), node_feat.unsqueeze(0)
+        node_feat_L = node_feat_L.repeat(1, node_feat_R.shape[1], 1)
+        node_feat_R = node_feat_R.repeat(node_feat_L.shape[0], 1, 1)
+        all_node_feat_combinations = torch.cat([node_feat_L, node_feat_R], -1) # [|V|, |V|, 2*node_dim]
 
-        return edge_index, edge_weights
+        # create combinations of all edge indices
+        V = node_feat.shape[0]
+        node_idx = torch.arange(V, device=device)
+        all_edge_index_combinations \
+            = torch.stack([node_idx[:, None].repeat(1, V), node_idx[None, :].repeat(V, 1)], dim=-1)  # [|V|, |V|, 2]
+
+        # remove node feature / edge index pairs that should not be
+        combined_edge_index = all_edge_index_combinations[possible_edge_diag > 0]  # [|E|', 2]
+        combined_node_feat = all_node_feat_combinations[possible_edge_diag > 0]  # [|E|', 2*node_dim]
+
+        # calculate weights of edges and remove edges the model does not propose
+        combined_edge_probs = self.edge_final(combined_node_feat)  # [|E|', 2]
+        combined_edge_types = Categorical(combined_edge_probs).sample()  # [|E|']
+        out_edge_index = combined_edge_index[combined_edge_types > 0]  # [|E|, 2]  # currently, only 1 edge type supported
+
+        # HOTFIX: add self-edges with weight 1 to graph
+        self_edges, self_edge_weights = node_idx[:, None].repeat(1, 2), torch.ones(V, device=device)
+        out_edge_index = torch.cat([out_edge_index, self_edges], dim=0)
+
+        # TODO variable edge weights?
+        out_edge_weights = torch.ones(out_edge_index.shape[0], device=0)  # [|E|]
+
+        return out_edge_index.t(), out_edge_weights
 
 
 class ObjectPoseEstimator(nn.Module):
