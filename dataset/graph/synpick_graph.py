@@ -177,19 +177,20 @@ def draw_synpick_pred_and_gt(graph_pred, graph_target, out_fp):
     G_pred.add_node(num_nodes+1, pos=np.array([-300, 200]), obj_class=24)
     G_pred.add_node(num_nodes+2, pos=np.array([300, -200]), obj_class=24)
     G_pred.add_node(num_nodes+3, pos=np.array([300, 200]), obj_class=24)
-
-
+    G_target.add_node(num_nodes, pos=np.array([-300, -200]), obj_class=24)
+    G_target.add_node(num_nodes+1, pos=np.array([-300, 200]), obj_class=24)
+    G_target.add_node(num_nodes+2, pos=np.array([300, -200]), obj_class=24)
+    G_target.add_node(num_nodes+3, pos=np.array([300, 200]), obj_class=24)
 
     # color range for object classes (target graph does not include edges)
     colors_pred = [G_pred.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
-    edge_weights_pred = [min(w, 0.5) for _, _, w in G_pred.edges.data("edge_attr")]
-    colors_target = [G_target.nodes[i]["obj_class"] / 24 for i in range(num_nodes)]
+    edge_weights_pred = [min(w, 1.0) for _, _, w in G_pred.edges.data("edge_attr")]
+    colors_target = [G_target.nodes[i]["obj_class"] / 24 for i in range(num_nodes+4)]
 
     # create plot and save
     plt.figure(1, figsize=(16, 9))
     nx.draw(G_target, pos=nx.get_node_attributes(G_target, "pos"), cmap=plt.get_cmap("gist_ncar"),
-            node_size=500, linewidths=1, node_color=colors_target, vmin=0.0, vmax=1.0,
-            with_labels=False, alpha=0.2, edgelist=[])
+            node_size=500, linewidths=1, node_color=colors_target, with_labels=False, alpha=0.2, edgelist=[])
     nx.draw(G_pred, pos=nx.get_node_attributes(G_pred, "pos"), cmap=plt.get_cmap("gist_ncar"),
             node_size=500, linewidths=1, node_color=colors_pred, with_labels=False, alpha=1.0,
             edge_color=edge_weights_pred, edge_cmap=plt.get_cmap("Greys"), edge_vmin=0.0, edge_vmax=1.0)

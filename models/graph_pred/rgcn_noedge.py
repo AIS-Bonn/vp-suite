@@ -66,17 +66,21 @@ class ObjectPoseEstimator(nn.Module):
     def __init__(self, node_features, out_features):
         super(ObjectPoseEstimator, self).__init__()
         self.node_embed = nn.Linear(node_features, self.hidden_dim)
+        self.node_rnn = nn.LSTMCell(input_size=self.hidden_dim, hidden_size=self.hidden_dim)
         self.edge_predictor = NodeToEdge(self.hidden_dim)
-        self.recurrent = DCRNN(self.hidden_dim, self.hidden_dim, 1)
+        self.graph_rnn = DCRNN(self.hidden_dim, self.hidden_dim, 1)
         self.final_linear = nn.Linear(self.hidden_dim, out_features)
 
 
-    def forward(self, node_x, batch_idx, h, device):
-        node_x_embed = self.node_embed(node_x)
-        edge_index, edge_weight = self.edge_predictor(node_x_embed, batch_idx, device)
-        h = self.recurrent(node_x_embed, edge_index, edge_weight, h)
-        out = self.final_linear(F.relu(h))
-        return out, h, edge_index, edge_weight
+    def forward(self, node_in_x, batch_idx, node_rnn_h, node_rnn_c, graph_rnn_h, device):
+        node_in_x = self.node_embed(node_in_x)  # [|V|, hidden_dim]
+        node_rnn_h = node_rnn_h if node_rnn_h is not None else torch.zeros_like(node_in_x, device=device)
+        node_rnn_c = node_rnn_c if node_rnn_c is not None else torch.zeros_like(node_in_x, device=device)
+        node_rnn_h, node_rnn_c = self.node_rnn(node_in_x, (node_rnn_h, node_rnn_c))
+        edge_index, edge_weight = self.edge_predictor(node_rnn_h, batch_idx, device)
+        graph_rnn_h = self.graph_rnn(node_in_x, edge_index, edge_weight, graph_rnn_h)
+        node_out_x = self.final_linear(F.relu(graph_rnn_h))
+        return node_out_x, edge_index, edge_weight, node_rnn_h, node_rnn_c, graph_rnn_h
 
 
     def pred_n(self, input_signal, device, pred_length=1, **kwargs):
@@ -86,13 +90,13 @@ class ObjectPoseEstimator(nn.Module):
         input_length = T - pred_length
         out_frames = [snapshots[0].to(device)]
         pred_loss = 0
-        rnn_h = None
+        node_rnn_h, node_rnn_c, graph_rnn_h = None, None, None
 
         for t in range(T - 1):
 
             graph_in, graph_target = out_frames[-1], snapshots[t+1].to(device).clone()
-            pred_x, rnn_h, pred_edge_index, pred_edge_weight \
-                = self.forward(graph_in.x, graph_in.batch, rnn_h, device)
+            pred_x, pred_edge_index, pred_edge_weight, node_rnn_h, node_rnn_c, graph_rnn_h \
+                = self.forward(graph_in.x, graph_in.batch, node_rnn_h, node_rnn_c, graph_rnn_h, device)
 
             if t >= input_length:  # prediction mode
                 pred_loss += F.mse_loss(pred_x, graph_target.x[:, 4:6])
