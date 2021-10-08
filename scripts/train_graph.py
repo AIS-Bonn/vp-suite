@@ -42,8 +42,8 @@ def train(trial=None, cfg=None):
         wandb.init(config=cfg, project="sem_vp_train_graph", reinit=False)
 
     # MODEL AND OPTIMIZER
-    pred_model = ObjectPoseEstimator(node_features=8, out_features=2).to(cfg.device)
-    #pred_model = RecurrentGCN(node_features=8, out_features=2).to(cfg.device)
+    pred_model = ObjectPoseEstimator(node_features=9, out_features=8).to(cfg.device)
+    #pred_model = RecurrentGCN(node_features=9, out_features=8).to(cfg.device)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)

@@ -99,7 +99,7 @@ def visualize_graph(cfg, vis_pairs, test=False):
         for t, (snap_pred, snap_target) in enumerate(zip(signal_pred, signal_in)):
             out_g_fname = os.path.join(cfg.out_dir, out_fname_g_template.format(g, t))
             out_g_filenames.append(out_g_fname)
-            draw_synpick_pred_and_gt(snap_pred, snap_target, out_g_fname)
+            draw_synpick_pred_and_gt(snap_pred, snap_target, out_g_fname, frame=t)
 
         clip = ImageSequenceClip(out_g_filenames, fps=3)
         out_fname = os.path.join(cfg.out_dir, out_fname_template.format(g))
