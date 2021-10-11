@@ -1,5 +1,5 @@
 import math
-import sys, os
+import os
 
 import networkx as nx
 import numpy as np
@@ -8,12 +8,13 @@ from PIL import Image
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
+from torch_geometric.data import Data as GraphData
+from torch_geometric.utils import to_networkx
 
 from dataset.graph.synpick_graph import denormalize_t, tote_min_coord, tote_max_coord
-from dataset.synpick_seg import SynpickSegmentationDataset
-from dataset.dataset_utils import postprocess_img, postprocess_mask, synpick_seg_val_augmentation
+from dataset.dataset_utils import postprocess_img, postprocess_mask, colorize_semseg
 from utils.quaternion import dq_translation, dq_normalize
-
+from pyquaternion import Quaternion
 
 def get_grid_vis(input, mode='RGB'):
 
@@ -45,38 +46,6 @@ def save_seg_vis(out_fp, **images):
         plt.title(' '.join(name.split('_')).title())
         plt.imshow(image)
     plt.savefig(out_fp)
-
-
-def colorize_semseg(input : np.ndarray, num_classes : int):
-    '''
-    Assigns a unique hue value to each class and replaces each pixel's class value with the corresponding RGB vector.
-    The <num_classes> different hue values are spread out evenly over [0°, 360°).
-    num_classes also counts the background.
-    '''
-
-    assert input.dtype == np.uint8
-    input_shape = input.shape
-
-    # 1 value less since background is painted white
-    hues = [360.0*i / (num_classes-1) for i in range(num_classes-1)]
-    # arrange hue values in star pattern so that neighboring classes values lead to different hues
-    # e.g. [1, 2, 3, 4, 5, 6, 7] -> [1, 5, 2, 6, 3, 7, 4]
-    if len(hues) % 2 == 0:  # even length
-        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
-    else:  # odd length -> append element to make it even and remove that element after rearrangement
-        hues.append[None]
-        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
-        hues.pop()
-
-    colors = np.zeros((num_classes, 3)).astype('uint8')
-    colors[0] = [255, 255, 255]
-    for i in range(1, num_classes):
-        rgb = hsluv.hsluv_to_rgb([hues[i-1], 100, 40])
-        colors[i] = (np.array(rgb) * 255.0).astype('uint8')
-
-    flattened = input.flatten()  # [-1]
-    colorized = colors[flattened].reshape(*input_shape, 3)  # [*input_shape, 3]
-    return colorized
 
 
 def visualize_seg(dataset, seg_model, device, out_dir=".", num_vis=5):
@@ -219,24 +188,29 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
 
 # === GRAPH ====================================================================
 
-def network_plot_3D(ax, G, node_out_features, alpha, angle=0, out_fp=None):
+ROT_AX_LEN = 16
+NODE_COLORMAP = plt.cm.get_cmap("gist_ncar")
+MAX_CLASS_ID = 22
 
-    ROT_AX_LEN = 10
+def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
 
-    pos = nx.get_node_attributes(G, 'pos')
-    n = G.number_of_nodes()
-    node_cmap = plt.cm.get_cmap("gist_ncar")
-    node_colors = [node_cmap(G.nodes[i]["obj_class"] / 24) for i in range(n)]
+    node_xs = nx.get_node_attributes(G, 'x')
+    node_colors = [NODE_COLORMAP(node_x[-1] / MAX_CLASS_ID) for _, node_x in node_xs.items()]
     edge_alphas = [min(w, 1.0) for _, _, w in G.edges.data("edge_attr")]
 
     # Loop on the pos dictionary to extract the x,y,z coordinates of each node
-    for key, pose in pos.items():
-        if node_out_features == 3:
-            x, y, z = pose[-3:]
-            ax.scatter(x, y, z, s=100, color=node_colors[key], edgecolors="face", alpha=alpha)
-        else:  # node_out_features == 8
-            x, y, z = dq_translation(dq_normalize(torch.tensor(pose)))
-            R = Quaternion(pose[:4]).rotation_matrix
+    for key, node_x in node_xs.items():
+
+        # position visualization
+        t_vec = node_x[4:-1] if graph_mode == "t" else dq_translation(dq_normalize(torch.tensor(node_x[:-1])))
+        x, y, z = denormalize_t(np.array(t_vec))
+        node_m = "s" if node_x[-1] == MAX_CLASS_ID else "o"
+        node_ec = "k" if node_x[-1] == MAX_CLASS_ID else "face"
+        ax.scatter(x, y, z, s=100, color=node_colors[key], marker=node_m, edgecolors=node_ec, alpha=alpha)
+
+        # rotation visualization
+        if graph_mode == "dq":
+            R = Quaternion(node_x[:4]).rotation_matrix * ROT_AX_LEN  # scale by ROT_AX_LEN for vis. purposes
             ax.plot(np.array((x, x + R[0, 0])), np.array((y, y + R[1, 0])), np.array((z, z + R[2, 0])),
                     c="r", alpha=alpha, linewidth=2)  # rot_ax_x
             ax.plot(np.array((x, x + R[0, 1])), np.array((y, y + R[1, 1])), np.array((z, z + R[2, 1])),
@@ -246,23 +220,25 @@ def network_plot_3D(ax, G, node_out_features, alpha, angle=0, out_fp=None):
 
     # Loop on the list of edges to get the x,y,z, coordinates of the connected nodes
     # Those two points are the extrema of the line to be plotted
-    for i, j in enumerate(G.edges()):
-        if node_out_features == 3:
-            x1, y1, z1 = pos[j[0]]
-            x2, y2, z2 = pos[j[1]]
-        else:  # node_out_features == 8
-            x1, y1, z1 = dq_translation(dq_normalize(torch.tensor(pos[j[0]])))
-            x2, y2, z2 = dq_translation(dq_normalize(torch.tensor(pos[j[1]])))
+    for i, (e_start, e_end) in enumerate(G.edges()):
+        if graph_mode == "t":
+            t1_vec = node_xs[e_start][4:-1]
+            t2_vec = node_xs[e_end][4:-1]
+        else:  # graph_mode == "dq"
+            t1_vec = dq_translation(dq_normalize(torch.tensor(node_xs[e_start][:-1])))
+            t2_vec = dq_translation(dq_normalize(torch.tensor(node_xs[e_end][:-1])))
 
         # Plot the connecting lines
+        x1, y1, z1 = denormalize_t(np.array(t1_vec))
+        x2, y2, z2 = denormalize_t(np.array(t2_vec))
         ax.plot(np.array((x1, x2)), np.array((y1, y2)), np.array((z1, z2)),
-                c='black', alpha=edge_alphas[key]*alpha, linewidth=0.5)
+                c='black', alpha=edge_alphas[i]*alpha, linewidth=0.5)
 
     # Set the initial view
     ax.view_init(20, angle)
     ax.set_xlim(tote_min_coord[0], tote_max_coord[0]);
     ax.set_ylim(tote_min_coord[1], tote_max_coord[1]);
-    ax.set_zlim(1800, 2000);
+    ax.set_zlim(tote_min_coord[2], tote_max_coord[2]);
 
     if out_fp is not None:
         plt.savefig(out_fp)
@@ -271,27 +247,16 @@ def network_plot_3D(ax, G, node_out_features, alpha, angle=0, out_fp=None):
     return
 
 
-def draw_synpick_pred_and_gt(graph_pred, graph_target, node_out_features, out_fp, frame=0):
+def draw_synpick_pred_and_gt(graph_pred, graph_target, graph_mode, out_fp, frame=0):
 
-    graph_pred_dict = graph_pred.to_dict()
-    graph_pred_dict.update({"obj_class": graph_pred_dict["x"][:, -1]})
-    graph_target_dict = graph_target.to_dict()
-    graph_target_dict.update({"obj_class": graph_target_dict["x"][:, -1]})
-
-    y_pred = graph_pred_dict["x"].cpu().numpy()[:, :-1]
-    y_target = graph_target_dict["x"].cpu().numpy()[:, :-1]
-
-    G_pred = to_networkx(GraphData.from_dict({**graph_pred_dict, "pos": denormalize_t(y_pred)}),
-                         to_undirected=True, node_attrs=["pos", "obj_class"], edge_attrs=["edge_attr"])
-    G_target = to_networkx(GraphData.from_dict({**graph_target_dict, "pos": denormalize_t(y_target)}),
-                           to_undirected=True, node_attrs=["pos", "obj_class"], edge_attrs=["edge_attr"])
+    G_pred = to_networkx(graph_pred, to_undirected=True, node_attrs=["x"], edge_attrs=["edge_attr"])
+    G_target = to_networkx(graph_target, to_undirected=True, node_attrs=["x"], edge_attrs=["edge_attr"])
 
     # create plot and save
     fig = plt.figure(figsize=(10, 10))
     ax = Axes3D(fig)
-    network_plot_3D(ax, G_pred, node_out_features, alpha=1.0, angle=1*frame)
-    network_plot_3D(ax, G_target, node_out_features, alpha=0.25, angle=1*frame, out_fp=out_fp)
-
+    network_plot_3D(ax, G_pred, graph_mode, alpha=1.0, angle=1*frame)
+    network_plot_3D(ax, G_target, graph_mode, alpha=0.25, angle=1*frame, out_fp=out_fp)
 
 def visualize_graph(cfg, vis_pairs, test=False):
 
@@ -306,7 +271,7 @@ def visualize_graph(cfg, vis_pairs, test=False):
         for t, (snap_pred, snap_target) in enumerate(zip(signal_pred, signal_in)):
             out_g_fname = os.path.join(cfg.out_dir, out_fname_g_template.format(g, t))
             out_g_filenames.append(out_g_fname)
-            draw_synpick_pred_and_gt(snap_pred, snap_target, cfg.graph_out_size, out_g_fname, frame=t)
+            draw_synpick_pred_and_gt(snap_pred, snap_target, cfg.graph_mode, out_g_fname, frame=t)
 
         clip = ImageSequenceClip(out_g_filenames, fps=3)
         out_fname = os.path.join(cfg.out_dir, out_fname_template.format(g))

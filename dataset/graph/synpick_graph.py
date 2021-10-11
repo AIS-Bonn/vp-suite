@@ -88,10 +88,10 @@ class SynpickGraphDataset(object):
                 R = obj_info["cam_R_m2c"]
                 r_q = Rotation.from_matrix([R[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
                 t_vec = normalize_t(obj_info["cam_t_m2c"])
-                pose = np.concatenate([r_q, t_vec])
+                pose = list(np.concatenate([r_q, t_vec]))
                 if self.graph_mode == "dq":
                     pose = DualQuaternion.from_quat_pose_array(pose).dq_array()
-                obj_feature = np.array(pose ++ [obj_info["obj_id"]])  # object's feature (x) vector
+                obj_feature = np.array(pose + [obj_info["obj_id"]])  # object's feature (x) vector
                 node_features_t.append(obj_feature)
 
                 # assemble outgoing edges
@@ -150,7 +150,8 @@ def normalize_t(pos):
     return 2 * np.divide(np.array(pos) - tote_min_coord, np.array(tote_max_coord) - tote_min_coord) - 1
 
 def denormalize_t(pos):
-    pos_dim = pos.shape[1]
+
+    pos_dim = pos.shape[-1]
     max_c = tote_max_coord[0:pos_dim]
     min_c = tote_min_coord[0:pos_dim]
     return ((np.array(pos) + 1) / 2) * (np.array(max_c) - min_c) + min_c

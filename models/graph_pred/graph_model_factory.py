@@ -1,12 +1,12 @@
-from rgcn import RecurrentGCN
-from rgcn_noedge import ObjectPoseEstimator
+from models.graph_pred.rgcn import RecurrentGCN
+from models.graph_pred.rgcn_noedge import ObjectPoseEstimator
 
 
-def get_graph_model(cfg, in_features):
+def get_graph_model(cfg):
 
     arch = cfg.graph_arch
 
     if arch == "rgcn":
-        return RecurrentGCN(in_features, cfg.graph_out_features)
+        return RecurrentGCN(cfg.graph_mode, cfg.graph_in_size, cfg.graph_out_size)
     elif arch == "rgcn_no_edge":
-        return ObjectPoseEstimator(in_features, cfg.graph_out_features)
+        return ObjectPoseEstimator(cfg.graph_mode, cfg.graph_in_size, cfg.graph_out_size)

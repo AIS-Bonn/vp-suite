@@ -18,6 +18,7 @@ def train(trial=None, cfg=None):
     # PREPARATION pt. 1
     best_eval_loss = float("inf")
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
+    cfg.graph_in_size = 8 if cfg.graph_mode == "t" else 9
     cfg.graph_out_size = 3 if cfg.graph_mode == "t" else 8
 
     random.seed(cfg.seed)
@@ -42,7 +43,7 @@ def train(trial=None, cfg=None):
         wandb.init(config=cfg, project="sem_vp_train_graph", reinit=False)
 
     # MODEL AND OPTIMIZER
-    pred_model = get_graph_model(cfg, in_features=9).to(cfg.device)
+    pred_model = get_graph_model(cfg).to(cfg.device)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)

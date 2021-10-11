@@ -4,21 +4,22 @@ from torch_geometric.data import Data as GraphData, Batch as GraphBatch
 from torch_geometric_temporal.nn.recurrent import DCRNN
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 
+from losses.dq_distance import dq_distance
 
 class RecurrentGCN(torch.nn.Module):
-    def __init__(self, node_features, out_features):
+    def __init__(self, graph_mode, node_features, out_features):
         super(RecurrentGCN, self).__init__()
         self.recurrent = DCRNN(node_features, 32, 1)
         self.linear = torch.nn.Linear(32, out_features)
-        self.loss_mode = "dq" if out_features = 8 else "mse"
+        self.graph_mode = graph_mode
 
 
     def node_loss(self, pred_x, target_x):
-        if self.loss_mode == "dq":
+        if self.graph_mode == "dq":
             target_x = target_x[:, :8]
             return dq_distance(pred_x, target_x)
         else:
-            target_x = target_x[:, 4:6]
+            target_x = target_x[:, 4:7]
             return F.mse_loss(pred_x, target_x)
 
 
@@ -46,8 +47,14 @@ class RecurrentGCN(torch.nn.Module):
             if t >= input_length:  # prediction mode
                 pred_loss += self.node_loss(pred_x, graph_target.x)
 
+                graph_pred_x = graph_in.x
+                if self.graph_mode == "dq":
+                    graph_pred_x[:, :-1] = pred_x
+                else:
+                    graph_pred_x[:, 4:-1] = pred_x
+
                 # construct Batch object directly because PyG-T does so
-                graph_pred = GraphBatch(x=pred_x,
+                graph_pred = GraphBatch(x=graph_pred_x,
                                         edge_index = graph_in.edge_index,
                                         edge_attr = graph_in.edge_attr,
                                         y=graph_in.y,

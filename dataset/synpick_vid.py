@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import Dataset
 
 from dataset.dataset_utils import preprocess_img, preprocess_mask_inflate, preprocess_mask_colorize
-from utils import most
+from utils.utils import most
 
 
 class SynpickVideoDataset(Dataset):

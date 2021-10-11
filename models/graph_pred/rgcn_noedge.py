@@ -63,22 +63,22 @@ class ObjectPoseEstimator(nn.Module):
 
     hidden_dim = 32
 
-    def __init__(self, node_features, out_features):
+    def __init__(self, graph_mode, node_features, out_features):
         super(ObjectPoseEstimator, self).__init__()
         self.node_embed = nn.Linear(node_features, self.hidden_dim)
         self.node_rnn = nn.LSTMCell(input_size=self.hidden_dim, hidden_size=self.hidden_dim)
         self.edge_predictor = NodeToEdge(self.hidden_dim)
         self.graph_rnn = DCRNN(self.hidden_dim, self.hidden_dim, 1)
         self.final_linear = nn.Linear(self.hidden_dim, out_features)
-        self.loss_mode = "dq" if out_features = 8 else "mse"
+        self.graph_mode = graph_mode
 
 
     def node_loss(self, pred_x, target_x):
-        if self.loss_mode == "dq":
+        if self.graph_mode == "dq":
             target_x = target_x[:, :8]
             return dq_distance(pred_x, target_x)
         else:
-            target_x = target_x[:, 4:6]
+            target_x = target_x[:, 4:7]
             return F.mse_loss(pred_x, target_x)
 
 
@@ -111,8 +111,14 @@ class ObjectPoseEstimator(nn.Module):
             if t >= input_length:  # prediction mode
                 pred_loss += self.node_loss(pred_x, graph_target.x)
 
+                graph_pred_x = graph_in.x
+                if self.graph_mode == "dq":
+                    graph_pred_x[:, :-1] = pred_x
+                else:
+                    graph_pred_x[:, 4:-1] = pred_x
+
                 # construct Batch object directly because PyG-T does so
-                graph_pred = GraphBatch(x=pred_x,
+                graph_pred = GraphBatch(x=graph_pred_x,
                                         edge_index = pred_edge_index,
                                         edge_attr = pred_edge_weight,
                                         y=graph_in.y,

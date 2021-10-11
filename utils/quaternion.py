@@ -124,7 +124,7 @@ def dq_normalize(dq):
     dq_r = dq[..., :4]
     norm = torch.sqrt(torch.sum(torch.square(dq_r), dim=-1))  # ||q|| = sqrt(w²+x²+y²+z²)
     assert not torch.any(torch.isclose(norm, torch.zeros_like(norm, device=dq.device)))  # check for singularities
-    return torch.div(dq, norm[:, None])  # dq_norm = dq / ||q|| = dq_r / ||dq_r|| + dq_d / ||dq_r||
+    return torch.div(dq, norm.unsqueeze(dim=-1))  # dq_norm = dq / ||q|| = dq_r / ||dq_r|| + dq_d / ||dq_r||
 
 
 def dq_quaternion_conjugate(dq):

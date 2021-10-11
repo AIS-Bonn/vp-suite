@@ -42,7 +42,7 @@ if __name__ == '__main__':
                         default="st_lstm", help="Which prediction model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
-    parser.add_argument("--graph-arch", type="str", choices=["rgcn", "rgcn_no_edge"])
+    parser.add_argument("--graph-arch", type=str, choices=["rgcn", "rgcn_no_edge"])
     parser.add_argument("--graph-mode", type=str, choices=["t", "dq"], default="dq",
                         help="what kind of information to predict as node features")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")

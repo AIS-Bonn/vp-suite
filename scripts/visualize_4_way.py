@@ -11,8 +11,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from dataset.synpick_vid import SynpickVideoDataset
-from dataset.dataset_utils import postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate
-from utils import colorize_semseg, save_vid_vis
+from dataset.dataset_utils import postprocess_mask, postprocess_img, preprocess_img, preprocess_mask_inflate, \
+    colorize_semseg
+from utils.visualization import save_vid_vis
 
 def visualize_4_way(cfg):
 

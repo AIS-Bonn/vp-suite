@@ -5,9 +5,8 @@ import albumentations as albu
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset
 
-from utils import colorize_semseg
+from torch.utils.data import Dataset
 
 
 def preprocess_mask(x):
@@ -88,3 +87,35 @@ def synpick_seg_train_augmentation(img_h=270):
         ),
     ]
     return albu.Compose(train_transform)
+
+
+def colorize_semseg(input : np.ndarray, num_classes : int):
+    '''
+    Assigns a unique hue value to each class and replaces each pixel's class value with the corresponding RGB vector.
+    The <num_classes> different hue values are spread out evenly over [0°, 360°).
+    num_classes also counts the background.
+    '''
+
+    assert input.dtype == np.uint8
+    input_shape = input.shape
+
+    # 1 value less since background is painted white
+    hues = [360.0*i / (num_classes-1) for i in range(num_classes-1)]
+    # arrange hue values in star pattern so that neighboring classes values lead to different hues
+    # e.g. [1, 2, 3, 4, 5, 6, 7] -> [1, 5, 2, 6, 3, 7, 4]
+    if len(hues) % 2 == 0:  # even length
+        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
+    else:  # odd length -> append element to make it even and remove that element after rearrangement
+        hues.append[None]
+        hues = [item for pair in list(zip(hues[:len(hues)//2], hues[len(hues)//2:])) for item in pair]
+        hues.pop()
+
+    colors = np.zeros((num_classes, 3)).astype('uint8')
+    colors[0] = [255, 255, 255]
+    for i in range(1, num_classes):
+        rgb = hsluv.hsluv_to_rgb([hues[i-1], 100, 40])
+        colors[i] = (np.array(rgb) * 255.0).astype('uint8')
+
+    flattened = input.flatten()  # [-1]
+    colorized = colors[flattened].reshape(*input_shape, 3)  # [*input_shape, 3]
+    return colorized
