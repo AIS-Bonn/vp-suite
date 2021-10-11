@@ -110,6 +110,8 @@ def train(trial=None, cfg=None):
 
 def train_iter(cfg, loader, pred_model, optimizer):
 
+    torch.autograd.set_detect_anomaly(True)
+
     loop = tqdm(loader)
     for _, signal_in in enumerate(loop):
 

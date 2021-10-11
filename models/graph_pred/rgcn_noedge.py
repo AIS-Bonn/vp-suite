@@ -111,7 +111,7 @@ class ObjectPoseEstimator(nn.Module):
             if t >= input_length:  # prediction mode
                 pred_loss += self.node_loss(pred_x, graph_target.x)
 
-                graph_pred_x = graph_in.x
+                graph_pred_x = graph_in.x.clone()
                 if self.graph_mode == "dq":
                     graph_pred_x[:, :-1] = pred_x
                 else:
