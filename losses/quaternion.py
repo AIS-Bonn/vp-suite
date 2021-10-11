@@ -2,13 +2,16 @@ import math
 import torch
 
 """
-sources: 
-- https://github.com/facebookresearch/QuaterNet/blob/main/common/quaternion.py
-- pip package "pyquaternion"
+Differentiable dual quaternion distance metric in PyTorch. 
 
-Screw parameter extraction from dual quaternions is verified against method 'DualQuaternion.screw()'
-from the pip package "dual_quaternions"
+Acknowledgements: 
+- Function q_mul(): https://github.com/facebookresearch/QuaterNet/blob/main/common/quaternion.py
+- Other functions related to quaternions: re-implementations based on pip package "pyquaternion"
+- Functions related to dual quaternions: re-implementations based on pip package "dual_quaternions"
 """
+
+# ======== QUATERNIONS =======================================================================
+
 
 def q_mul(q1, q2):
     """
@@ -78,7 +81,7 @@ def q_conjugate(q):
     return q * conj.expand_as(q)
 
 
-# ==========================================================================
+# === DUAL QUATERNIONS =======================================================================
 
 
 def dq_mul(dq1, dq2):
@@ -174,7 +177,7 @@ def dq_to_screw(dq):
     return l, m, theta.squeeze(-1), d
 
 
-# ==========================================================================
+# === LOSSES =================================================================================
 
 
 # these parameters can be tuned!
@@ -187,6 +190,7 @@ def dq_distance(dq_pred, dq_real):
     Calculates the screw motion parameters between dual quaternion representations of the given poses pose_pred/real.
     This screw motion describes the "shortest" rigid transformation between dq_pred and dq_real.
     A combination of that transformation's screw axis translation magnitude and rotation angle can be used as a metric.
+    => "Distance" between two dual quaternions: weighted sum of screw motion axis magnitude and rotation angle.
     '''
 
     dq_pred, dq_real = dq_normalize(dq_pred), dq_normalize(dq_real)
