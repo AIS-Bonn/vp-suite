@@ -9,9 +9,8 @@ import torch.nn as nn
 from tqdm import tqdm
 from dataset.graph.synpick_graph import SynpickGraphDataset
 from dataset.graph.pygt_loader import DataLoader
-from models.graph_pred.rgcn import RecurrentGCN
-from models.graph_pred.rgcn_noedge import ObjectPoseEstimator
-from visualize import visualize_graph
+from models.graph_pred.graph_model_factory import get_graph_model
+from utils.visualization import visualize_graph
 
 
 def train(trial=None, cfg=None):
@@ -19,6 +18,7 @@ def train(trial=None, cfg=None):
     # PREPARATION pt. 1
     best_eval_loss = float("inf")
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
+    cfg.graph_out_size = 3 if cfg.graph_mode == "t" else 8
 
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -30,9 +30,9 @@ def train(trial=None, cfg=None):
     val_dir = os.path.join(data_dir, 'val')
     test_dir = os.path.join(data_dir, 'test')
     train_data = SynpickGraphDataset(data_dir=train_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                     allow_overlap=cfg.vid_allow_overlap)
+                                     allow_overlap=cfg.vid_allow_overlap, graph_mode=cfg.graph_mode)
     val_data = SynpickGraphDataset(data_dir=val_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                     allow_overlap=cfg.vid_allow_overlap)
+                                     allow_overlap=cfg.vid_allow_overlap, graph_mode=cfg.graph_mode)
     train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=min(cfg.batch_size, 32),
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
@@ -42,8 +42,7 @@ def train(trial=None, cfg=None):
         wandb.init(config=cfg, project="sem_vp_train_graph", reinit=False)
 
     # MODEL AND OPTIMIZER
-    pred_model = ObjectPoseEstimator(node_features=9, out_features=8).to(cfg.device)
-    #pred_model = RecurrentGCN(node_features=9, out_features=8).to(cfg.device)
+    pred_model = get_graph_model(cfg, in_features=9).to(cfg.device)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
@@ -92,7 +91,7 @@ def train(trial=None, cfg=None):
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
     test_data = SynpickGraphDataset(data_dir=test_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                     allow_overlap=cfg.vid_allow_overlap)
+                                     allow_overlap=cfg.vid_allow_overlap, graph_mode=cfg.graph_mode)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + [-1]
     test_loss, _ = eval_iter(cfg, test_loader, pred_model, vis_idx)

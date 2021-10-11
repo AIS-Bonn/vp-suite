@@ -1,20 +1,18 @@
-import sys, os, argparse
+import sys, os
+
 sys.path.append(".")
 
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from models.vid_pred.copy_last_frame import CopyLastFrameModel
 from dataset.synpick_vid import SynpickVideoDataset
 from metrics.main import get_prediction_metrics
-from visualize import visualize_vid
+from utils.visualization import visualize_vid
 
 copy_last_frame_id = "CopyLastFrame baseline"
 

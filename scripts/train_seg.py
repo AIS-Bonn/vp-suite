@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from dataset.synpick_seg import SynpickSegmentationDataset
 from dataset.dataset_utils import synpick_seg_val_augmentation, synpick_seg_train_augmentation
 from models.segmentation.seg_model import UNet
-from visualize import visualize_seg
+from utils.visualization import visualize_seg
 
 def train(cfg):
 

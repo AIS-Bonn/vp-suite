@@ -1,13 +1,13 @@
-from itertools import permutations
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 
-from torch_geometric.data import Data as GraphData, Batch as GraphBatch
+from torch_geometric.data import Batch as GraphBatch
 from torch_geometric_temporal.nn.recurrent import DCRNN
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
+
+from losses.dq_distance import dq_distance
 
 
 class NodeToEdge(nn.Module):
@@ -70,6 +70,16 @@ class ObjectPoseEstimator(nn.Module):
         self.edge_predictor = NodeToEdge(self.hidden_dim)
         self.graph_rnn = DCRNN(self.hidden_dim, self.hidden_dim, 1)
         self.final_linear = nn.Linear(self.hidden_dim, out_features)
+        self.loss_mode = "dq" if out_features = 8 else "mse"
+
+
+    def node_loss(self, pred_x, target_x):
+        if self.loss_mode == "dq":
+            target_x = target_x[:, :8]
+            return dq_distance(pred_x, target_x)
+        else:
+            target_x = target_x[:, 4:6]
+            return F.mse_loss(pred_x, target_x)
 
 
     def forward(self, node_in_x, batch_idx, node_rnn_h, node_rnn_c, graph_rnn_h, device):
@@ -99,13 +109,10 @@ class ObjectPoseEstimator(nn.Module):
                 = self.forward(graph_in.x, graph_in.batch, node_rnn_h, node_rnn_c, graph_rnn_h, device)
 
             if t >= input_length:  # prediction mode
-                pred_loss += F.mse_loss(pred_x, graph_target.x[:, 4:6])
-
-                graph_pred_x = graph_in.x.clone()
-                graph_pred_x[:, 4:6] = pred_x
+                pred_loss += self.node_loss(pred_x, graph_target.x)
 
                 # construct Batch object directly because PyG-T does so
-                graph_pred = GraphBatch(x=graph_pred_x,
+                graph_pred = GraphBatch(x=pred_x,
                                         edge_index = pred_edge_index,
                                         edge_attr = pred_edge_weight,
                                         y=graph_in.y,

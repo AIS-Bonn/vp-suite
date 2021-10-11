@@ -1,4 +1,4 @@
-import os, time, random
+import os, random
 from pathlib import Path
 
 import wandb
@@ -12,7 +12,7 @@ from scripts.test_pred import test_pred_models
 from dataset.synpick_vid import SynpickVideoDataset
 from models.vid_pred.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
-from visualize import visualize_vid
+from utils.visualization import visualize_vid
 
 def train(trial=None, cfg=None):
 

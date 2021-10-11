@@ -1,22 +1,16 @@
-import os, json, time
+import os, json
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 from dual_quaternions import DualQuaternion
 
-import networkx as nx
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-from torch_geometric.data import Data as GraphData
-from torch_geometric.utils.convert import to_networkx
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
 
 
 class SynpickGraphDataset(object):
-    def __init__(self, data_dir, num_frames, step, allow_overlap):
+    def __init__(self, data_dir, num_frames, step, allow_overlap, graph_mode="t"):
         super(SynpickGraphDataset, self).__init__()
 
         scene_dir = os.path.join(data_dir, 'scene_gt')
@@ -32,6 +26,7 @@ class SynpickGraphDataset(object):
         # Otherwise, [[x_0, x_1, x_2, ...], [x_3, x_4, x_5, ...], ...]
         self.allow_overlap = allow_overlap
         self.action_size = 3
+        self.graph_mode = graph_mode
 
         # determine which dataset indices are valid for given sequence length T
         self.n_total_frames = 0
@@ -90,11 +85,13 @@ class SynpickGraphDataset(object):
             for obj_info in frame_info:
 
                 # assemble node feature vector
-                rotmat = obj_info["cam_R_m2c"]
-                r_q = R.from_matrix([rotmat[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
+                R = obj_info["cam_R_m2c"]
+                r_q = Rotation.from_matrix([R[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
                 t_vec = normalize_t(obj_info["cam_t_m2c"])
-                pose_dq = DualQuaternion.from_quat_pose_array(np.concatenate([r_q, t_vec]))
-                obj_feature = np.array(pose_dq.dq_array() ++ [obj_info["obj_id"]])  # object's feature (x) vector
+                pose = np.concatenate([r_q, t_vec])
+                if self.graph_mode == "dq":
+                    pose = DualQuaternion.from_quat_pose_array(pose).dq_array()
+                obj_feature = np.array(pose ++ [obj_info["obj_id"]])  # object's feature (x) vector
                 node_features_t.append(obj_feature)
 
                 # assemble outgoing edges
@@ -157,65 +154,3 @@ def denormalize_t(pos):
     max_c = tote_max_coord[0:pos_dim]
     min_c = tote_min_coord[0:pos_dim]
     return ((np.array(pos) + 1) / 2) * (np.array(max_c) - min_c) + min_c
-
-
-def draw_synpick_pred_and_gt(graph_pred, graph_target, out_fp, frame=0):
-
-    graph_pred_dict = graph_pred.to_dict()
-    graph_pred_dict.update({"obj_class": graph_pred_dict["x"][:, 7]})
-    graph_target_dict = graph_target.to_dict()
-    graph_target_dict.update({"obj_class": graph_target_dict["x"][:, 7]})
-
-    y_pred = graph_pred_dict["x"].cpu().numpy()[:, 4:7]
-    y_target = graph_target_dict["x"].cpu().numpy()[:, 4:7]
-    G_pred = to_networkx(GraphData.from_dict({**graph_pred_dict, "pos": denormalize_t(y_pred)}),
-                         to_undirected=True, node_attrs=["pos", "obj_class"], edge_attrs=["edge_attr"])
-    G_target = to_networkx(GraphData.from_dict({**graph_target_dict, "pos": denormalize_t(y_target)}),
-                           to_undirected=True, node_attrs=["pos", "obj_class"], edge_attrs=["edge_attr"])
-
-    # create plot and save
-    fig = plt.figure(figsize=(10, 10))
-    ax = Axes3D(fig)
-    network_plot_3D(ax, G_pred, alpha=1.0, angle=1*frame)
-    network_plot_3D(ax, G_target, alpha=0.25, angle=1*frame, out_fp=out_fp)
-
-
-def network_plot_3D(ax, G, alpha, angle=0, out_fp=None):
-
-    ROT_AX_LEN = 10
-
-    pos = nx.get_node_attributes(G, 'pos')
-    n = G.number_of_nodes()
-    node_cmap = plt.cm.get_cmap("gist_ncar")
-    node_colors = [node_cmap(G.nodes[i]["obj_class"] / 24) for i in range(n)]
-    edge_alphas = [min(w, 1.0) for _, _, w in G.edges.data("edge_attr")]
-
-    # Loop on the pos dictionary to extract the x,y,z coordinates of each node
-    for key, value in pos.items():
-        xi, yi, zi = value
-        ax.scatter(xi, yi, zi, s=100, color=node_colors[key], edgecolors="face", alpha=alpha)
-        ax.plot(np.array((xi, xi+ROT_AX_LEN)), np.array((yi, yi)), np.array((zi, zi)), c="r", alpha=alpha, linewidth=2)  # rot_ax_x
-        ax.plot(np.array((xi, xi)), np.array((yi, yi+ROT_AX_LEN)), np.array((zi, zi)), c="g", alpha=alpha, linewidth=2)  # rot_ax_y
-        ax.plot(np.array((xi, xi)), np.array((yi, yi)), np.array((zi, zi+ROT_AX_LEN)), c="b", alpha=alpha, linewidth=2)  # rot_ax_z
-
-    # Loop on the list of edges to get the x,y,z, coordinates of the connected nodes
-    # Those two points are the extrema of the line to be plotted
-    for i, j in enumerate(G.edges()):
-        x = np.array((pos[j[0]][0], pos[j[1]][0]))
-        y = np.array((pos[j[0]][1], pos[j[1]][1]))
-        z = np.array((pos[j[0]][2], pos[j[1]][2]))
-
-        # Plot the connecting lines
-        ax.plot(x, y, z, c='black', alpha=edge_alphas[key]*alpha, linewidth=0.5)
-
-    # Set the initial view
-    ax.view_init(20, angle)
-    ax.set_xlim(tote_min_coord[0], tote_max_coord[0]);
-    ax.set_ylim(tote_min_coord[1], tote_max_coord[1]);
-    ax.set_zlim(1800, 2000);
-
-    if out_fp is not None:
-        plt.savefig(out_fp)
-        plt.close('all')
-
-    return
