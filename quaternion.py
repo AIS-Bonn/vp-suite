@@ -11,8 +11,6 @@ sources:
 
 def q_mul(q1, q2):
     """
-    source:
-
     Multiply quaternion(s) q with quaternion(s) r.
     Expects two equally-sized tensors of shape (*, 4), where * denotes any number of dimensions.
     Returns q1*q2 as a tensor of shape (*, 4).
@@ -63,6 +61,13 @@ def q_normalize(q):
     assert not torch.any(torch.isclose(norm, torch.zeros_like(norm, device=q.device)))  # check for singularities
     return  torch.div(q, norm[:, None])  # q_norm = q / ||q||
 
+def q_conjugate(q)
+
+    assert q.shape[-1] == 4
+
+    conj = torch.tensor([1, -1, -1, -1], device=q.device)  # multiplication coefficients per element
+    return q * conj.expand_as(q)
+
 
 def dq_mul(dq1, dq2):
 
@@ -80,7 +85,12 @@ def dq_mul(dq1, dq2):
 
 
 def dq_translation(dq):
-    raise NotImplementedError
+
+    assert dq.shape[-1] == 8
+
+    dq_r, dq_d = torch.split(dq, [4, 4], dim=-1)
+    mult = q_mul((2.0 * dq_d), q_conjugate(dq_r))
+    return mult[..., 1:]
 
 
 def dq_normalize(dq):
@@ -107,21 +117,27 @@ def dq_to_screw(dq):
 
     dq_r, dq_d = torch.split(dq, [4, 4], dim=-1)
     theta = q_angle(dq_r)
-    theta_close_to_zero = torch.isclose(theta, torch.zeros_like(theta, device=dq.device))
-    theta_okay = ~theta_close_to_zero
+    no_rot = torch.isclose(theta, torch.zeros_like(theta, device=dq.device))
+    with_rot = ~no_rot
     dq_t = dq_translation(dq)
 
     l = torch.zeros(*dq.shape[:-1], 3, device=dq.device)
-    m = torch.zeros(*dq.shape[:-1], 3, device=dq.device)
+    m = torch.ones(*dq.shape[:-1], 3, device=dq.device)
     theta = torch.zeros(*dq.shape[:-1], device=dq.device)
     d = torch.zeros(*dq.shape[:-1], device=dq.device)
 
-    l[theta_okay, :] = NotImplementedError
-    l[theta_close_to_zero, :] = NotImplementedError
-    m[theta_okay, :] = NotImplementedError
-    m[theta_close_to_zero, :] = NotImplementedError
-    d[theta_okay] = NotImplementedError
-    d[theta_close_to_zero] = NotImplementedError
+    l[with_rot] = dq_r[with_rot, 1:] / np.sin(theta / 2)
+    d[with_rot] = (dq_t[with_rot] * l[with_rot]).sum(dim=-1)  # batched dot product
+    t_l_cross = torch.cross(dq_t[with_rot], l[with_rot], dim=-1)
+    m[with_rot] = 0.5 * (t_l_cross + torch.cross(l[with_rot], t_l_cross / np.tan(theta / 2), dim=-1))
+
+    d[no_rot] = torch.linalg.norm(dq_t[no_rot], dim=-1)
+    no_trans = torch.isclose(d[no_rot], torch.zeros_like(d[no_rot], device=dq.device))
+    unit_transform = torch.logical_and(no_rot, no_trans)
+    only_trans = ~unit_transform
+    l[unit_transform] = dq_t[unit_transform] / d[unit_transform]
+    l[only_trans] = 0
+    m[no_rot] *= float("inf")
 
     return l, m, theta, d
 

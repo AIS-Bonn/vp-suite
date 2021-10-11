@@ -11,7 +11,7 @@ def dual_quaternion_distance(pose_pred, pose_real):
     '''
 
     dq_pred, dq_real = dq_normalize(pose_pred), dq_normalize(pose_real)
-    dq_pred_inv = dq_quaternion_conjugate(dq_pred)
+    dq_pred_inv = dq_quaternion_conjugate(dq_pred)  # inverse is quat. conj. because it's normalized
     dq_diff = dq_mul(dq_pred_inv, dq_real)
     _, _, theta, d = dq_to_screw(dq_diff)
     return torch.mean(LAMBDA_ROT * theta + LAMBDA_TRANS * d)
