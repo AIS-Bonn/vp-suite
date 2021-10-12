@@ -74,12 +74,12 @@ class SynpickGraphDataset(object):
         ep, start_frame = self.valid_frames[i]  # only consider valid indices
         frame_list = self.get_scene_frames(ep, start_frame)  # list of lists of object information dicts
 
-        gripper_pos = np.array([frame_info[-1]["cam_t_m2c"] for frame_info in frame_list])
-        gripper_pos_deltas = np.stack([new - old for old, new in zip(gripper_pos, gripper_pos[1:])], axis=0)
-        gripper_actions = F.pad(torch.from_numpy(gripper_pos_deltas), (0, 0, 0, 1))  # last graph gets padded action
+        gripper_pos = [frame_info[-1]["cam_t_m2c"] for frame_info in frame_list]
+        gripper_pos = np.array(gripper_pos + gripper_pos[-1:])  # duplicate last pos to pad the resulting actions array
+        gripper_actions = [normalize_a(new - old) for old, new in zip(gripper_pos, gripper_pos[1:])]  # actions = gripper t-deltas
 
         edge_indices, edge_weights, node_features, targets = [], [], [], []
-        for frame_info, action in zip(frame_list, gripper_actions):
+        for frame_info in frame_list:
             all_instance_ids = [obj_info["ins_id"] for obj_info in frame_info]
             edge_indices_t, node_features_t = [], []
             for obj_info in frame_info:
@@ -106,19 +106,22 @@ class SynpickGraphDataset(object):
             edge_indices.append(edge_indices_t)  # shape: [2, |E|]
             edge_weights.append(np.ones(edge_indices_t.shape[1]))  # shape: [|E|]
             targets.append(None)
-            # TODO actions as global features
 
-        # sequence consists of T graphs with the labels being the features from the following graph
-        return DynamicGraphTemporalSignal(
+        gripper_actions = [np.expand_dims(ga, 0).repeat(nf.shape[0], axis=0)
+                           for ga, nf in zip(gripper_actions, node_features)]
+
+        data_signal = DynamicGraphTemporalSignal(
             edge_indices = edge_indices,
             edge_weights = edge_weights,
             features = node_features,
-            targets = targets
-        )
+            targets = targets,
+            action = gripper_actions
+        )  # sequence consists of T graphs
+
+        return data_signal
 
     def get_dataset(self):
         return self.__getitem__(0)
-
 
 
     def __len__(self):
@@ -148,6 +151,9 @@ def outside_tote(pos):
 
 def normalize_t(pos):
     return 2 * np.divide(np.array(pos) - tote_min_coord, np.array(tote_max_coord) - tote_min_coord) - 1
+
+def normalize_a(action):
+    return np.divide(action, [20, 20, 20])
 
 def denormalize_t(pos):
 

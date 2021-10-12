@@ -37,6 +37,8 @@ def train(trial=None, cfg=None):
     train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=min(cfg.batch_size, 32),
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    if cfg.include_actions:
+        cfg.graph_in_size += train_data.action_size
 
     # WandB
     if not cfg.no_wandb:
@@ -60,7 +62,7 @@ def train(trial=None, cfg=None):
         # eval
         print("Validating...")
         vis_idx = [-1]
-        if (epoch + 1) % cfg.vis_every_n == 0 and not cfg.no_vis:
+        if (epoch + 1) % cfg.vis_every == 0 and not cfg.no_vis:
             vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + vis_idx
         eval_loss, vis_pairs = eval_iter(cfg, valid_loader, pred_model, vis_idx)
         optimizer_scheduler.step(eval_loss)
@@ -79,7 +81,7 @@ def train(trial=None, cfg=None):
             out_filenames = visualize_graph(cfg, vis_pairs)
 
             if not cfg.no_wandb:
-                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=3,format="gif")
+                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=2, format="gif")
                             for i, out_fn in enumerate(out_filenames)}
                 wandb.log(log_vids, commit=False)
 

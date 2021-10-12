@@ -7,11 +7,12 @@ from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 from losses.dq_distance import dq_distance
 
 class RecurrentGCN(torch.nn.Module):
-    def __init__(self, graph_mode, node_features, out_features):
+    def __init__(self, graph_mode, node_features, out_features, include_actions):
         super(RecurrentGCN, self).__init__()
         self.recurrent = DCRNN(node_features, 32, 1)
         self.linear = torch.nn.Linear(32, out_features)
         self.graph_mode = graph_mode
+        self.include_actions = include_actions
 
 
     def node_loss(self, pred_x, target_x):
@@ -41,8 +42,10 @@ class RecurrentGCN(torch.nn.Module):
         for t in range(T - 1):
 
             graph_in, graph_target = out_frames[-1], snapshots[t+1].to(device).clone()
-            pred_x, rnn_h = self.forward(graph_in.x, graph_in.edge_index,
-                                         graph_in.edge_attr, rnn_h)
+            in_x = graph_in.x.clone()
+            if self.include_actions:  # append action to node features
+                in_x = torch.cat([in_x, graph_in.action], dim=-1)
+            pred_x, rnn_h = self.forward(in_x, graph_in.edge_index, graph_in.edge_attr, rnn_h)
 
             if t >= input_length:  # prediction mode
                 pred_loss += self.node_loss(pred_x, graph_target.x)
@@ -53,12 +56,14 @@ class RecurrentGCN(torch.nn.Module):
                 else:
                     graph_pred_x[:, 4:-1] = pred_x
 
-                # construct Batch object directly because PyG-T does so
+                # Construct predicted Batch object directly because PyG-T does so. Apart from the nodes' x values,
+                # All other attributes are taken from the target graph.
                 graph_pred = GraphBatch(x=graph_pred_x,
-                                        edge_index = graph_in.edge_index,
-                                        edge_attr = graph_in.edge_attr,
-                                        y=graph_in.y,
-                                        batch=graph_in.batch)
+                                        edge_index = graph_target.edge_index,
+                                        edge_attr = graph_target.edge_attr,
+                                        y=graph_target.y,
+                                        batch=graph_target.batch,
+                                        action=graph_target.action)
                 out_frames.append(graph_pred)
             else:
                 out_frames.append(graph_target)

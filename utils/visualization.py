@@ -238,7 +238,7 @@ def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
     ax.view_init(20, angle)
     ax.set_xlim(tote_min_coord[0], tote_max_coord[0]);
     ax.set_ylim(tote_min_coord[1], tote_max_coord[1]);
-    ax.set_zlim(tote_min_coord[2], tote_max_coord[2]);
+    ax.set_zlim(1800, tote_max_coord[2]);
 
     if out_fp is not None:
         plt.savefig(out_fp)
@@ -253,7 +253,7 @@ def draw_synpick_pred_and_gt(graph_pred, graph_target, graph_mode, out_fp, frame
     G_target = to_networkx(graph_target, to_undirected=True, node_attrs=["x"], edge_attrs=["edge_attr"])
 
     # create plot and save
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(10, 8))
     ax = Axes3D(fig)
     network_plot_3D(ax, G_pred, graph_mode, alpha=1.0, angle=1*frame)
     network_plot_3D(ax, G_target, graph_mode, alpha=0.25, angle=1*frame, out_fp=out_fp)
@@ -273,10 +273,10 @@ def visualize_graph(cfg, vis_pairs, test=False):
             out_g_filenames.append(out_g_fname)
             draw_synpick_pred_and_gt(snap_pred, snap_target, cfg.graph_mode, out_g_fname, frame=t)
 
-        clip = ImageSequenceClip(out_g_filenames, fps=3)
+        clip = ImageSequenceClip(out_g_filenames, fps=2)
         out_fname = os.path.join(cfg.out_dir, out_fname_template.format(g))
         out_filenames.append(out_fname)
-        clip.write_gif(out_fname, fps=3)
+        clip.write_gif(out_fname, fps=2)
         for out_g_fname in out_g_filenames:
             os.remove(out_g_fname)
 

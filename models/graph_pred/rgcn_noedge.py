@@ -63,7 +63,7 @@ class ObjectPoseEstimator(nn.Module):
 
     hidden_dim = 32
 
-    def __init__(self, graph_mode, node_features, out_features):
+    def __init__(self, graph_mode, node_features, out_features, include_actions):
         super(ObjectPoseEstimator, self).__init__()
         self.node_embed = nn.Linear(node_features, self.hidden_dim)
         self.node_rnn = nn.LSTMCell(input_size=self.hidden_dim, hidden_size=self.hidden_dim)
@@ -71,6 +71,7 @@ class ObjectPoseEstimator(nn.Module):
         self.graph_rnn = DCRNN(self.hidden_dim, self.hidden_dim, 1)
         self.final_linear = nn.Linear(self.hidden_dim, out_features)
         self.graph_mode = graph_mode
+        self.include_actions = include_actions
 
 
     def node_loss(self, pred_x, target_x):
@@ -105,8 +106,11 @@ class ObjectPoseEstimator(nn.Module):
         for t in range(T - 1):
 
             graph_in, graph_target = out_frames[-1], snapshots[t+1].to(device).clone()
+            in_x = graph_in.x.clone()
+            if self.include_actions:  # append action to node features
+                in_x = torch.cat([in_x, graph_in.action], dim=-1)
             pred_x, pred_edge_index, pred_edge_weight, node_rnn_h, node_rnn_c, graph_rnn_h \
-                = self.forward(graph_in.x, graph_in.batch, node_rnn_h, node_rnn_c, graph_rnn_h, device)
+                = self.forward(in_x, graph_in.batch, node_rnn_h, node_rnn_c, graph_rnn_h, device)
 
             if t >= input_length:  # prediction mode
                 pred_loss += self.node_loss(pred_x, graph_target.x)
@@ -121,8 +125,9 @@ class ObjectPoseEstimator(nn.Module):
                 graph_pred = GraphBatch(x=graph_pred_x,
                                         edge_index = pred_edge_index,
                                         edge_attr = pred_edge_weight,
-                                        y=graph_in.y,
-                                        batch=graph_in.batch)
+                                        y=graph_target.y,
+                                        batch=graph_target.batch,
+                                        action=graph_target.action)
                 out_frames.append(graph_pred)
             else:
                 out_frames.append(graph_target)
