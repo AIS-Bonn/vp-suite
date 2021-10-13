@@ -63,6 +63,8 @@ if __name__ == '__main__':
     parser.add_argument("--full-test", action="store_true", help="If specified, tests models on the whole test set")
     parser.add_argument("--vis-every", type=int, default=10, help="visualize predictions after every Nth epoch")
 
+    parser.add_argument("--teacher-forcing-epochs", type=int, default=0,
+                        help="Number of epochs in which a decaying teacher forcing ratio is used")
     parser.add_argument("--mse-loss-scale", type=float, default=1.0)
     parser.add_argument("--l1-loss-scale", type=float, default=1.0)
     parser.add_argument("--smoothl1-loss-scale", type=float, default=0.0)

@@ -1,3 +1,5 @@
+import random
+
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data as GraphData, Batch as GraphBatch
@@ -32,6 +34,7 @@ class RecurrentGCN(torch.nn.Module):
 
     def pred_n(self, input_signal, device, pred_length=1, **kwargs):
 
+        teacher_forcing_ratio = kwargs.get("teacher_forcing_ratio", 0)  # non-zero only if specified and during training
         snapshots = [snap for snap in iter(input_signal)]
         T = len(snapshots)
         input_length = T - pred_length
@@ -41,14 +44,19 @@ class RecurrentGCN(torch.nn.Module):
 
         for t in range(T - 1):
 
-            graph_in, graph_target = out_frames[-1], snapshots[t+1].to(device).clone()
+            graph_target = snapshots[t+1].to(device)
+            if t < input_length or random.random() < teacher_forcing_ratio:  # obs. phase
+                graph_in = snapshots[t].to(device)
+            else:  # pred. phase
+                graph_in = out_frames[-1]
+
             in_x = graph_in.x.clone()
             if self.include_actions:  # append action to node features
                 in_x = torch.cat([in_x, graph_in.action], dim=-1)
             pred_x, rnn_h = self.forward(in_x, graph_in.edge_index, graph_in.edge_attr, rnn_h)
+            pred_loss += self.node_loss(pred_x, graph_target.x)
 
             if t >= input_length:  # prediction mode
-                pred_loss += self.node_loss(pred_x, graph_target.x)
 
                 graph_pred_x = graph_in.x.clone()
                 if self.graph_mode == "dq":

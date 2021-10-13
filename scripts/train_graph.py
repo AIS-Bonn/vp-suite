@@ -57,7 +57,7 @@ def train(trial=None, cfg=None):
 
         # train
         print(f'\nTraining (epoch: {epoch+1} of {cfg.epochs})')
-        train_iter(cfg, train_loader, pred_model, optimizer)
+        train_iter(cfg, train_loader, pred_model, optimizer, epoch)
 
         # eval
         print("Validating...")
@@ -110,14 +110,16 @@ def train(trial=None, cfg=None):
 
 # ==============================================================================
 
-def train_iter(cfg, loader, pred_model, optimizer):
+def train_iter(cfg, loader, pred_model, optimizer, epoch):
 
     torch.autograd.set_detect_anomaly(True)
 
     loop = tqdm(loader)
     for _, signal_in in enumerate(loop):
 
-        _, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length)
+        tfr = 0 if cfg.teacher_forcing_epochs <= 0 \
+            else np.maximum(0, 1 - epoch // cfg.teacher_forcing_epochs)
+        _, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, teacher_forcing_ratio=tfr)
 
         # bwd
         optimizer.zero_grad()
