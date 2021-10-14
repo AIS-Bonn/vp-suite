@@ -7,7 +7,7 @@ from torch_geometric.data import Batch as GraphBatch
 from torch_geometric_temporal.nn.recurrent import DCRNN
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 
-from losses.dq_distance import dq_distance
+from losses.pose_distance import dq_distance
 
 
 class NodeToEdge(nn.Module):

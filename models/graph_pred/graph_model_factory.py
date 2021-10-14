@@ -7,6 +7,6 @@ def get_graph_model(cfg):
     arch = cfg.graph_arch
 
     if arch == "rgcn":
-        return RecurrentGCN(cfg.graph_mode, cfg.graph_in_size, cfg.graph_out_size, cfg.include_actions)
+        return RecurrentGCN(cfg.graph_mode, cfg.node_in_dim, cfg.node_out_dim, cfg.include_actions)
     elif arch == "rgcn_no_edge":
-        return ObjectPoseEstimator(cfg.graph_mode, cfg.graph_in_size, cfg.graph_out_size, cfg.include_actions)
+        return ObjectPoseEstimator(cfg.graph_mode, cfg.node_in_dim, cfg.node_out_dim, cfg.include_actions)

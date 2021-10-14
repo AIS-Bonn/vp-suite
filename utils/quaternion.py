@@ -1,5 +1,6 @@
 import math
 import torch
+from pytorch3d.transforms import euler_angles_to_matrix, matrix_to_quaternion
 
 """
 Differentiable dual quaternion distance metric in PyTorch. 
@@ -11,6 +12,15 @@ Acknowledgements:
 """
 
 # ======== QUATERNIONS =======================================================================
+
+
+def q_from_re(re):
+    '''
+    Body-3-2-1 convention
+    TODO doc
+    '''
+    assert re.shape[-1] == 3
+    return matrix_to_quaternion(euler_angles_to_matrix(re, convention="ZYX"))
 
 
 def q_mul(q1, q2):
@@ -145,7 +155,7 @@ def dq_to_screw(dq):
     Input shape: [*, 8]
     Output:
      - Plucker coordinates (l, m) for the roto-translation axis (both of shape [*, 3])
-     - Amount of rotation and translation around/along the axis (both of shape [*])
+     - Amount of rotation and amount of translation around/along the axis (both of shape [*])
     """
 
     assert dq.shape[-1] == 8

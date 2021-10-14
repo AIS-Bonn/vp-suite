@@ -7,10 +7,20 @@ from scipy.spatial.transform import Rotation
 from dual_quaternions import DualQuaternion
 
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
+from pytorch3d.transforms import matrix_to_euler_angles, matrix_to_quaternion
+
+
+NODE_FEAT_DIM = {
+    "tv": (4, 3),
+    "re_tv": (7, 6),
+    "rq_tv": (8, 7),
+    "rq_tv_to_tv": (8, 3),
+    "dq": (9, 8)
+}  # (in_dim, out_dim)
 
 
 class SynpickGraphDataset(object):
-    def __init__(self, data_dir, num_frames, step, allow_overlap, graph_mode="t"):
+    def __init__(self, data_dir, num_frames, step, allow_overlap, graph_mode="tv"):
         super(SynpickGraphDataset, self).__init__()
 
         scene_dir = os.path.join(data_dir, 'scene_gt')
@@ -27,6 +37,7 @@ class SynpickGraphDataset(object):
         self.allow_overlap = allow_overlap
         self.action_size = 3
         self.graph_mode = graph_mode
+        self.node_feat_dim = NODE_FEAT_DIM[self.graph_mode]
 
         # determine which dataset indices are valid for given sequence length T
         self.n_total_frames = 0
@@ -69,6 +80,20 @@ class SynpickGraphDataset(object):
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
 
+    def get_pose(self, r_matvec, t):
+
+        R = torch.tensor([r_matvec[i:i + 3] for i in [0, 3, 6]])
+        r = None
+        if "q" in self.graph_mode:
+            r = matrix_to_quaternion(R).numpy()
+        elif "re" in self.graph_mode:
+            r = matrix_to_euler_angles(R, "ZYX").numpy()
+        pose = t if r is None else list(np.concatenate([r, t]))
+        if self.graph_mode == "dq":
+            pose = DualQuaternion.from_quat_pose_array(pose).dq_array()
+        return pose
+
+
     def __getitem__(self, i):
 
         ep, start_frame = self.valid_frames[i]  # only consider valid indices
@@ -86,12 +111,10 @@ class SynpickGraphDataset(object):
 
                 # assemble node feature vector
                 R = obj_info["cam_R_m2c"]
-                r_q = Rotation.from_matrix([R[i:i+3] for i in [0, 3, 6]]).as_quat()  # rotation in quaternions
                 t_vec = normalize_t(obj_info["cam_t_m2c"])
-                pose = list(np.concatenate([r_q, t_vec]))
-                if self.graph_mode == "dq":
-                    pose = DualQuaternion.from_quat_pose_array(pose).dq_array()
-                obj_feature = np.array(pose + [obj_info["obj_id"]])  # object's feature (x) vector
+                pose = self.get_pose(R, t_vec)
+                obj_class = np.array([obj_info["obj_id"]])
+                obj_feature = np.concatenate([pose, obj_class])  # object's feature (x) vector
                 node_features_t.append(obj_feature)
 
                 # assemble outgoing edges

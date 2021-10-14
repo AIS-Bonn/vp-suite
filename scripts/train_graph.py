@@ -18,9 +18,6 @@ def train(trial=None, cfg=None):
     # PREPARATION pt. 1
     best_eval_loss = float("inf")
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
-    cfg.graph_in_size = 8 if cfg.graph_mode == "t" else 9
-    cfg.graph_out_size = 3 if cfg.graph_mode == "t" else 8
-
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -37,8 +34,9 @@ def train(trial=None, cfg=None):
     train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=min(cfg.batch_size, 32),
                               drop_last=True)
     valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
+    cfg.node_in_dim, cfg.node_out_dim = train_data.node_feat_dim
     if cfg.include_actions:
-        cfg.graph_in_size += train_data.action_size
+        cfg.node_in_dim += train_data.action_size
 
     # WandB
     if not cfg.no_wandb:
@@ -97,16 +95,16 @@ def train(trial=None, cfg=None):
                                      allow_overlap=cfg.vid_allow_overlap, graph_mode=cfg.graph_mode)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + [-1]
-    test_loss, _ = eval_iter(cfg, test_loader, pred_model, vis_idx)
-    test_loss = test_loss.item()
+    test_metric, _ = eval_iter(cfg, test_loader, pred_model, vis_idx, test=True)
+    test_metric = test_metric.item()
 
-    print(f"Test loss: {test_loss}")
+    print(f"Test loss: {test_metric}")
     if not cfg.no_wandb:
-        wandb.log({"test_loss": test_loss}, commit=True)
+        wandb.log({"test_pose_dq_distance": test_metric}, commit=True)
         wandb.finish()
 
     print("Testing done, bye bye!")
-    return test_loss
+    return test_metric
 
 # ==============================================================================
 
@@ -132,11 +130,11 @@ def train_iter(cfg, loader, pred_model, optimizer, epoch):
         #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
 
-def eval_iter(cfg, loader, pred_model, vis_idx):
+def eval_iter(cfg, loader, pred_model, vis_idx, test=False):
 
     pred_model.eval()
     loop = tqdm(loader)
-    eval_losses = []
+    eval_distances = []
 
     next_vis_idx = vis_idx.pop(0)
     vis_pairs = []
@@ -145,17 +143,17 @@ def eval_iter(cfg, loader, pred_model, vis_idx):
 
         for idx, signal_in in enumerate(loop):
 
-            signal_pred, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length)
+            signal_pred, distance = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, test=test)
 
-            eval_losses.append(loss)
-            loop.set_postfix(loss=loss.item())
+            eval_distances.append(distance)
+            loop.set_postfix(dist=distance.item())
             #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
             if idx == next_vis_idx:
                 vis_pairs.append((signal_pred, signal_in))
                 next_vis_idx = vis_idx.pop(0)
 
-    eval_loss = torch.stack(eval_losses).mean()
+    eval_metric = torch.stack(eval_distances).mean()
     pred_model.train()
 
-    return eval_loss, vis_pairs
+    return eval_metric, vis_pairs

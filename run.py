@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
     parser.add_argument("--graph-arch", type=str, choices=["rgcn", "rgcn_no_edge"])
-    parser.add_argument("--graph-mode", type=str, choices=["t", "dq"], default="dq",
+    parser.add_argument("--graph-mode", type=str, choices=["dq", "rq_tv", "re_tv", "tv", "rq_tv_to_tv"], default="dq",
                         help="what kind of information to predict as node features")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--epochs", type=int, default=300)

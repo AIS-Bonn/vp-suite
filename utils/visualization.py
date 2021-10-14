@@ -13,7 +13,7 @@ from torch_geometric.utils import to_networkx
 
 from dataset.graph.synpick_graph import denormalize_t, tote_min_coord, tote_max_coord
 from dataset.dataset_utils import postprocess_img, postprocess_mask, colorize_semseg
-from utils.quaternion import dq_translation, dq_normalize
+from utils.quaternion import dq_translation, dq_normalize, q_from_re
 from pyquaternion import Quaternion
 
 def get_grid_vis(input, mode='RGB'):
@@ -192,7 +192,29 @@ ROT_AX_LEN = 16
 NODE_COLORMAP = plt.cm.get_cmap("gist_ncar")
 MAX_CLASS_ID = 22
 
-def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
+
+def pose_R_t_from_node_x(cfg, node_x):
+
+    start_ = 4 if cfg.graph_mode == "rq_tv_to_tv" else 0
+    node_x = node_x[start_:start_ + cfg.node_out_dim]
+
+    if cfg.graph_mode in ["tv",  "rq_tv_to_tv"]:
+        R = None
+        t = node_x
+    elif cfg.graph_mode == "dq":
+        R = Quaternion(node_x[:4]).rotation_matrix
+        t = dq_translation(dq_normalize(torch.tensor(node_x)))
+    elif cfg.graph_mode == "rq_tv":
+        R = Quaternion(node_x[:4]).rotation_matrix
+        t = node_x[4:]
+    elif cfg.graph_mode == "re_tv":
+        rq = q_from_re(torch.tensor(node_x[:3])).tolist()
+        R = Quaternion(rq).rotation_matrix
+        t = node_x[3:]
+    return R, t
+
+
+def network_plot_3D(cfg, ax, G, alpha, angle=0, out_fp=None):
 
     node_xs = nx.get_node_attributes(G, 'x')
     node_colors = [NODE_COLORMAP(node_x[-1] / MAX_CLASS_ID) for _, node_x in node_xs.items()]
@@ -201,16 +223,16 @@ def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
     # Loop on the pos dictionary to extract the x,y,z coordinates of each node
     for key, node_x in node_xs.items():
 
-        # position visualization
-        t_vec = node_x[4:-1] if graph_mode == "t" else dq_translation(dq_normalize(torch.tensor(node_x[:-1])))
-        x, y, z = denormalize_t(np.array(t_vec))
+        # prepare object pose and class information
+        R, t = pose_R_t_from_node_x(cfg, node_x)
+        x, y, z = denormalize_t(np.array(t))
         node_m = "s" if node_x[-1] == MAX_CLASS_ID else "o"
         node_ec = "k" if node_x[-1] == MAX_CLASS_ID else "face"
-        ax.scatter(x, y, z, s=100, color=node_colors[key], marker=node_m, edgecolors=node_ec, alpha=alpha)
 
-        # rotation visualization
-        if graph_mode == "dq":
-            R = Quaternion(node_x[:4]).rotation_matrix * ROT_AX_LEN  # scale by ROT_AX_LEN for vis. purposes
+        # draw obj. translation as scatter, and rotation as coord. system axes
+        ax.scatter(x, y, z, s=100, color=node_colors[key], marker=node_m, edgecolors=node_ec, alpha=alpha)
+        if R is not None:
+            R *= ROT_AX_LEN
             ax.plot(np.array((x, x + R[0, 0])), np.array((y, y + R[1, 0])), np.array((z, z + R[2, 0])),
                     c="r", alpha=alpha, linewidth=2)  # rot_ax_x
             ax.plot(np.array((x, x + R[0, 1])), np.array((y, y + R[1, 1])), np.array((z, z + R[2, 1])),
@@ -221,16 +243,12 @@ def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
     # Loop on the list of edges to get the x,y,z, coordinates of the connected nodes
     # Those two points are the extrema of the line to be plotted
     for i, (e_start, e_end) in enumerate(G.edges()):
-        if graph_mode == "t":
-            t1_vec = node_xs[e_start][4:-1]
-            t2_vec = node_xs[e_end][4:-1]
-        else:  # graph_mode == "dq"
-            t1_vec = dq_translation(dq_normalize(torch.tensor(node_xs[e_start][:-1])))
-            t2_vec = dq_translation(dq_normalize(torch.tensor(node_xs[e_end][:-1])))
+        _, t1 = pose_R_t_from_node_x(cfg, node_xs[e_start])
+        _, t2 = pose_R_t_from_node_x(cfg, node_xs[e_end])
 
         # Plot the connecting lines
-        x1, y1, z1 = denormalize_t(np.array(t1_vec))
-        x2, y2, z2 = denormalize_t(np.array(t2_vec))
+        x1, y1, z1 = denormalize_t(np.array(t1))
+        x2, y2, z2 = denormalize_t(np.array(t2))
         ax.plot(np.array((x1, x2)), np.array((y1, y2)), np.array((z1, z2)),
                 c='black', alpha=edge_alphas[i]*alpha, linewidth=0.5)
 
@@ -243,11 +261,10 @@ def network_plot_3D(ax, G, graph_mode, alpha, angle=0, out_fp=None):
     if out_fp is not None:
         plt.savefig(out_fp)
         plt.close('all')
-
     return
 
 
-def draw_synpick_pred_and_gt(graph_pred, graph_target, graph_mode, out_fp, frame=0):
+def draw_synpick_pred_and_gt(cfg, graph_pred, graph_target, out_fp, frame=0):
 
     G_pred = to_networkx(graph_pred, to_undirected=True, node_attrs=["x"], edge_attrs=["edge_attr"])
     G_target = to_networkx(graph_target, to_undirected=True, node_attrs=["x"], edge_attrs=["edge_attr"])
@@ -255,8 +272,9 @@ def draw_synpick_pred_and_gt(graph_pred, graph_target, graph_mode, out_fp, frame
     # create plot and save
     fig = plt.figure(figsize=(10, 8))
     ax = Axes3D(fig)
-    network_plot_3D(ax, G_pred, graph_mode, alpha=1.0, angle=1*frame)
-    network_plot_3D(ax, G_target, graph_mode, alpha=0.25, angle=1*frame, out_fp=out_fp)
+    network_plot_3D(cfg, ax, G_pred, alpha=1.0, angle=1*frame)
+    network_plot_3D(cfg, ax, G_target, alpha=0.25, angle=1*frame, out_fp=out_fp)
+
 
 def visualize_graph(cfg, vis_pairs, test=False):
 
@@ -271,7 +289,7 @@ def visualize_graph(cfg, vis_pairs, test=False):
         for t, (snap_pred, snap_target) in enumerate(zip(signal_pred, signal_in)):
             out_g_fname = os.path.join(cfg.out_dir, out_fname_g_template.format(g, t))
             out_g_filenames.append(out_g_fname)
-            draw_synpick_pred_and_gt(snap_pred, snap_target, cfg.graph_mode, out_g_fname, frame=t)
+            draw_synpick_pred_and_gt(cfg, snap_pred, snap_target, out_g_fname, frame=t)
 
         clip = ImageSequenceClip(out_g_filenames, fps=2)
         out_fname = os.path.join(cfg.out_dir, out_fname_template.format(g))
