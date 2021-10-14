@@ -8,7 +8,7 @@ from dual_quaternions import DualQuaternion
 
 from torch_geometric_temporal.signal import DynamicGraphTemporalSignal
 from pytorch3d.transforms import matrix_to_euler_angles, matrix_to_quaternion
-
+from utils.quaternion import q_to_re
 
 NODE_FEAT_DIM = {
     "tv": (4, 3),
@@ -87,7 +87,7 @@ class SynpickGraphDataset(object):
         if "q" in self.graph_mode:
             r = matrix_to_quaternion(R).numpy()
         elif "re" in self.graph_mode:
-            r = matrix_to_euler_angles(R, "ZYX").numpy()
+            r = q_to_re(matrix_to_quaternion(R)).numpy()
         pose = t if r is None else list(np.concatenate([r, t]))
         if self.graph_mode == "dq":
             pose = DualQuaternion.from_quat_pose_array(pose).dq_array()

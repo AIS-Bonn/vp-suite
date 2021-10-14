@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import torch
 from pytorch3d.transforms import euler_angles_to_matrix, matrix_to_quaternion
 
@@ -14,13 +15,55 @@ Acknowledgements:
 # ======== QUATERNIONS =======================================================================
 
 
+def check_angle_singularities(re_tv):
+    singular_pitch = torch.isclose(torch.abs(re_tv[:, 1]), torch.ones_like(re_tv[:, 1]) * (np.pi/2))
+    re_tv[singular_pitch, 0] = 0
+    re_tv[singular_pitch, 2:] = 0
+    return re_tv
+
+
 def q_from_re(re):
     '''
-    Body-3-2-1 convention
     TODO doc
     '''
+    # IMPORTANT: Since in-place-slicing can't be done on views, assume that singularities
+    # have been removed using check_angle_singularities() already!
+
     assert re.shape[-1] == 3
-    return matrix_to_quaternion(euler_angles_to_matrix(re, convention="ZYX"))
+    roll, pitch, yaw = torch.split(re, [1, 1, 1], dim=-1)
+    
+    sr, cr = torch.sin(roll / 2), torch.cos(roll / 2)
+    sp, cp = torch.sin(pitch / 2), torch.cos(pitch / 2)
+    sy, cy = torch.sin(yaw / 2), torch.cos(yaw / 2)
+
+    qw = cr * cp * cy + sr * sp * sy
+    qx = sr * cp * cy - cr * sp * sy
+    qy = cr * sp * cy + sr * cp * sy
+    qz = cr * cp * sy - sr * sp * cy
+
+    return torch.cat([qw, qx, qy, qz], dim=-1)
+
+
+def q_to_re(q):
+    '''
+    TODO doc
+    '''
+    assert q.shape[-1] == 4
+    qw, qx, qy, qz = torch.split(q, [1, 1, 1, 1], dim=-1)
+
+    t0 = 2 * (qw * qx + qy * qz)
+    t1 = 1 - 2 * (qx * qx + qy * qy)
+    roll = torch.atan2(t0, t1)
+
+    t2 = 2 * (qw * qy - qz * qx)
+    t2 = torch.clamp(t2, -1, 1)
+    pitch = torch.asin(t2)
+
+    t3 = 2 * (qw * qz + qx * qy)
+    t4 = 1 - 2 * (qy * qy + qz * qz)
+    yaw = torch.atan2(t3, t4)
+
+    return torch.cat([roll, pitch, yaw], dim=-1)
 
 
 def q_mul(q1, q2):

@@ -8,6 +8,7 @@ from torch_geometric_temporal.signal import DynamicGraphTemporalSignal as DGTS
 
 from losses.pose_distance import node_distance_fn
 from metrics.pose_distance import pose_distance_in_dq_space
+from utils.quaternion import check_angle_singularities
 
 class RecurrentGCN(torch.nn.Module):
     def __init__(self, graph_mode, node_in_dim, node_out_dim, include_actions):
@@ -68,6 +69,8 @@ class RecurrentGCN(torch.nn.Module):
             if self.include_actions:  # append action to node features
                 in_x = torch.cat([in_x, graph_in.action], dim=-1)
             pred_x, rnn_h = self.forward(in_x, graph_in.edge_index, graph_in.edge_attr, rnn_h)
+            if self.graph_mode == "re_tv":
+                pred_x = check_angle_singularities(pred_x)
             if test_mode:
                 pred_distances += self.node_metric(pred_x, graph_target.x)
             else:
