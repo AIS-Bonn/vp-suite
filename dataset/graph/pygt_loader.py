@@ -50,7 +50,7 @@ def collate_temporal_signal(
         edge_indices = [batch["edge_index"].numpy() for batch in batches_by_timestep],
         edge_weights = [batch["edge_attr"].numpy() for batch in batches_by_timestep],
         features = [batch["x"].numpy() for batch in batches_by_timestep],
-        targets = [None for batch in batches_by_timestep],
+        targets = [batch["y"].numpy() for batch in batches_by_timestep],
         batches = [batch["batch"].numpy() for batch in batches_by_timestep],
         action = [batch["action"].numpy() for batch in batches_by_timestep]
     )

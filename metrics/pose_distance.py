@@ -46,14 +46,14 @@ def pose_distance_in_dq_space(pose_pred, pose_real, graph_mode):
     TODO doc
     """
     dq_pred = convert_to_dq[graph_mode](pose_pred)
-    dq_real = convert_to_dq[graph_mode](pose_real)
+    dq_real = pose_real  # pose_real should be provided in dual quaternion rep.
     return dq_distance(dq_pred, dq_real)
 
 
 convert_to_dq = {
-    "tv": dq_from_tv,
+    "tv": NotImplemented,
     "re_tv": dq_from_re_tv,
     "rq_tv": dq_from_rq_tv,
-    "rq_tv_to_tv": dq_from_tv,
+    "rq_tv_to_tv": NotImplemented,
     "dq": identity,
-}
+}  # even though dq_from_tv() is implemented, for metrics it shall not be used since rotations should have been copied

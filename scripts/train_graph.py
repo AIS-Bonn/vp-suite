@@ -53,19 +53,21 @@ def train(trial=None, cfg=None):
     # MAIN LOOP
     for epoch in range(0, cfg.epochs):
 
-        # train
+        # train iteration
         print(f'\nTraining (epoch: {epoch+1} of {cfg.epochs})')
         train_iter(cfg, train_loader, pred_model, optimizer, epoch)
 
-        # eval
+        # eval iteration, generating visualizations every N epochs
         print("Validating...")
         vis_idx = [-1]
         if (epoch + 1) % cfg.vis_every == 0 and not cfg.no_vis:
             vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + vis_idx
-        eval_loss, vis_pairs = eval_iter(cfg, valid_loader, pred_model, vis_idx)
+        eval_distances, vis_pairs = eval_iter(cfg, valid_loader, pred_model, vis_idx)
+        eval_loss = eval_distances["loss"]
         optimizer_scheduler.step(eval_loss)
         eval_loss = eval_loss.item()
         print(f"Validation loss (mean over entire validation set): {eval_loss}")
+        print(eval_distances)
 
         # save model if last epoch improved indicator loss
         if best_eval_loss > eval_loss:
@@ -85,7 +87,7 @@ def train(trial=None, cfg=None):
 
         # final bookkeeping
         if not cfg.no_wandb:
-            wandb.log({"loss": eval_loss}, commit=True)
+            wandb.log(eval_distances, commit=True)
 
     # TESTING
     print("\nTraining done, testing best model...")
@@ -95,7 +97,7 @@ def train(trial=None, cfg=None):
                                      allow_overlap=cfg.vid_allow_overlap, graph_mode=cfg.graph_mode)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     vis_idx = sorted(random.sample(range(len(valid_loader)), 10)) + [-1]
-    test_metric, _ = eval_iter(cfg, test_loader, pred_model, vis_idx, test=True)
+    test_metric, _ = eval_iter(cfg, test_loader, pred_model, vis_idx)
     test_metric = test_metric.item()
 
     print(f"Test loss: {test_metric}")
@@ -117,9 +119,10 @@ def train_iter(cfg, loader, pred_model, optimizer, epoch):
 
         tfr = 0 if cfg.teacher_forcing_epochs <= 0 \
             else np.maximum(0, 1 - epoch // cfg.teacher_forcing_epochs)
-        _, loss = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, teacher_forcing_ratio=tfr)
+        _, distances = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, teacher_forcing_ratio=tfr)
 
         # bwd
+        loss = distances["loss"]
         optimizer.zero_grad()
         loss.backward()
         nn.utils.clip_grad_norm_(pred_model.parameters(), 100)
@@ -130,12 +133,11 @@ def train_iter(cfg, loader, pred_model, optimizer, epoch):
         #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
 
-def eval_iter(cfg, loader, pred_model, vis_idx, test=False):
+def eval_iter(cfg, loader, pred_model, vis_idx):
 
     pred_model.eval()
     loop = tqdm(loader)
-    eval_distances = []
-
+    eval_dist_list = []
     next_vis_idx = vis_idx.pop(0)
     vis_pairs = []
 
@@ -143,17 +145,17 @@ def eval_iter(cfg, loader, pred_model, vis_idx, test=False):
 
         for idx, signal_in in enumerate(loop):
 
-            signal_pred, distance = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, test=test)
-
-            eval_distances.append(distance)
-            loop.set_postfix(dist=distance.item())
+            signal_pred, distances = pred_model.pred_n(signal_in, cfg.device, cfg.vid_pred_length, eval=True)
+            eval_dist_list.append(distances)
+            loop.set_postfix(dist=distances["loss"].item())
             #loop.set_postfix(mem=torch.cuda.memory_allocated())
 
             if idx == next_vis_idx:
                 vis_pairs.append((signal_pred, signal_in))
                 next_vis_idx = vis_idx.pop(0)
 
-    eval_metric = torch.stack(eval_distances).mean()
+    # for each key, calculate the mean across the list of distances dicts
+    eval_distances = {k: torch.stack([dist[k] for dist in eval_dist_list]).mean() for k in eval_dist_list[0].keys()}
     pred_model.train()
 
-    return eval_metric, vis_pairs
+    return eval_distances, vis_pairs

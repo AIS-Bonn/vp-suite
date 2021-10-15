@@ -80,16 +80,16 @@ class SynpickGraphDataset(object):
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
 
-    def get_pose(self, r_matvec, t):
+    def get_pose(self, r_matvec, t, graph_mode):
 
         R = torch.tensor([r_matvec[i:i + 3] for i in [0, 3, 6]])
         r = None
-        if "q" in self.graph_mode:
+        if "q" in graph_mode:
             r = matrix_to_quaternion(R).numpy()
-        elif "re" in self.graph_mode:
+        elif "re" in graph_mode:
             r = q_to_re(matrix_to_quaternion(R)).numpy()
         pose = t if r is None else list(np.concatenate([r, t]))
-        if self.graph_mode == "dq":
+        if graph_mode == "dq":
             pose = DualQuaternion.from_quat_pose_array(pose).dq_array()
         return pose
 
@@ -106,16 +106,20 @@ class SynpickGraphDataset(object):
         edge_indices, edge_weights, node_features, targets = [], [], [], []
         for frame_info in frame_list:
             all_instance_ids = [obj_info["ins_id"] for obj_info in frame_info]
-            edge_indices_t, node_features_t = [], []
+            edge_indices_t, node_features_t, targets_t = [], [], []
             for obj_info in frame_info:
 
                 # assemble node feature vector
                 R = obj_info["cam_R_m2c"]
                 t_vec = normalize_t(obj_info["cam_t_m2c"])
-                pose = self.get_pose(R, t_vec)
+                pose = self.get_pose(R, t_vec, self.graph_mode)
                 obj_class = np.array([obj_info["obj_id"]])
                 obj_feature = np.concatenate([pose, obj_class])  # object's feature (x) vector
                 node_features_t.append(obj_feature)
+
+                # add dq representation of object pose as node 'target' for distance evaluation purposes
+                pose_dq = pose if self.graph_mode == "dq" else self.get_pose(R, t_vec, "dq")
+                targets_t.append(np.array(pose_dq))
 
                 # assemble outgoing edges
                 instance_idx = obj_info["ins_id"]  # object's instance idx
@@ -124,11 +128,11 @@ class SynpickGraphDataset(object):
                 touched_node_idx = [all_instance_ids.index(t) for t in touches]
                 edge_indices_t.extend([np.array([node_idx, touch_idx]) for touch_idx in touched_node_idx])
 
-            node_features.append(np.stack(node_features_t, axis=0))  # shape: [|V|, feat_dim]
+            node_features.append(np.stack(node_features_t, axis=0))  # shape: [|V|, graph_in_dim]
             edge_indices_t = np.stack(edge_indices_t, axis=1)
             edge_indices.append(edge_indices_t)  # shape: [2, |E|]
             edge_weights.append(np.ones(edge_indices_t.shape[1]))  # shape: [|E|]
-            targets.append(None)
+            targets.append(np.stack(targets_t, axis=0))  # shape: [|V|, 8]
 
         gripper_actions = [np.expand_dims(ga, 0).repeat(nf.shape[0], axis=0)
                            for ga, nf in zip(gripper_actions, node_features)]
