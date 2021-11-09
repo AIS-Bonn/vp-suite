@@ -25,15 +25,20 @@ def get_segmentation_metrics(pred, target):
     }
 
 
-def get_prediction_metrics(pred, target):
+def get_prediction_metrics(pred, target, frames=None):
     '''
     input type: torch.tensor (torch.float)
     input shape: [b, t, c, h, w]
     input range: [-1.0, 1.0]
+    if frames is specified, only considers the first 'frames' frames.
     '''
 
     if pred.shape != target.shape:
         raise ValueError("Output images and target images are of different shape!")
+
+    frames = frames or pred.shape[1]
+    pred = pred[:, :frames]
+    target = target[:, :frames]
     b, t, c, h, w = pred.shape
 
     # for image-level losses: create zippable lists of pred-target numpy array pairs, removing other dimensions
@@ -43,12 +48,12 @@ def get_prediction_metrics(pred, target):
     target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
 
     return {
-        "ssim (↑)": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "psnr (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "mse (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "mae (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        "lpips (↓)": LPIPS(device=pred.device).forward(pred, target).item(),
-        "fvd (↓)": FVD(device=pred.device, num_frames=t, in_channels=c).forward(pred, target).item()
+        f"ssim_{frames} (↑)": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        f"psnr_{frames} (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        f"mse_{frames} (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        f"mae_{frames} (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
+        f"lpips_{frames} (↓)": LPIPS(device=pred.device).forward(pred, target).item(),
+        f"fvd_{frames} (↓)": FVD(device=pred.device, num_frames=t, in_channels=c).forward(pred, target).item()
     }
 
 
