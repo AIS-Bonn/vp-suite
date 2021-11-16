@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true",
                         help="If specified, use gripper deltas for action-conditional learning")
-    parser.add_argument("--pred-arch", type=str, choices=["unet", "lstm", "st_lstm", "copy", "phy", "st_phy"],
+    parser.add_argument("--pred-arch", type=str, choices=["unet", "lstm", "lstm_old", "st_lstm", "copy", "phy", "st_phy"],
                         default="st_lstm", help="Which prediction model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")
@@ -80,6 +80,9 @@ if __name__ == '__main__':
     parser.add_argument("--seg-unet-features", nargs="+", type=int, default=[64, 128, 256, 512])
     # pred.UNet
     parser.add_argument("--pred-unet-features", nargs="+", type=int, default=[8, 16, 32, 64])
+    # pred.ConvLSTM
+    parser.add_argument("--pred-lstm-num-layers", type=int, default=3)
+    parser.add_argument("--pred-lstm-kernel-size", nargs=2, type=int, default=(3, 3))
     # pred.ST_LSTM
     parser.add_argument("--pred-st-enc-channels", type=int, default=64)
     parser.add_argument("--pred-st-num-layers", type=int, default=3)

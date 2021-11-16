@@ -3,7 +3,7 @@ sys.path.append(".")
 
 import torch
 
-from models.vid_pred.conv_lstm import LSTMModel
+from models.vid_pred.conv_lstm import LSTMModel, LSTMModelOld
 from models.vid_pred.copy_last_frame import CopyLastFrameModel
 from models.vid_pred.phydnet.phydnet import PhyDNet
 from models.vid_pred.st_lstm.st_lstm import STLSTMModel
@@ -22,12 +22,18 @@ def get_pred_model(cfg):
 
     if arch == "unet":
         print("prediction model: UNet3d")
-        pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels, time_dim=cfg.vid_input_length,
-                                 features=cfg.pred_unet_features)
+        pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
+                                 time_dim=cfg.vid_input_length, features=cfg.pred_unet_features)
 
     elif arch == "lstm":
         print("prediction model: LSTM")
-        pred_model = LSTMModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels)
+        pred_model = LSTMModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels, img_size=cfg.img_shape,
+                               lstm_kernel_size=cfg.pred_lstm_kernel_size, num_layers=cfg.pred_lstm_num_layers,
+                               action_size=action_size, device=cfg.device)
+
+    elif arch == "lstm_old":
+        print("prediction model: LSTM (old version)")
+        pred_model = LSTMModelOld(in_channels=cfg.num_channels, out_channels=cfg.num_channels)
 
     elif arch == "st_lstm":
         print("prediction model: ST-LSTM")
