@@ -17,7 +17,7 @@ class VideoPredictionModel(nn.Module):
         preds = []
         loss_dicts = []
         for i in range(pred_length):
-            pred, loss_dict = self.forward(x)
+            pred, loss_dict = self.forward(x, **kwargs)
             pred = pred.unsqueeze(dim=1)
             preds.append(pred)
             loss_dicts.append(loss_dict)

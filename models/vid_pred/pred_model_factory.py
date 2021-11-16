@@ -8,7 +8,7 @@ from models.vid_pred.copy_last_frame import CopyLastFrameModel
 from models.vid_pred.phydnet.phydnet import PhyDNet
 from models.vid_pred.st_lstm.st_lstm import STLSTMModel
 from models.vid_pred.st_lstm.st_phy import STPhy
-from models.vid_pred.unet_3d import UNet3dModel
+from models.vid_pred.unet_3d import UNet3dModel, UNet3dModelOld
 
 
 def get_pred_model(cfg):
@@ -22,8 +22,14 @@ def get_pred_model(cfg):
 
     if arch == "unet":
         print("prediction model: UNet3d")
-        pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
-                                 time_dim=cfg.vid_input_length, features=cfg.pred_unet_features)
+        pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels, img_size=cfg.img_shape,
+                                 time_dim=cfg.vid_input_length, features=cfg.pred_unet_features,
+                                 action_size=action_size, device=cfg.device)
+
+    elif arch == "unet_old":
+        print("prediction model: UNet3d (old version)")
+        pred_model = UNet3dModelOld(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
+                                    time_dim=cfg.vid_input_length, features=cfg.pred_unet_features)
 
     elif arch == "lstm":
         print("prediction model: LSTM")

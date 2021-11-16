@@ -135,8 +135,8 @@ class LSTMModel(nn.Module):
         if self.use_actions:
             if actions is None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
-            else:
-                actions = actions.transpose(0, 1)  # [T_in+pred, b]
+        if type(actions) == torch.Tensor:
+            actions = actions.transpose(0, 1)  # [T_in+pred, b, ...]
 
         # build up belief over given frames
         hidden_state = self._init_hidden((b, self.lstm_channels, self.enc_h, self.enc_w))
@@ -144,7 +144,7 @@ class LSTMModel(nn.Module):
             if self.use_actions:
                 inflated_action = self.action_inflate(actions[t])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
-                encoded = torch.cat([encoded, inflated_action], dim=-2)
+                encoded = torch.cat([encoded, inflated_action], dim=-3)
             hidden_state = self.lstm(encoded, hidden_state)
 
         # pred 1
@@ -157,7 +157,7 @@ class LSTMModel(nn.Module):
             if self.use_actions:
                 inflated_action = self.action_inflate(actions[t - T_in])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
-                encoded = torch.cat([encoded, inflated_action], dim=-2)
+                encoded = torch.cat([encoded, inflated_action], dim=-3)
             hidden_state = self.lstm(encoded, hidden_state)
             out_hidden, _ = hidden_state[-1]
             preds.append(TF.resize(self.autoencoder.decode(out_hidden), size=[h, w]))
