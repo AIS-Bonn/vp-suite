@@ -126,7 +126,7 @@ class LSTMModel(nn.Module):
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
-        b, T_in, _, h, w = x.shape
+        T_in, b, _, h, w = x.shape
         assert self.img_size == (h, w), "input image does not match specified size"
         encoded_frames = [self.autoencoder.encode(frame) for frame in list(x)]
 
@@ -139,7 +139,7 @@ class LSTMModel(nn.Module):
                 actions = actions.transpose(0, 1)  # [T_in+pred, b]
 
         # build up belief over given frames
-        hidden_state = self._init_hidden(batch_size=b, image_size=(self.enc_h, self.enc_w))
+        hidden_state = self._init_hidden((b, self.lstm_channels, self.enc_h, self.enc_w))
         for t, encoded in enumerate(encoded_frames):
             if self.use_actions:
                 inflated_action = self.action_inflate(actions[t])\
@@ -148,8 +148,8 @@ class LSTMModel(nn.Module):
             hidden_state = self.lstm(encoded, hidden_state)
 
         # pred 1
-        h, _ = hidden_state
-        preds = [TF.resize(self.autoencoder.decode(h[-1]), size=[h, w])]
+        out_hidden, _ = hidden_state[-1]
+        preds = [TF.resize(self.autoencoder.decode(out_hidden), size=[h, w])]
 
         # preds 2, 3, ...
         for t in range(pred_length - 1):
@@ -159,8 +159,8 @@ class LSTMModel(nn.Module):
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
                 encoded = torch.cat([encoded, inflated_action], dim=-2)
             hidden_state = self.lstm(encoded, hidden_state)
-            h, _ = hidden_state
-            preds.append(TF.resize(self.autoencoder.decode(h[-1]), size=[h, w]))
+            out_hidden, _ = hidden_state[-1]
+            preds.append(TF.resize(self.autoencoder.decode(out_hidden), size=[h, w]))
 
         # prepare for return
         preds = torch.stack(preds, dim=0).transpose(0, 1)  # output is [b, t, c, h, w] again
@@ -174,10 +174,10 @@ class LSTMModel(nn.Module):
             new_state_list.append([h, c])
         return new_state_list
 
-    def _init_hidden(self, batch_size, image_size):
+    def _init_hidden(self, image_size):
         init_states = []
         for i in range(self.lstm_num_layers):
-            init_states.append(self.cell_list[i].init_hidden(batch_size, image_size))
+            init_states.append(self.cell_list[i].init_hidden(image_size))
         return init_states
 
     @staticmethod
