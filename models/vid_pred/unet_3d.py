@@ -78,8 +78,8 @@ class UNet3dModel(VideoPredictionModel):
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()
         self.pool = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
+        self.action_size = action_size
         self.use_actions = action_size > 0
-        self.action_size = action_size if self.use_actions else 0
         if self.use_actions:
             self.action_inflates = nn.ModuleList()
         self.device = device
@@ -103,10 +103,13 @@ class UNet3dModel(VideoPredictionModel):
                                                kernel_size=(2, 2), stride=(2, 2)))
             self.ups.append(DoubleConv2d(in_c=feature * 2, out_c=feature))
 
-        self.bottleneck = DoubleConv2d(in_c=features[-1] + self.action_size, out_c=features[-1] * 2)
         if self.use_actions:
             self.bottleneck_action_inflate = nn.Linear(in_features=action_size,
                                                   out_features=action_size * img_size[0] * img_size[1])
+            self.bottleneck = DoubleConv2d(in_c=features[-1] + self.action_size, out_c=features[-1] * 2)
+        else:
+            self.bottleneck = DoubleConv2d(in_c=features[-1], out_c=features[-1] * 2)
+
         self.final_conv = nn.Conv2d(in_channels=features[0], out_channels=out_channels, kernel_size=(1, 1))
 
     def pred_n(self, x, pred_length=1, **kwargs):
