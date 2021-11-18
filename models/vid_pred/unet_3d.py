@@ -148,8 +148,9 @@ class UNet3dModel(VideoPredictionModel):
         x = x.permute((0, 2, 1, 3, 4))  # [b, c, T, h, w]
         b, _, T, _, _ = x.shape
         skip_connections = []
-        actions = kwargs["actions"]  # [T, b, a]
-        assert actions.shape[-1] == self.action_size, "action size mismatch"
+        actions = kwargs.get("actions", None)  # [T, b, a]
+        if self.use_actions:
+            assert actions.shape[-1] == self.action_size, "action size mismatch"
 
         # DOWN
         for i in range(len(self.downs)):
