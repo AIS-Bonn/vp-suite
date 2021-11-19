@@ -4,7 +4,9 @@ import torch
 from functools import reduce
 from scipy.special import factorial
 from torch import nn as nn
-from torchvision.transforms import Resize
+
+from models.model_blocks.conv import DCGANConv, DCGANConvTranspose
+from models.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
 class PhyCell_Cell(nn.Module):
@@ -200,74 +202,11 @@ class ConvLSTM(nn.Module):
         self.H, self.C = H, C
 
 
-class dcgan_conv(nn.Module):
-    def __init__(self, nin, nout, stride):
-        super(dcgan_conv, self).__init__()
-        self.main = nn.Sequential(
-            nn.Conv2d(in_channels=nin, out_channels=nout, kernel_size=(3, 3), stride=stride, padding=1),
-            nn.GroupNorm(16, nout),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-    def forward(self, input):
-        return self.main(input)
-
-
-class dcgan_upconv(nn.Module):
-    def __init__(self, nin, nout, stride):
-        super(dcgan_upconv, self).__init__()
-        if (stride == 2):
-            output_padding = 1
-        else:
-            output_padding = 0
-        self.main = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=nin, out_channels=nout, kernel_size=(3, 3), stride=stride, padding=1,
-                               output_padding=output_padding),
-            nn.GroupNorm(16, nout),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-
-    def forward(self, input):
-        return self.main(input)
-
-
-class encoder_E(nn.Module):
-    def __init__(self, nc=1, nf=32):
-        super(encoder_E, self).__init__()
-        # input is (1) x 64 x 64
-        self.c1 = dcgan_conv(nc, nf, stride=2)  # (32) x 32 x 32
-        self.c2 = dcgan_conv(nf, nf, stride=1)  # (32) x 32 x 32
-        self.c3 = dcgan_conv(nf, 2 * nf, stride=2)  # (64) x 16 x 16
-
-    def forward(self, input):
-        h1 = self.c1(input)
-        h2 = self.c2(h1)
-        h3 = self.c3(h2)
-        return h3
-
-
-class decoder_D(nn.Module):
-    def __init__(self, out_size, nc=1, nf=32):
-        super(decoder_D, self).__init__()
-        self.upc1 = dcgan_upconv(2 * nf, nf, stride=2)  # (32) x 32 x 32
-        self.upc2 = dcgan_upconv(nf, nf, stride=1)  # (32) x 32 x 32
-        self.upc3 = nn.ConvTranspose2d(in_channels=nf, out_channels=nc, kernel_size=(3, 3), stride=2, padding=1,
-                                       output_padding=1)  # (nc) x 64 x 64
-        self.resize = Resize(size=out_size)
-
-    def forward(self, input):
-        d1 = self.upc1(input)
-        d2 = self.upc2(d1)
-        d3 = self.upc3(d2)
-        out = self.resize(d3)
-        return out
-
-
-class encoder_specific(nn.Module):
+class EncoderSplit(nn.Module):
     def __init__(self, nc=64, nf=64):
-        super(encoder_specific, self).__init__()
-        self.c1 = dcgan_conv(nc, nf, stride=1)  # (64) x 16 x 16
-        self.c2 = dcgan_conv(nf, nf, stride=1)  # (64) x 16 x 16
+        super(EncoderSplit, self).__init__()
+        self.c1 = DCGANConv(nc, nf, stride=1)  # (64) x 16 x 16
+        self.c2 = DCGANConv(nf, nf, stride=1)  # (64) x 16 x 16
 
     def forward(self, input):
         h1 = self.c1(input)
@@ -275,11 +214,11 @@ class encoder_specific(nn.Module):
         return h2
 
 
-class decoder_specific(nn.Module):
+class DecoderSplit(nn.Module):
     def __init__(self, nc=64, nf=64):
-        super(decoder_specific, self).__init__()
-        self.upc1 = dcgan_upconv(nf, nf, stride=1)  # (64) x 16 x 16
-        self.upc2 = dcgan_upconv(nf, nc, stride=1)  # (32) x 32 x 32
+        super(DecoderSplit, self).__init__()
+        self.upc1 = DCGANConvTranspose(nf, nf, stride=1)  # (64) x 16 x 16
+        self.upc2 = DCGANConvTranspose(nf, nc, stride=1)  # (32) x 32 x 32
 
     def forward(self, input):
         d1 = self.upc1(input)
@@ -291,18 +230,18 @@ class EncoderRNN(torch.nn.Module):
 
     def __init__(self, img_size, img_channels, phy_cell_channels, phy_kernel_size, action_size, device):
         super(EncoderRNN, self).__init__()
-        self.encoder_E = encoder_E(nc=img_channels).to(device)
-        self.encoder_Ep = encoder_specific().to(device)
-        self.encoder_Er = encoder_specific().to(device)
+        self.encoder_E = DCGANEncoder(nc=img_channels).to(device)
+        self.encoder_Ep = EncoderSplit().to(device)
+        self.encoder_Er = EncoderSplit().to(device)
 
         zeros = torch.zeros((1, img_channels, *img_size), device=device)
         encoded_zeros = self.encoder_E(zeros)
         self.shape_Ep = self.encoder_Ep(encoded_zeros).shape[1:]
         self.shape_Er = self.encoder_Er(encoded_zeros).shape[1:]
 
-        self.decoder_Dp = decoder_specific().to(device)
-        self.decoder_Dr = decoder_specific().to(device)
-        self.decoder_D = decoder_D(out_size=img_size, nc=img_channels).to(device)
+        self.decoder_Dp = DecoderSplit().to(device)
+        self.decoder_Dr = DecoderSplit().to(device)
+        self.decoder_D = DCGANDecoder(out_size=img_size, nc=img_channels).to(device)
 
         phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
         self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,

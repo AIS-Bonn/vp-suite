@@ -1,7 +1,5 @@
 import torch
 from torch import nn as nn
-from torch.nn import functional as F
-from torchvision import transforms as TF
 
 
 class STLSTMCell(nn.Module):
@@ -148,76 +146,3 @@ class ActionConditionalSTLSTMCell(nn.Module):
         h_new = o_t * torch.tanh(self.conv_last(mem))
 
         return h_new, c_new, m_new, delta_c, delta_m
-
-
-class Autoencoder(nn.Module):
-    def __init__(self, img_channels, img_shape, encoded_channels, device):
-        super(Autoencoder, self).__init__()
-
-        self.img_channels = img_channels
-        self.img_h, self.img_w = img_shape
-        self.encoded_channels = encoded_channels
-        self.device = device
-
-        self.build_models()
-        self.to(self.device)
-
-        zeros = torch.zeros((1, self.img_channels, self.img_h, self.img_w), device=self.device)
-        self.encoded_shape = self.encoder(zeros).shape
-
-    def build_models(self):
-        self.encoder = Encoder(in_channels=self.img_channels, out_channels=self.encoded_channels)
-        self.decoder = Decoder(in_channels=self.encoded_channels, out_channels=self.img_channels,
-                               out_h=self.img_h, out_w=self.img_w)
-
-    def encode(self, x):
-        return self.encoder(x)
-
-    def decode(self, x):
-        return self.decoder(x)
-
-
-class Encoder(nn.Module):
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-
-        self.act_fn = nn.ReLU(inplace=True)
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-
-        self.conv1 = nn.Conv2d(in_channels=self.in_channels, out_channels=32, kernel_size=5, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2)
-        self.mean_layer = nn.Conv2d(in_channels=64, out_channels=self.out_channels, kernel_size=3, stride=1)
-
-    def forward(self, x):
-
-        x = self.act_fn(self.conv1(x))
-        x = self.act_fn(self.conv2(x))
-        x = self.act_fn(self.mean_layer(x))
-        x = F.normalize(x, p=2, dim=-1, eps=1e-8)
-        return x
-
-
-class Decoder(nn.Module):
-
-    def __init__(self, in_channels, out_channels, out_h, out_w):
-        super().__init__()
-
-        self.act_fn = nn.ReLU(inplace=True)
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-
-        self.fc1 = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=1)
-        self.conv1 = nn.ConvTranspose2d(self.in_channels, 64, kernel_size=6, stride=2, padding=0)
-        self.conv2 = nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2, padding=0)
-        self.conv3 = nn.ConvTranspose2d(32, self.out_channels, kernel_size=5, stride=1, padding=0)
-        self.res = TF.Resize(size=(out_h, out_w))
-
-
-    def forward(self, x):
-        x = self.act_fn(self.fc1(x))
-        x = self.act_fn(self.conv1(x))
-        x = self.act_fn(self.conv2(x))
-        x = self.res(self.conv3(x))
-        return x

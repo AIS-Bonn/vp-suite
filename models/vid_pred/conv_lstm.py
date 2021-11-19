@@ -2,8 +2,8 @@ import torch
 from torch import nn as nn
 from torchvision.transforms import functional as TF
 
-from models.model_blocks import ConvLSTMCell
-from models.vid_pred.st_lstm.model_blocks import Autoencoder
+from models.model_blocks.recurrent import ConvLSTMCell
+from models.model_blocks.enc import Autoencoder
 from models.vid_pred.pred_model import VideoPredictionModel
 
 

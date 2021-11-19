@@ -9,8 +9,9 @@ import torch.nn.functional as F
 
 from losses.image_distance import MSE
 from models.vid_pred.pred_model import VideoPredictionModel
-from models.vid_pred.st_lstm.model_blocks import STLSTMCell, ActionConditionalSTLSTMCell, Autoencoder
-from models.vid_pred.phydnet.model_blocks import PhyCell_Cell, K2M
+from models.model_blocks.enc import Autoencoder
+from models.vid_pred.specific_model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
+from models.vid_pred.specific_model_blocks.phydnet import PhyCell_Cell, K2M
 
 
 class STPhy(VideoPredictionModel):

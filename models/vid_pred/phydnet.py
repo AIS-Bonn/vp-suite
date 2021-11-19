@@ -6,8 +6,7 @@ from tqdm import tqdm
 
 from losses.image_distance import MSE
 from models.vid_pred.pred_model import VideoPredictionModel
-
-from models.vid_pred.phydnet.model_blocks import EncoderRNN, K2M
+from models.vid_pred.specific_model_blocks.phydnet import EncoderRNN, K2M
 
 
 class PhyDNet(VideoPredictionModel):

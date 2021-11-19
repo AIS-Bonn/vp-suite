@@ -5,9 +5,9 @@ import torch
 
 from models.vid_pred.conv_lstm import LSTMModel, LSTMModelOld
 from models.vid_pred.copy_last_frame import CopyLastFrameModel
-from models.vid_pred.phydnet.phydnet import PhyDNet
-from models.vid_pred.st_lstm.st_lstm import STLSTMModel
-from models.vid_pred.st_lstm.st_phy import STPhy
+from models.vid_pred.phydnet import PhyDNet
+from models.vid_pred.st_lstm import STLSTMModel
+from models.vid_pred.st_phy import STPhy
 from models.vid_pred.unet_3d import UNet3dModel, UNet3dModelOld
 
 

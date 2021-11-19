@@ -6,7 +6,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 # inspired by https://www.youtube.com/watch?v=IHq1t7NxS8k
-from models.model_blocks import DoubleConv2d
+from models.model_blocks.conv import DoubleConv2d
 
 
 class UNet(nn.Module):
