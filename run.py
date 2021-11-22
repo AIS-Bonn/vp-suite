@@ -8,7 +8,7 @@ from scripts.train_seg import train as train_seg_model
 from scripts.train_graph import train as train_graph_model
 from scripts.test_pred import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
-from models.vid_pred.pred_model_factory import test_all_models
+from models.vid_pred.pred_model_factory import MODELS, test_all_models
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SYNPICK_CLASSES = 22
@@ -38,8 +38,7 @@ if __name__ == '__main__':
     parser.add_argument("--include-gripper", action="store_true", help="If specified, gripper is included in masks")
     parser.add_argument("--include-actions", action="store_true",
                         help="If specified, use gripper deltas for action-conditional learning")
-    parser.add_argument("--pred-arch", type=str, choices=["unet", "unet_old", "lstm", "lstm_old", "non_conv",
-                                                          "st_lstm", "copy", "phy", "st_phy"],
+    parser.add_argument("--pred-arch", type=str, choices=MODELS,
                         default="st_lstm", help="Which prediction model arch to use")
     parser.add_argument("--pred-mode", type=str, choices=["rgb", "colorized", "mask"], default="rgb",
                         help="Which kind of data to train/test on")

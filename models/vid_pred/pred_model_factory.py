@@ -11,6 +11,7 @@ from models.vid_pred.st_phy import STPhy
 from models.vid_pred.unet_3d import UNet3dModel, UNet3dModelOld
 from models.vid_pred.non_conv import LinearLSTMModel
 
+MODELS = ["unet", "unet_old", "lstm", "lstm_old", "non_conv", "st_lstm", "copy", "phy", "st_phy"]
 
 def get_pred_model(cfg):
 
@@ -97,8 +98,7 @@ def test_all_models(cfg):
     x = torch.randn((cfg.batch_size, cfg.vid_input_length, cfg.num_channels, *cfg.img_shape)).to(cfg.device)
     a = torch.randn((cfg.batch_size, cfg.vid_total_length, cfg.action_size)).to(cfg.device)
 
-    arch = ["copy", "unet", "lstm", "st_lstm", "phy", "st_phy"]
-    for (include_actions, arch) in product([False, True], arch):
+    for (include_actions, arch) in product([False, True], MODELS):
         cfg.include_actions = include_actions
         cfg.pred_arch = arch
         model = get_pred_model(cfg)
