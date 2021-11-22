@@ -1,12 +1,11 @@
 # Semantc Video Prediction
 
 This repo contains code to train models that can be used for semantic video prediction:
-- Semantic Segmentation models (using a UNet-like Model)
-- Video Prediction models (on RGB data or Semantic Segmentation information) (using ecurrent convolutional models)
+- Semantic Segmentation models (e.g. a UNet-like Model)
+- Video Prediction models (on RGB data or Semantic Segmentation information) (using mostly recurrent or convolutional models)
 - Object interaction/feature prediction models (using graph neural networks)
 
-Furthermore, it also 
-provides the code to prepare existing [SynPick](http://ais.uni-bonn.de/datasets/synpick/)
+Furthermore, it also provides the code to prepare existing [SynPick](http://ais.uni-bonn.de/datasets/synpick/)
 datasets for the training routined provided.
 
 ## Installation and Usage
@@ -22,13 +21,9 @@ cd semantic-video-prediction
 conda env create -f environment.yml
 ```
 
-*Note: In case `torch-geometric` does not work, install it manually using pip and be sure to match
-the PyTorch and CUDA version (e.g. PyTorch 1.9 and CUDA 10.2):*
-```
-pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.0+cu102.html
-pip install torch-sparse -f https://data.pyg.org/whl/torch-1.9.0+cu102.html
-pip install torch-geometric
-```
+This yml file excludes `PyTorch`, `pytorch-geometric`, and `pytorch-geometric-temporal` because getting matching versions is easier done by hand:
+1. Get a version of PyTorch that suits your needs (e.g. CUDA version) from [here](https://pytorch.org/get-started/locally/).
+2. Follow [this](https://pytorch-geometric-temporal.readthedocs.io/en/latest/notes/installation.html) doc to install matching versions of `pytorch-geometric` and `pytorch-geometric-temporal`.
 
 ### Usage
 
