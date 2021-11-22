@@ -1,4 +1,4 @@
-# Semantc Video Prediction
+# Semantic Video Prediction
 
 This repo contains code to train models that can be used for semantic video prediction:
 - Semantic Segmentation models (e.g. a UNet-like Model)
