@@ -9,6 +9,7 @@ from models.vid_pred.phydnet import PhyDNet
 from models.vid_pred.st_lstm import STLSTMModel
 from models.vid_pred.st_phy import STPhy
 from models.vid_pred.unet_3d import UNet3dModel, UNet3dModelOld
+from models.vid_pred.non_conv import LinearLSTMModel
 
 
 def get_pred_model(cfg):
@@ -40,6 +41,12 @@ def get_pred_model(cfg):
     elif arch == "lstm_old":
         print("prediction model: LSTM (old version)")
         pred_model = LSTMModelOld(in_channels=cfg.num_channels, out_channels=cfg.num_channels)
+
+    elif arch == "non_conv":
+        print("prediction model: Non-Conv LSTM")
+        pred_model = LinearLSTMModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
+                                     img_size=cfg.img_shape, lstm_kernel_size=(5, 5), num_layers=3,
+                                     action_size=action_size, device=cfg.device)
 
     elif arch == "st_lstm":
         print("prediction model: ST-LSTM")
