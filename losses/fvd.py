@@ -27,13 +27,8 @@ class FrechetVideoDistance(nn.Module):
     def __init__(self, device, num_frames, in_channels=3):
         super(FrechetVideoDistance, self).__init__()
 
-        if num_frames < self.min_T:
-            raise ValueError(f"The I3D Module used for FVD needs at least"
-                             f" 9 input frames (given: {num_frames})!")
-        elif num_frames > self.max_T:
-            self.determine_number_of_chunks(num_frames)
-            print(f"Warning: The I3D Module used for FVD handles at most 16 input frames (given: {num_frames})"
-                  f" -> input video will be chunked into {self.input_chunks} chunks!")
+        self.pred_frames = num_frames
+        _ = self.has_valid_num_pred_frames()
 
         self.i3d = InceptionI3d(num_classes=self.i3d_num_classes, in_channels=in_channels)
         self.i3d.load_state_dict(torch.load("models/i3d/models/rgb_imagenet.pt"))
@@ -41,6 +36,18 @@ class FrechetVideoDistance(nn.Module):
         self.i3d.eval()  # don't train the pre-trained I3D
         self.to(device)
 
+    def has_valid_num_pred_frames(self):
+        ok = True
+        if self.pred_frames < self.min_T:
+            print(f"The I3D Module used for FVD needs at least"
+                             f" 9 input frames (given: {self.pred_frames}) -> returning None as loss value!")
+            ok = False
+        elif self.pred_frames > self.max_T:
+            self.determine_number_of_chunks(self.pred_frames)
+            print(f"Warning: The I3D Module used for FVD handles at most 16 input frames (given: {self.pred_frames})"
+                  f" -> input video will be chunked into {self.input_chunks} chunks!")
+            ok = True
+        return ok
 
     def determine_number_of_chunks(self, n):
         '''
@@ -67,6 +74,9 @@ class FrechetVideoDistance(nn.Module):
         vid_shape = pred.shape
         if vid_shape != real.shape:
             raise ValueError("FrechetVideoDistance.get_distance(pred, real): vid shapes not equal!")
+
+        if not self.has_valid_num_pred_frames():
+            return None
 
         # resize images in video to 224x224 because the I3D network needs that
         pred = TF.resize(pred.reshape(-1, *vid_shape[2:]), self.i3d_in_shape)

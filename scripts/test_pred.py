@@ -5,6 +5,7 @@ sys.path.append(".")
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
+import wandb
 
 import torch
 from torch.utils.data import DataLoader
@@ -69,7 +70,7 @@ def test_pred_models(cfg):
         elif not cfg.no_wandb:
             not_first_iter = i > 0
             last_iter = i == len(pm_items) - 1
-            wandb.init(config={full_eval: cfg.full_test, model: model_desc},
+            wandb.init(config={"full_eval": cfg.full_test, "model": model_desc},
                        project="sem_vp_test_pred", reinit=not_first_iter)
             wandb.log(mean_metric_dict, commit=last_iter)
             if last_iter:
