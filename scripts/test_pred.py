@@ -58,6 +58,18 @@ def test_pred_models(cfg):
                                    **get_prediction_metrics(pred, target)}
                     metric_dicts.append(cur_metrics)
 
+    print(f"Saving visualizations (except for {copy_last_frame_id})...")
+    num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
+    num_vis = 5
+    vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
+    for model_path, (model, _) in pred_models.items():
+        if model_path != copy_last_frame_id:
+            model_dir = str(Path(model_path).parent.resolve())
+            print(model_path, model_dir)
+            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
+                          (cfg.pred_mode, num_channels), test=True, vis_idx=vis_idx, mode="mp4")
+
+    if eval_length > 0:
         pm_items = pred_models.items()
         for i, (model_desc, (_, metric_dicts)) in enumerate(pm_items):
             mean_metric_dict = {k: np.mean([m_dict[k] for m_dict in metric_dicts]) for k in metric_dicts[0].keys()}
@@ -77,14 +89,3 @@ def test_pred_models(cfg):
                 wandb.log(mean_metric_dict, commit=last_iter)
                 if last_iter:
                     wandb.finish()
-
-    print(f"Saving visualizations (except for {copy_last_frame_id})...")
-    num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
-    num_vis = 5
-    vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
-    for model_path, (model, _) in pred_models.items():
-        if model_path != copy_last_frame_id:
-            model_dir = str(Path(model_path).parent.resolve())
-            print(model_path, model_dir)
-            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
-                          (cfg.pred_mode, num_channels), test=True, vis_idx=vis_idx, mode="mp4")
