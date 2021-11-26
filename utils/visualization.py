@@ -1,6 +1,7 @@
 import math
 import os
 
+from pathlib import Path
 import networkx as nx
 import numpy as np
 import torch
@@ -109,7 +110,7 @@ def add_border_around_vid(vid, c_and_l, b_width=10):
     return vid
 
 
-def save_vid_vis(out_fp, vid_input_length, **trajs):
+def save_vid_vis(out_fp, vid_input_length, mode="gif", **trajs):
 
     T, _, h, w = list(trajs.values())[0].shape
     T_in, T_pred = vid_input_length, T-vid_input_length
@@ -121,39 +122,53 @@ def save_vid_vis(out_fp, vid_input_length, **trajs):
         else:
             trajs[key] = add_border_around_vid(traj, [("green", T_in), ("red", T_pred)], b_width=16)
 
-    n_trajs = len(trajs)
-    plt_scale = 0.01
-    plt_cols = math.ceil(math.sqrt(n_trajs))
-    plt_rows = math.ceil(n_trajs / plt_cols)
-    plt_w = 1.2 * w * plt_scale * plt_cols
-    plt_h = 1.4 * h * plt_scale * plt_rows
-    fig = plt.figure(figsize=(plt_w, plt_h), dpi=100)
+    if mode == "gif":
+        n_trajs = len(trajs)
+        plt_scale = 0.01
+        plt_cols = math.ceil(math.sqrt(n_trajs))
+        plt_rows = math.ceil(n_trajs / plt_cols)
+        plt_w = 1.2 * w * plt_scale * plt_cols
+        plt_h = 1.4 * h * plt_scale * plt_rows
+        fig = plt.figure(figsize=(plt_w, plt_h), dpi=100)
 
-    def update(t):
-        for i, (name, traj) in enumerate(trajs.items()):
-            plt.subplot(plt_rows, plt_cols, i+1)
-            plt.xticks([])
-            plt.yticks([])
-            plt.title(' '.join(name.split('_')).title())
-            plt.imshow(traj[t].transpose(1, 2, 0))
+        def update(t):
+            for i, (name, traj) in enumerate(trajs.items()):
+                plt.subplot(plt_rows, plt_cols, i+1)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title(' '.join(name.split('_')).title())
+                plt.imshow(traj[t].transpose(1, 2, 0))
 
-    anim = FuncAnimation(fig, update, frames=np.arange(T), interval=500)
-    anim.save(out_fp, writer="imagemagick", dpi=200)
-    plt.close(fig)
-
+        anim = FuncAnimation(fig, update, frames=np.arange(T), interval=500)
+        anim.save(out_fp, writer="imagemagick", dpi=200)
+        plt.close(fig)
+    else:
+        from moviepy.editor import ImageSequenceClip
+        for name, traj in trajs.items():
+            frames = list(traj)
+            out_paths = []
+            for t, frame in enumerate(frames):
+                out_fn = f"{out_fp[:-4]}_{name}_t{t}.gif"
+                out_paths.append(out_fn)
+                Image.fromarray(frame.transpose((1, 2, 0))).save(out_fn)
+            clip = ImageSequenceClip(out_paths, fps=2)
+            clip.write_videofile(f"{out_fp[:-4]}_{name}.mp4", fps=2)
+            for out_fn in out_paths:
+                os.remove(out_fn)
 
 def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device,
-                  out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False):
+                  out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False, vis_idx=None, mode="gif"):
 
     pred_mode, num_channels = vid_type
     out_fn_template = "vis_{}_test.gif" if test else "vis_{}.gif"
     out_filenames = []
 
-    for i in range(num_vis):
+    if vis_idx is None:
+        vis_idx = np.random.choice(len(dataset), num_vis, replace=False)
 
+    for i, n in enumerate(vis_idx):
         out_filename = os.path.join(out_dir, out_fn_template.format(str(i)))
         out_filenames.append(out_filename)
-        n = np.random.choice(len(dataset))
         data = dataset[n] # [in_l + pred_l, c, h, w]
 
         gt_rgb_vis = postprocess_img(data["rgb"])
@@ -175,13 +190,13 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                     pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=num_channels).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
 
                 save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
-                    true_colorized=gt_colorized_vis, pred_trajectory=pr_traj_vis)
+                    true_colorized=gt_colorized_vis, pred_trajectory=pr_traj_vis, mode=mode)
 
             pred_model.train()
 
         else:
             save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
-                true_colorized=gt_colorized_vis)
+                true_colorized=gt_colorized_vis, mode=mode)
 
     return out_filenames
 

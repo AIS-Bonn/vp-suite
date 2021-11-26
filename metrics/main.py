@@ -47,14 +47,20 @@ def get_prediction_metrics(pred, target, frames=None):
     target_stacked = target.view(-1, *target.shape[2:]).detach().cpu()
     target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
 
-    return {
+    metrics_dict = {
         f"ssim_{frames} (↑)": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         f"psnr_{frames} (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         f"mse_{frames} (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         f"mae_{frames} (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
         f"lpips_{frames} (↓)": LPIPS(device=pred.device).forward(pred, target).item(),
-        f"fvd_{frames} (↓)": FVD(device=pred.device, num_frames=t, in_channels=c).forward(pred, target).item()
     }
+
+    # FVD can be None if frame length does not fit -> disregard those
+    if frames >= FVD.min_T and frames <= FVD.max_T:
+        fvd = FVD(device=pred.device, num_frames=t, in_channels=c)
+        metrics_dict[f"fvd_{frames} (↓)"] = fvd.forward(pred, target).item()
+
+    return metrics_dict
 
 
 if __name__ == '__main__':
