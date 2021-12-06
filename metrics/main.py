@@ -25,7 +25,7 @@ def get_segmentation_metrics(pred, target):
     }
 
 
-def get_prediction_metrics(pred, target, frames=None):
+def get_prediction_metrics(pred, target, frames=None, all_frame_cnts=False, lpips=None, fvd=None):
     '''
     input type: torch.tensor (torch.float)
     input shape: [b, t, c, h, w]
@@ -47,18 +47,23 @@ def get_prediction_metrics(pred, target, frames=None):
     target_stacked = target.view(-1, *target.shape[2:]).detach().cpu()
     target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
 
-    metrics_dict = {
-        f"ssim_{frames} (↑)": np.mean([SSIM(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        f"psnr_{frames} (↑)": np.mean([PSNR(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        f"mse_{frames} (↓)": np.mean([MSE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        f"mae_{frames} (↓)": np.mean([MAE(p, t) for p, t in zip(pred_numpy, target_numpy)]),
-        f"lpips_{frames} (↓)": LPIPS(device=pred.device).forward(pred, target).item(),
-    }
+    metrics_dict = {}
+    frames = [frames] if not all_frame_cnts else range(1, frames+1)
+    lpips = lpips if lpips is not None else LPIPS(device=pred.device)
+    fvd = fvd if fvd is not None else FVD(device=pred.device, num_frames=t, in_channels=c)
 
-    # FVD can be None if frame length does not fit -> disregard those
-    if frames >= FVD.min_T and frames <= FVD.max_T:
-        fvd = FVD(device=pred.device, num_frames=t, in_channels=c)
-        metrics_dict[f"fvd_{frames} (↓)"] = fvd.forward(pred, target).item()
+    for frame_cnt in frames:
+        metrics_dict.update({
+            f"ssim_{frame_cnt} (↑)": np.mean([SSIM(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
+            f"psnr_{frame_cnt} (↑)": np.mean([PSNR(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
+            f"mse_{frame_cnt} (↓)": np.mean([MSE(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
+            f"mae_{frame_cnt} (↓)": np.mean([MAE(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
+            f"lpips_{frame_cnt} (↓)": lpips.forward(pred[:, :frame_cnt], target[:, :frame_cnt]).item(),
+        })
+
+        # FVD can be None if frame length does not fit -> disregard those
+        if frame_cnt >= fvd.min_T and frame_cnt <= fvd.max_T:
+            metrics_dict[f"fvd_{frame_cnt} (↓)"] = fvd.forward(pred[:, :frame_cnt], target[:, :frame_cnt]).item()
 
     return metrics_dict
 

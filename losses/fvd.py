@@ -76,6 +76,7 @@ class FrechetVideoDistance(nn.Module):
             raise ValueError("FrechetVideoDistance.get_distance(pred, real): vid shapes not equal!")
 
         if not self.has_valid_num_pred_frames():
+            print(pred.shape, real.shape)
             return None
 
         # resize images in video to 224x224 because the I3D network needs that

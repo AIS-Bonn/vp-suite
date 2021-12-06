@@ -8,13 +8,13 @@ sys.path.append(".")
 from models.vid_pred.pred_model import VideoPredictionModel
 
 
-class LinearLSTMModel(VideoPredictionModel):
+class NonConvLSTMModel(VideoPredictionModel):
 
     bottleneck_dim = 1024
     lstm_hidden_dim = 1024
 
     def __init__(self, in_channels, out_channels, img_size, lstm_kernel_size, num_layers, action_size, device):
-        super(LinearLSTMModel, self).__init__()
+        super(NonConvLSTMModel, self).__init__()
 
         self.device = device
         self.in_channels = in_channels

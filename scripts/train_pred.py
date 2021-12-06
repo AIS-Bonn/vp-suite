@@ -128,7 +128,8 @@ def train(trial=None, cfg=None):
         wandb.finish()
 
     print("Testing done, bye bye!")
-    return test_metrics["fvd (↓)"], test_metrics["mse (↓)"]
+    frames = cfg.vid_pred_length
+    return test_metrics[f"fvd_{frames} (↓)"], test_metrics[f"mse_{frames} (↓)"]
 
 # ==============================================================================
 

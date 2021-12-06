@@ -9,9 +9,10 @@ from models.vid_pred.phydnet import PhyDNet
 from models.vid_pred.st_lstm import STLSTMModel
 from models.vid_pred.st_phy import STPhy
 from models.vid_pred.unet_3d import UNet3dModel, UNet3dModelOld
-from models.vid_pred.non_conv import LinearLSTMModel
+from models.vid_pred.non_conv import NonConvLSTMModel
+from models.vid_pred.lin_pred import SimpleV1, SimpleV2
 
-MODELS = ["unet", "unet_old", "lstm", "lstm_old", "non_conv", "st_lstm", "copy", "phy", "st_phy"]
+MODELS = ["unet", "unet_old", "lstm", "lstm_old", "non_conv", "st_lstm", "copy", "phy", "st_phy", "simplev1", "simplev2"]
 
 def get_pred_model(cfg):
 
@@ -22,7 +23,17 @@ def get_pred_model(cfg):
     else:
         action_size = 0
 
-    if arch == "unet":
+    if arch == "simplev1":
+        print("prediction model: SimpleV1")
+        pred_model = SimpleV1(in_channels=cfg.num_channels, out_channels=cfg.num_channels, time_slice=5,
+                              action_size=action_size, device=cfg.device)
+
+    elif arch == "simplev2":
+        print("prediction model: SimpleV2")
+        pred_model = SimpleV2(in_channels=cfg.num_channels, out_channels=cfg.num_channels, time_slice=5,
+                              action_size=action_size, device=cfg.device)
+
+    elif arch == "unet":
         print("prediction model: UNet3d")
         pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels, img_size=cfg.img_shape,
                                  time_dim=cfg.vid_input_length, features=cfg.pred_unet_features,
@@ -45,9 +56,9 @@ def get_pred_model(cfg):
 
     elif arch == "non_conv":
         print("prediction model: Non-Conv LSTM")
-        pred_model = LinearLSTMModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
-                                     img_size=cfg.img_shape, lstm_kernel_size=(5, 5), num_layers=3,
-                                     action_size=action_size, device=cfg.device)
+        pred_model = NonConvLSTMModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
+                                      img_size=cfg.img_shape, lstm_kernel_size=(5, 5), num_layers=3,
+                                      action_size=action_size, device=cfg.device)
 
     elif arch == "st_lstm":
         print("prediction model: ST-LSTM")
