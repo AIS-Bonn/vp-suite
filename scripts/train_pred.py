@@ -1,4 +1,4 @@
-import os, random
+import random
 from pathlib import Path
 
 import wandb
@@ -6,10 +6,9 @@ import wandb
 import numpy as np
 import torch.nn
 from tqdm import tqdm
-from torch.utils.data import DataLoader
 
 from scripts.test_pred import test_pred_models
-from dataset.synpick_vid import SynpickVideoDataset
+from dataset.dataset import create_dataset
 from models.vid_pred.pred_model_factory import get_pred_model
 from losses.main import PredictionLossProvider
 from utils.visualization import visualize_vid
@@ -21,6 +20,7 @@ def train(trial=None, cfg=None):
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
     num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
     cfg.num_channels = num_classes if cfg.pred_mode == "mask" else 3
+    cfg.num_classes = num_classes
     vid_type = (cfg.pred_mode, cfg.num_channels)
 
     random.seed(cfg.seed)
@@ -28,21 +28,7 @@ def train(trial=None, cfg=None):
     torch.manual_seed(cfg.seed)
 
     # DATA
-    data_dir = cfg.data_dir
-    train_dir = os.path.join(data_dir, 'train')
-    val_dir = os.path.join(data_dir, 'val')
-    test_dir = os.path.join(data_dir, 'test')
-    train_data = SynpickVideoDataset(data_dir=train_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                     allow_overlap=cfg.vid_allow_overlap, num_classes=num_classes,
-                                     include_gripper=cfg.include_gripper)
-    val_data = SynpickVideoDataset(data_dir=val_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                   allow_overlap=cfg.vid_allow_overlap, num_classes=num_classes,
-                                   include_gripper=cfg.include_gripper)
-    train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.batch_size,
-                              drop_last=True)
-    valid_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=4, drop_last=True)
-    cfg.action_size = train_data.action_size
-    cfg.img_shape = train_data.img_shape
+    (train_data, val_data, test_data), (train_loader, val_loader, test_loader) = create_dataset(cfg)
 
     # Optuna
     if cfg.use_optuna:
@@ -91,8 +77,9 @@ def train(trial=None, cfg=None):
 
         # eval
         print("Validating...")
-        val_losses, indicator_loss = eval_iter(cfg, valid_loader, pred_model, loss_provider)
-        optimizer_scheduler.step(indicator_loss)
+        val_losses, indicator_loss = eval_iter(cfg, val_loader, pred_model, loss_provider)
+        if not cfg.no_train:
+            optimizer_scheduler.step(indicator_loss)
         print("Validation losses (mean over entire validation set):")
         for k, v in val_losses.items():
             print(f" - {k}: {v}")
@@ -105,7 +92,7 @@ def train(trial=None, cfg=None):
             print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
-        if epoch % 10 == 9 and not cfg.no_vis:
+        if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
             print("Saving visualizations...")
             out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
                                           cfg.device, cfg.out_dir, vid_type, num_vis=10)

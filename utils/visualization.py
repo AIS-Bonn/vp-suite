@@ -112,10 +112,11 @@ def add_border_around_vid(vid, c_and_l, b_width=10):
 
 def save_vid_vis(out_fp, vid_input_length, mode="gif", **trajs):
 
+    trajs = {k: v for k, v in trajs.items() if v is not None}  # filter out 'None' trajs
     T, _, h, w = list(trajs.values())[0].shape
     T_in, T_pred = vid_input_length, T-vid_input_length
     for key, traj in trajs.items():
-        if "true_" in key.lower() or "gt_" in key.lower():
+        if "true_" in key.lower() or "gt_" in key.lower() or key.lower() == "gt":
             trajs[key] = add_border_around_vid(traj, [("green", T)], b_width=16)
         elif "seg" in key.lower():
             trajs[key] = add_border_around_vid(traj, [("yellow", T)], b_width=16)
@@ -171,8 +172,10 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
         out_filenames.append(out_filename)
         data = dataset[n] # [in_l + pred_l, c, h, w]
 
-        gt_rgb_vis = postprocess_img(data["rgb"])
-        gt_colorized_vis = postprocess_img(data["colorized"])
+        gt_rgb_vis = postprocess_img(data["rgb"][:vid_input_length+vid_pred_length])
+        gt_colorized_vis = data.get("colorized", None)
+        if gt_colorized_vis is not None:
+            gt_colorized_vis = postprocess_img(gt_colorized_vis)
         actions = data["actions"].to(device).unsqueeze(dim=0)
         in_traj = data[pred_mode]
 
@@ -189,14 +192,14 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                     pr_traj_vis = postprocess_mask(pr_traj.argmax(dim=2).squeeze())  # [in_l + pred_l, h, w]
                     pr_traj_vis = colorize_semseg(pr_traj_vis, num_classes=num_channels).transpose((0, 3, 1, 2))  # [in_l + pred_l, 3, h, w]
 
-                save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
-                    true_colorized=gt_colorized_vis, pred_trajectory=pr_traj_vis, mode=mode)
+                save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, GT=gt_rgb_vis,
+                    GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)
 
             pred_model.train()
 
         else:
-            save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, true_trajectory=gt_rgb_vis,
-                true_colorized=gt_colorized_vis, mode=mode)
+            save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, GT=gt_rgb_vis,
+                GT_Color=gt_colorized_vis, mode=mode)
 
     return out_filenames
 

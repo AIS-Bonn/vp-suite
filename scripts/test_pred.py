@@ -19,7 +19,7 @@ from utils.visualization import visualize_vid
 
 copy_last_frame_id = "CopyLastFrame baseline"
 
-def test_pred_models(cfg):
+def test_pred_models(cfg, test_loader=None):
 
     # prep
     random.seed(cfg.seed)
@@ -34,10 +34,11 @@ def test_pred_models(cfg):
 
     # DATASET
     data_dir = os.path.join(cfg.data_dir, "test")
-    test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                    allow_overlap=cfg.vid_allow_overlap, num_classes=dataset_classes,
-                                    include_gripper=cfg.include_gripper)
-    test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
+    if test_loader is None:
+        test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
+                                        allow_overlap=cfg.vid_allow_overlap, num_classes=dataset_classes,
+                                        include_gripper=cfg.include_gripper)
+        test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
     iter_loader = iter(test_loader)
     eval_length = len(iter_loader) if cfg.full_test else 10
 

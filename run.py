@@ -9,6 +9,7 @@ from scripts.train_graph import train as train_graph_model
 from scripts.test_pred import test_pred_models
 from scripts.visualize_4_way import visualize_4_way
 from models.vid_pred.pred_model_factory import MODELS, test_all_models
+from dataset.dataset import SUPPORTED_DATASETS
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SYNPICK_CLASSES = 22
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"], default=DEVICE)
     parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--out-dir", type=str, default=None, help="Output path for results (models, visualizations...)")
+    parser.add_argument("--dataset", type=str, choices=SUPPORTED_DATASETS)
     parser.add_argument("--dataset-classes", type=int, default=SYNPICK_CLASSES,
                         help="Number of object classes in dataset (applies to semantic segmentation/prediction only)")
     parser.add_argument("--vid-step", type=int, default=2, help="For video dataset, use only every nth frame")
@@ -66,7 +68,7 @@ if __name__ == '__main__':
     parser.add_argument("--teacher-forcing-epochs", type=int, default=0,
                         help="Number of epochs in which a decaying teacher forcing ratio is used")
     parser.add_argument("--mse-loss-scale", type=float, default=1.0)
-    parser.add_argument("--l1-loss-scale", type=float, default=1.0)
+    parser.add_argument("--l1-loss-scale", type=float, default=0.0)
     parser.add_argument("--smoothl1-loss-scale", type=float, default=0.0)
     parser.add_argument("--lpips-loss-scale", type=float, default=0.0)
     parser.add_argument("--fvd-loss-scale", type=float, default=0.0)
