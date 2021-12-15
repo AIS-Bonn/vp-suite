@@ -36,6 +36,10 @@ class FrechetVideoDistance(nn.Module):
         self.i3d.eval()  # don't train the pre-trained I3D
         self.to(device)
 
+    @classmethod
+    def valid_T(cls, x):
+        return x >= cls.min_T and x <= cls.max_T
+
     def has_valid_num_pred_frames(self):
         ok = True
         if self.pred_frames < self.min_T:

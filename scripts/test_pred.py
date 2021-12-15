@@ -8,18 +8,16 @@ import numpy as np
 import wandb
 
 import torch
-from torch.utils.data import DataLoader
 
 from models.vid_pred.copy_last_frame import CopyLastFrameModel
-from dataset.synpick_vid import SynpickVideoDataset
-from metrics.main import get_prediction_metrics
-from losses.image_perceptual import LPIPS
-from losses.fvd import FrechetVideoDistance as FVD
+from metrics.main import PredictionMetricProvider
 from utils.visualization import visualize_vid
+from dataset.dataset import create_dataset
+
 
 copy_last_frame_id = "CopyLastFrame baseline"
 
-def test_pred_models(cfg, test_loader=None):
+def test_pred_models(cfg, test_stuff=None):
 
     # prep
     random.seed(cfg.seed)
@@ -33,20 +31,19 @@ def test_pred_models(cfg, test_loader=None):
         pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
 
     # DATASET
-    data_dir = os.path.join(cfg.data_dir, "test")
-    if test_loader is None:
-        test_data = SynpickVideoDataset(data_dir=data_dir, num_frames=cfg.vid_total_length, step=cfg.vid_step,
-                                        allow_overlap=cfg.vid_allow_overlap, num_classes=dataset_classes,
-                                        include_gripper=cfg.include_gripper)
-        test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=4)
+    if test_stuff is None:
+        (_, _, test_data), (_, _, test_loader) = create_dataset(cfg)
+    else:
+        test_data, test_loader = test_stuff
+
     iter_loader = iter(test_loader)
     eval_length = len(iter_loader) if cfg.full_test else 10
 
     # evaluation / metric calc.
     if eval_length > 0:
         with torch.no_grad():
-            lpips = LPIPS(device=cfg.device)
-            fvd = FVD(device=cfg.device, num_frames=cfg.vid_pred_length, in_channels=3)
+
+            metric_provider = PredictionMetricProvider(cfg)
 
             for i in tqdm(range(eval_length)):
                 data = next(iter_loader)
@@ -60,7 +57,7 @@ def test_pred_models(cfg, test_loader=None):
                         pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
                     else:
                         pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length)
-                    cur_metrics = get_prediction_metrics(pred, target, all_frame_cnts=True, lpips=lpips, fvd=fvd)
+                    cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
                     metric_dicts.append(cur_metrics)
 
     # save visualizations

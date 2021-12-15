@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from losses.image_distance import MSE
+from losses.loss_image import MSE
 from models.vid_pred.pred_model import VideoPredictionModel
 from models.model_blocks.enc import Autoencoder
 from models.vid_pred.specific_model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
@@ -75,7 +75,7 @@ class STPhy(VideoPredictionModel):
             for j in range(0, 7):
                 self.constraints[ind, i, j] = 1
                 ind += 1
-        self.criterion = MSE()
+        self.criterion = MSE(device=self.device)
 
         self.to(self.device)
 

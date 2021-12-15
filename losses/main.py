@@ -1,28 +1,28 @@
 import torch
-import torch.nn as nn
-import numpy as np
 
-from losses.image_distance import MSE, L1, SmoothL1
-from losses.image_perceptual import LPIPS
+from losses.loss_image import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
 from losses.fvd import FrechetVideoDistance as FVD
 
-
-class PredictionLossProvider(nn.Module):
+class PredictionLossProvider():
     def __init__(self, cfg):
 
         self.ignore_zero_scales = not cfg.calc_zero_loss_scales
         self.device = cfg.device
         self.losses = {
-            "mse": (MSE().to(self.device), cfg.mse_loss_scale),
-            "l1": (L1().to(self.device), cfg.l1_loss_scale),
-            "smooth_l1": (SmoothL1().to(self.device), cfg.smoothl1_loss_scale),
-            "lpips": (LPIPS(device=self.device), cfg.lpips_loss_scale)
+            "mse": (MSE(device=self.device), cfg.mse_loss_scale),
+            "l1": (L1(device=self.device), cfg.l1_loss_scale),
+            "smooth_l1": (SmoothL1(device=self.device), cfg.smoothl1_loss_scale),
+            "lpips": (LPIPS(device=self.device), cfg.lpips_loss_scale),
+            "ssim": (SSIM(device=self.device), cfg.ssim_loss_scale),
+            "psnr": (PSNR(device=self.device), cfg.psnr_loss_scale)
         }
+        '''
         # FVD loss only available for 2- or 3- channel input
         if cfg.num_channels in [2, 3]:
             self.losses["fvd"] = (FVD(device=self.device, num_frames=cfg.vid_pred_length,
                                       in_channels=cfg.num_channels),
                                   cfg.fvd_loss_scale)
+        '''
 
     def get_losses(self, pred, target, eval=False):
         '''
@@ -37,7 +37,7 @@ class PredictionLossProvider(nn.Module):
         for key, (loss, scale) in self.losses.items():
             if scale == 0 and self.ignore_zero_scales and not eval: continue
             val = loss(pred, target)
-            loss_values[key] = val
             total_loss += scale * val
+            loss_values[key] = loss.loss_to_display(val)
 
         return loss_values, total_loss

@@ -109,14 +109,14 @@ def train(trial=None, cfg=None):
     print("\nTraining done, testing best model...")
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
-    test_metrics = test_pred_models(cfg)
+    test_metrics = test_pred_models(cfg, (test_data, test_loader))
     if not cfg.no_wandb:
         wandb.log(test_metrics, commit=True)
         wandb.finish()
 
     print("Testing done, bye bye!")
     frames = cfg.vid_pred_length
-    return test_metrics[f"fvd_{frames} (↓)"], test_metrics[f"mse_{frames} (↓)"]
+    return test_metrics[f"mse_{frames} (↓)"]
 
 # ==============================================================================
 

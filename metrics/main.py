@@ -4,10 +4,8 @@ sys.path.append(".")
 import torch
 import numpy as np
 
-from metrics.image_distance import SSIM, PSNR, MSE, MAE
 from metrics.segmentation import Accuracy as ACC
-from losses.image_perceptual import LPIPS
-from losses.fvd import FrechetVideoDistance as FVD
+from losses.loss_image import LPIPS, MSE, L1, SmoothL1, SSIM, PSNR
 
 
 def get_segmentation_metrics(pred, target):
@@ -25,59 +23,47 @@ def get_segmentation_metrics(pred, target):
     }
 
 
-def get_prediction_metrics(pred, target, frames=None, all_frame_cnts=False, lpips=None, fvd=None):
-    '''
-    input type: torch.tensor (torch.float)
-    input shape: [b, t, c, h, w]
-    input range: [-1.0, 1.0]
-    if frames is specified, only considers the first 'frames' frames.
-    '''
+class PredictionMetricProvider():
+    def __init__(self, cfg):
 
-    if pred.shape != target.shape:
-        raise ValueError("Output images and target images are of different shape!")
+        self.device = cfg.device
+        self.metrics = {
+            "mse": MSE(device=self.device),
+            "mae/l1": L1(device=self.device),
+            "smooth_l1": SmoothL1(device=self.device),
+            "lpips": LPIPS(device=self.device),
+            "ssim": SSIM(device=self.device),
+            "psnr": PSNR(device=self.device)
+        }
+        # FVD loss only available for 2- or 3- channel input
+        self.use_fvd = cfg.num_channels in [2, 3]
 
-    frames = frames or pred.shape[1]
-    pred = pred[:, :frames]
-    target = target[:, :frames]
-    b, t, c, h, w = pred.shape
+    def get_metrics(self, pred, target, frames=None, all_frame_cnts=False):
+        '''
+        input type: torch.tensor (torch.float)
+        input shape: [b, t, c, h, w]
+        input range: [-1.0, 1.0]
+        if frames is specified, only considers the first 'frames' frames.
+        '''
 
-    # for image-level losses: create zippable lists of pred-target numpy array pairs, removing other dimensions
-    pred_stacked = pred.view(-1, *pred.shape[2:]).detach().cpu()
-    pred_torch, pred_numpy = list(pred_stacked), list(pred_stacked.numpy())
-    target_stacked = target.view(-1, *target.shape[2:]).detach().cpu()
-    target_torch, target_numpy = list(target_stacked), list(target_stacked.numpy())
+        if pred.shape != target.shape:
+            raise ValueError("Output images and target images are of different shape!")
 
-    metrics_dict = {}
-    frames = [frames] if not all_frame_cnts else range(1, frames+1)
-    lpips = lpips if lpips is not None else LPIPS(device=pred.device)
-    fvd = fvd if fvd is not None else FVD(device=pred.device, num_frames=t, in_channels=c)
+        frames = frames or pred.shape[1]
+        pred = pred[:, :frames]
+        target = target[:, :frames]
 
-    for frame_cnt in frames:
-        metrics_dict.update({
-            f"ssim_{frame_cnt} (↑)": np.mean([SSIM(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
-            f"psnr_{frame_cnt} (↑)": np.mean([PSNR(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
-            f"mse_{frame_cnt} (↓)": np.mean([MSE(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
-            f"mae_{frame_cnt} (↓)": np.mean([MAE(p, t) for p, t in list(zip(pred_numpy, target_numpy))[:frame_cnt]]),
-            f"lpips_{frame_cnt} (↓)": lpips.forward(pred[:, :frame_cnt], target[:, :frame_cnt]).item(),
-        })
+        metrics_dict = {}
+        frames = [frames] if not all_frame_cnts else range(1, frames + 1)
 
-        # FVD can be None if frame length does not fit -> disregard those
-        if frame_cnt >= fvd.min_T and frame_cnt <= fvd.max_T:
-            metrics_dict[f"fvd_{frame_cnt} (↓)"] = fvd.forward(pred[:, :frame_cnt], target[:, :frame_cnt]).item()
+        for frame_cnt in frames:
+            pred_ = pred[:, :frame_cnt]
+            target_ = target[:, :frame_cnt]
+            frame_cnt_metrics = {
+                f"{key}_{frame_cnt} ({'↑' if loss.bigger_is_better else '↓'})":
+                    loss.loss_to_display(loss(pred_, target_).item())
+                for key, loss in self.metrics.items()
+            }
+            metrics_dict.update(frame_cnt_metrics)
 
-    return metrics_dict
-
-
-if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("\nPrediction metrics:")
-    a, b = torch.rand(8, 16, 3, 93, 124).to(device), torch.rand(8, 16, 3, 93, 124).to(device)  # [b, t, c, h, w]
-    a, b = 2*a-1, 2*b-1  # range: [-1.0, 1.0)
-    for metric, val in get_prediction_metrics(a, b).items():
-        print(f"{metric}: {val}")
-
-    print("\nSegmentation metrics:")
-    x, y = torch.rand(8, 93, 124).to(device), torch.rand(8, 93, 124).to(device)  # [b, h, w]
-    x, y = (10*x).int(), (10*y).int()
-    for metric, val in get_segmentation_metrics(x, y).items():
-        print(f"{metric}: {val}")
+        return metrics_dict

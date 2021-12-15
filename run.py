@@ -71,6 +71,8 @@ if __name__ == '__main__':
     parser.add_argument("--l1-loss-scale", type=float, default=0.0)
     parser.add_argument("--smoothl1-loss-scale", type=float, default=0.0)
     parser.add_argument("--lpips-loss-scale", type=float, default=0.0)
+    parser.add_argument("--ssim-loss-scale", type=float, default=0.0)
+    parser.add_argument("--psnr-loss-scale", type=float, default=0.0)
     parser.add_argument("--fvd-loss-scale", type=float, default=0.0)
     parser.add_argument("--calc-zero-loss-scales", action="store_true", help="if specified, also calculates loss scores"
                                                                              "for those losses not used for backprop")
