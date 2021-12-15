@@ -63,8 +63,8 @@ class PSNR(Loss):
             pred = pred.reshape(-1, *pred.shape[2:])  # [b*t, ...]
         if target.ndim == 5:
             target = target.reshape(-1, *target.shape[2:])  # [b*t, ...]
-        pred = (pred + 1) / 2  # range: [0., 1.]
-        target = (target + 1) / 2  # range: [0., 1.]
+        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
+        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
         return -self.criterion(pred, target)
 
     @classmethod
@@ -82,8 +82,8 @@ class LPIPS(Loss):
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
         assert pred.shape[1] == 3, "pred channels != 3"
         assert target.shape[1] == 3, "target channels != 3"
-        pred = (pred + 1) / 2  # range: [0., 1.]
-        target = (target + 1) / 2  # range: [0., 1.]
+        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
+        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)  # scalar
 
     def loss_to_display(cls, x): return 1.0 - x
@@ -100,8 +100,8 @@ class SSIM(Loss):
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
         assert pred.shape[1] == 3, "pred channels != 3"
         assert target.shape[1] == 3, "target channels != 3"
-        pred = (pred + 1) / 2  # range: [0., 1.]
-        target = (target + 1) / 2  # range: [0., 1.]
+        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
+        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)
 
     def loss_to_display(cls, x): return 1.0 - x
