@@ -44,7 +44,7 @@ class BAIRPushingDataset(Dataset):
         # convert entries range from [0, 255, np.uint8] to [-1, 1, torch.float32]
         rgb = torch.from_numpy(rgb).float()
         rgb = (2 * rgb / 255) - 1
-        actions = np.load(self.actions_fps[i])
+        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
 
         data = {
             "rgb": rgb,

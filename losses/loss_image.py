@@ -63,8 +63,8 @@ class PSNR(Loss):
             pred = pred.reshape(-1, *pred.shape[2:])  # [b*t, ...]
         if target.ndim == 5:
             target = target.reshape(-1, *target.shape[2:])  # [b*t, ...]
-        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
-        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
+        pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0) # range: [0., 1.]
+        target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return -self.criterion(pred, target)
 
     @classmethod
@@ -75,18 +75,15 @@ class LPIPS(Loss):
     def __init__(self, device):
         super(LPIPS, self).__init__(device)
         self.criterion = piqa.lpips.LPIPS().to(device)
-        self.bigger_is_better = True
 
     def forward(self, pred, target):
         pred = pred.reshape(-1, *pred.shape[-3:])  # [..., 3, h, w]
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
         assert pred.shape[1] == 3, "pred channels != 3"
         assert target.shape[1] == 3, "target channels != 3"
-        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
-        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
-        return 1.0 - self.criterion(pred, target)  # scalar
-
-    def loss_to_display(cls, x): return 1.0 - x
+        pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0) # range: [0., 1.]
+        target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
+        return self.criterion(pred, target)  # scalar
 
 
 class SSIM(Loss):
@@ -100,8 +97,8 @@ class SSIM(Loss):
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
         assert pred.shape[1] == 3, "pred channels != 3"
         assert target.shape[1] == 3, "target channels != 3"
-        pred = torch.clamp((pred + 1) / 2, min=-1, max=1) # range: [0., 1.]
-        target = torch.clamp((target + 1) / 2, min=-1, max=1)  # range: [0., 1.]
+        pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0) # range: [0., 1.]
+        target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)
 
     def loss_to_display(cls, x): return 1.0 - x
