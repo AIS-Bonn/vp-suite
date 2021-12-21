@@ -15,6 +15,7 @@ from models.vid_pred.specific_model_blocks.phydnet import PhyCell_Cell, K2M
 
 
 class STPhy(VideoPredictionModel):
+
     def __init__(self, img_size, img_channels, enc_channels, phy_channels, num_layers, action_size,
                  inflated_action_dim, phy_kernel_size, decouple_loss_scale, reconstruction_loss_scale,
                  moment_loss_scale, device):
@@ -79,9 +80,12 @@ class STPhy(VideoPredictionModel):
 
         self.to(self.device)
 
+    @classmethod
+    def model_desc(cls):
+        return "ST_Phy"
+
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)
-
 
     def pred_n(self, input, pred_length=1, **kwargs):
 

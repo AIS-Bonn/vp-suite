@@ -1,4 +1,5 @@
-import sys, os, random
+import sys, random
+from typing import List
 
 sys.path.append(".")
 
@@ -9,15 +10,14 @@ import wandb
 
 import torch
 
+from models.vid_pred.pred_model import VideoPredictionModel
 from models.vid_pred.copy_last_frame import CopyLastFrameModel
 from metrics.main import PredictionMetricProvider
 from utils.visualization import visualize_vid
 from dataset.dataset import create_dataset
 
 
-copy_last_frame_id = "CopyLastFrame baseline"
-
-def test_pred_models(cfg, test_stuff=None):
+def test_pred_models(cfg, test_data_and_loader=None):
 
     # prep
     random.seed(cfg.seed)
@@ -26,15 +26,18 @@ def test_pred_models(cfg, test_stuff=None):
     dataset_classes = cfg.dataset_classes+1 if cfg.include_gripper else cfg.dataset_classes
 
     # MODELS
-    pred_models = {model_path: (torch.load(model_path).to(cfg.device), []) for model_path in cfg.models}
+    model_fps = cfg.models
+    pred_models : List[VideoPredictionModel] = [torch.load(model_path).to(cfg.device) for model_path in model_fps]
     if cfg.program == "test_pred":
-        pred_models[copy_last_frame_id] = (CopyLastFrameModel().to(cfg.device), [])
+        pred_models.append(CopyLastFrameModel().to(cfg.device))  # add baseline copy model
+        model_fps.append("")
+    models_dict = {model.desc: (model, fp, []) for model, fp in zip(pred_models, model_fps)}
 
     # DATASET
-    if test_stuff is None:
+    if test_data_and_loader is None:
         (_, _, test_data), (_, _, test_loader) = create_dataset(cfg)
     else:
-        test_data, test_loader = test_stuff
+        test_data, test_loader = test_data_and_loader
 
     iter_loader = iter(test_loader)
     eval_length = len(iter_loader) if cfg.full_test else 10
@@ -52,46 +55,65 @@ def test_pred_models(cfg, test_stuff=None):
                 target = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
                 actions = data["actions"].to(cfg.device)
 
-                for (model, metric_dicts) in pred_models.values():
+                for (model, _, model_metrics_per_dp) in models_dict.values():
                     if getattr(model, "use_actions", False):
                         pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
                     else:
                         pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length)
                     cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
-                    metric_dicts.append(cur_metrics)
+                    model_metrics_per_dp.append(cur_metrics)
 
     # save visualizations
     if not cfg.no_vis:
-        print(f"Saving visualizations (except for {copy_last_frame_id})...")
+        print(f"Saving visualizations for trained models...")
         num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
         num_vis = 5
         vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
-        for model_path, (model, _) in pred_models.items():
-            if model_path != copy_last_frame_id:
-                model_dir = str(Path(model_path).parent.resolve())
-                print(model_path, model_dir)
-                visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
-                              (cfg.pred_mode, num_channels), test=True, vis_idx=vis_idx, mode="mp4")
+        for model_desc, (model, model_fp, _) in models_dict.items():
+            if model_desc == CopyLastFrameModel.desc: continue  # don't print for copy baseline
+            model_dir = str(Path(model_fp).parent.resolve())
+            print(model_desc, model_dir)
+            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
+                          (cfg.pred_mode, num_channels), test=True, vis_idx=vis_idx, mode="mp4")
 
     # log or display metrics
     if eval_length > 0:
-        pm_items = pred_models.items()
-        for i, (model_desc, (_, metric_dicts)) in enumerate(pm_items):
-            mean_metric_dict = {k: np.mean([m_dict[k] for m_dict in metric_dicts]) for k in metric_dicts[0].keys()}
-            print(f"\n{model_desc}: ")
-            for (k, v) in mean_metric_dict.items():
-                print(f"{k}: {v}")
+        wandb_full_suffix = " (full test)" if cfg.full_test else ""
+        models_dict_items = models_dict.items()
+        for i, (model_desc, (_, model_fp, model_metrics_per_dp)) in enumerate(models_dict_items):
 
-            # optuna is used -> return metrics for optimization.
-            # otherwise, log to WandB if desired.
+            # model_metrics_per_dp: list of N lists of F metric dicts (called D).
+            # each D_{n, f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
+            # -> Aggregate these metrics over all n, keeping the specific metrics/prediction horizons separate
+            datapoint_range = range(len(model_metrics_per_dp))
+            frame_range = range(len(model_metrics_per_dp[0]))
+            metric_keys = model_metrics_per_dp[0][0].keys()
+            mean_metric_dicts = [
+                {metric_key: np.mean(
+                    [model_metrics_per_dp[dp_i][frame][metric_key] for dp_i in datapoint_range]
+                ) for metric_key in metric_keys}
+                for frame in frame_range
+            ]
+
+            # return metrics for the first model if called from another program
             if cfg.program != "test_pred":
-                return mean_metric_dict
+                return mean_metric_dicts
+
+            # Log model to WandB
             elif not cfg.no_wandb:
-                wandb.init(config={"full_eval": cfg.full_test, "model": model_desc},
-                           project="sem_vp_test_pred", reinit=(i > 0))
-                for frame_cnt in range(1, cfg.vid_pred_length + 1):
-                    fstr = str(frame_cnt)
-                    frame_cnt_dict = {k.replace("_" + fstr, ''): v for k, v in mean_metric_dict.items() if fstr in k}
-                    wandb.log({**frame_cnt_dict, "pred. frames": frame_cnt}, commit=True)
-                if i == len(pm_items) - 1:
+                print("Logging test results to WandB for all models...")
+                wandb.init(config={"full_eval": cfg.full_test, "model_fp": model_fp},
+                           project="sem_vp_test_pred", name=f"{model_desc}{wandb_full_suffix}", reinit=(i > 0))
+                for f, mean_metric_dict in enumerate(mean_metric_dicts):
+                    wandb.log({"pred_frames": f+1, **mean_metric_dict})
+                if i == len(models_dict_items) - 1:
                     wandb.finish()
+
+            # Per-model/per-pred.-horizon console log of the metrics
+            else:
+                print("Printing out test results to terminal...")
+                print(f"\n{model_desc} (path: {model_fp}): ")
+                for f, mean_metric_dict in enumerate(mean_metric_dicts):
+                    print(f"pred_frames: {f + 1}")
+                    for (k, v) in mean_metric_dict.items():
+                        print(f" -> {k}: {v}")

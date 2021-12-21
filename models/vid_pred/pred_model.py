@@ -1,10 +1,20 @@
 import torch
 import torch.nn as nn
 
+
 class VideoPredictionModel(nn.Module):
 
     def __init__(self):
         super(VideoPredictionModel, self).__init__()
+
+    @classmethod
+    def model_desc(cls):
+        raise NotImplementedError
+
+    @property
+    def desc(self):
+        return self.__class__.model_desc()
+
 
     def forward(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]

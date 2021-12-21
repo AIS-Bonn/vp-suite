@@ -29,14 +29,12 @@ class PredictionMetricProvider():
         self.device = cfg.device
         self.metrics = {
             "mse": MSE(device=self.device),
-            "mae/l1": L1(device=self.device),
-            "smooth_l1": SmoothL1(device=self.device),
+            "mae": L1(device=self.device),
+            #"smooth_l1": SmoothL1(device=self.device),
             "lpips": LPIPS(device=self.device),
             "ssim": SSIM(device=self.device),
             "psnr": PSNR(device=self.device)
         }
-        # FVD loss only available for 2- or 3- channel input
-        self.use_fvd = cfg.num_channels in [2, 3]
 
     def get_metrics(self, pred, target, frames=None, all_frame_cnts=False):
         '''
@@ -53,17 +51,17 @@ class PredictionMetricProvider():
         pred = pred[:, :frames]
         target = target[:, :frames]
 
-        metrics_dict = {}
+        metrics = []
         frames = [frames] if not all_frame_cnts else range(1, frames + 1)
 
         for frame_cnt in frames:
             pred_ = pred[:, :frame_cnt]
             target_ = target[:, :frame_cnt]
             frame_cnt_metrics = {
-                f"{key}_{frame_cnt} ({'↑' if loss.bigger_is_better else '↓'})":
+                f"{key} ({'↑' if loss.bigger_is_better else '↓'})":
                     loss.loss_to_display(loss(pred_, target_).item())
                 for key, loss in self.metrics.items()
             }
-            metrics_dict.update(frame_cnt_metrics)
+            metrics.append(frame_cnt_metrics)
 
-        return metrics_dict
+        return metrics
