@@ -7,6 +7,7 @@ import numpy as np
 
 import torch
 from torch.utils.data.dataset import Dataset
+from dataset.dataset_utils import preprocess_img
 
 
 class MovingMNISTDataset(Dataset):
@@ -25,12 +26,9 @@ class MovingMNISTDataset(Dataset):
 
     def __getitem__(self, i):
 
-        rgb = np.load(self.data_fps[i])  # [t, h, w]
-        rgb = np.expand_dims(rgb, axis=1).repeat(3, axis=1) # [t, c, h, w]
-
-        # convert entries range from [0, 255, np.uint8] to [-1, 1, torch.float32]
-        rgb = torch.from_numpy(rgb).float()
-        rgb = (2 * rgb / 255) - 1
+        rgb_raw = np.load(self.data_fps[i])  # [t, h, w]
+        rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t, h, w, c]
+        rgb = preprocess_img(rgb_raw)  # [t, c, h, w]
 
         data = {
             "rgb": rgb,

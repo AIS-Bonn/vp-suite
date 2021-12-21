@@ -12,6 +12,7 @@ from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
 from tqdm import tqdm
+from dataset.dataset_utils import preprocess_img
 
 
 class BAIRPushingDataset(Dataset):
@@ -40,10 +41,7 @@ class BAIRPushingDataset(Dataset):
 
     def __getitem__(self, i):
 
-        rgb = np.load(self.obs_fps[i]).transpose((0, 3, 1, 2))  # [t, c, h, w]
-        # convert entries range from [0, 255, np.uint8] to [-1, 1, torch.float32]
-        rgb = torch.from_numpy(rgb).float()
-        rgb = (2 * rgb / 255) - 1
+        rgb = preprocess_img(np.load(self.obs_fps[i]))  # [t, c, h, w]
         actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
 
         data = {

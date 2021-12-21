@@ -6,6 +6,8 @@ import torch
 import imageio
 import torchfile
 from torch.utils.data.dataset import Dataset
+from dataset.dataset_utils import preprocess_img
+
 
 class KTHActionsDataset2(Dataset):
 
@@ -52,13 +54,12 @@ class KTHActionsDataset2(Dataset):
         last_frame = len(seq) - 1 if len(seq) <= self.seq_length else first_frame + self.seq_length - 1
         for i in range(first_frame, last_frame + 1):
             fname = os.path.join(dname, seq[i].decode('utf-8'))
-            im = (2. * imageio.imread(fname) / 255) - 1
-            frames[i - first_frame] = im
+            frames[i - first_frame] = imageio.imread(fname)
 
         for i in range(last_frame + 1, self.seq_length):
             frames[i] = frames[last_frame]
 
-        rgb = torch.Tensor(frames).permute(0,3,1,2)  # [t, c, h, w]
+        rgb = preprocess_img(np.array(frames))  # [t, c, h, w]
 
         data = {
             "rgb": rgb,
