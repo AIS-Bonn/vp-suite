@@ -15,41 +15,34 @@ from tqdm import tqdm
 
 from vp_suite.dataset.dataset_utils import preprocess_img
 from vp_suite.utils.utils import most
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
+class SynpickVideoDataset(BaseVPDataset):
 
-class SynpickVideoDataset(Dataset):
+    action_size = 3
+    skip_first_n = 72
 
-    def __init__(self, data_dir, num_frames, step, allow_overlap, include_gripper):
-        super(SynpickVideoDataset, self).__init__()
+    def __init__(self, data_dir, cfg):
+        super(SynpickVideoDataset, self).__init__(data_dir, cfg)
 
-        images_dir = os.path.join(data_dir, 'rgb')
-        scene_gt_dir = os.path.join(data_dir, 'scene_gt')
-
-        self.include_gripper = include_gripper
-        self.check_gripper_movement = self.include_gripper and os.path.isdir(scene_gt_dir)
+        images_dir = os.path.join(self.data_dir, 'rgb')
+        scene_gt_dir = os.path.join(self.data_dir, 'scene_gt')
 
         self.image_ids = sorted(os.listdir(images_dir))
         self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
 
-        if self.check_gripper_movement:
-            scene_gt_fps = [os.path.join(scene_gt_dir, scene_gt_fp) for scene_gt_fp in sorted(os.listdir(scene_gt_dir))]
-            self.gripper_pos = {}
-            for scene_gt_fp, ep in zip(scene_gt_fps, [int(a[-20:-14]) for a in scene_gt_fps]):
-                with open(scene_gt_fp, "r") as scene_json_file:
-                    ep_dict = json.load(scene_json_file)
-                gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
-                self.gripper_pos[ep] = gripper_pos
+        scene_gt_fps = [os.path.join(scene_gt_dir, scene_gt_fp) for scene_gt_fp in sorted(os.listdir(scene_gt_dir))]
+        self.gripper_pos = {}
+        for scene_gt_fp, ep in zip(scene_gt_fps, [int(a[-20:-14]) for a in scene_gt_fps]):
+            with open(scene_gt_fp, "r") as scene_json_file:
+                ep_dict = json.load(scene_json_file)
+            gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
+            self.gripper_pos[ep] = gripper_pos
 
-        self.skip_first_n = 72
         self.total_len = len(self.image_ids)
-        self.step = step  # if >1, (step - 1) frames are skipped between each frame
-        self.sequence_length = (num_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
-        self.frame_offsets = range(0, num_frames * self.step, self.step)
-
-        # If allow_overlap: Frames are packed into trajectories like [[0, 1, 2], [1, 2, 3], ...].
-        # False: [[0, 1, 2], [3, 4, 5], ...]
-        self.allow_overlap = allow_overlap
-        self.action_size = 3
+        self.step = cfg.data_seq_step  # if >1, (step - 1) frames are skipped between each frame
+        self.sequence_length = (cfg.total_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
+        self.frame_offsets = range(0, cfg.total_frames * self.step, self.step)
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
@@ -92,7 +85,7 @@ class SynpickVideoDataset(Dataset):
             raise ValueError("No valid indices in generated dataset! "
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
-    def __getitem__(self, i):
+    def __getitem__(self, i) -> VPData:
 
         i = self.valid_idx[i]  # only consider valid indices
         idx = range(i, i + self.sequence_length, self.step)  # create range of indices for frame sequence
@@ -106,8 +99,8 @@ class SynpickVideoDataset(Dataset):
         imgs = [preprocess_img(img) for img in imgs_]
 
         data = {
-            "rgb": torch.stack(imgs, dim=0),
-            "actions": actions
+            "frames": torch.stack(imgs, dim=0),  # [t, c, h, w]
+            "actions": actions  # [t, a]
         }
         return data
 

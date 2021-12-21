@@ -8,8 +8,8 @@ import torch.nn
 from tqdm import tqdm
 
 from scripts.test_models import test_pred_models
-from dataset.dataset import create_dataset
-from vp_suite.models.pred_model_factory import get_pred_model
+from dataset.dataset_factory import create_dataset
+from vp_suite.models.model_factory import get_pred_model
 from losses.main import PredictionLossProvider
 from utils.visualization import visualize_vid
 

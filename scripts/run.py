@@ -4,8 +4,8 @@ import torch
 
 from vp_suite.train import train as train_pred_model
 from scripts.test_models import test_pred_models
-from vp_suite.models.pred_model_factory import MODELS
-from vp_suite.dataset.dataset import SUPPORTED_DATASETS
+from vp_suite.models.model_factory import MODELS
+from vp_suite.dataset.dataset_factory import SUPPORTED_DATASETS
 from vp_suite.utils.utils import timestamp
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -5,7 +5,7 @@ from torchvision import transforms as TF
 import sys
 sys.path.append("")
 
-from vp_suite.models.pred_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 
 class NonConvLSTMModel(VideoPredictionModel):

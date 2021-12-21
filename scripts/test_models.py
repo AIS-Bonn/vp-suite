@@ -10,11 +10,11 @@ import wandb
 
 import torch
 
-from vp_suite.models.pred_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.copy_last_frame import CopyLastFrameModel
 from vp_suite.metrics.main import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
-from vp_suite.dataset.dataset import create_dataset
+from vp_suite.dataset.dataset_factory import create_dataset
 
 
 def test_pred_models(cfg, test_data_and_loader=None):

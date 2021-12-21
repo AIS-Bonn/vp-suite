@@ -6,29 +6,30 @@ from pathlib import Path
 import numpy as np
 
 import torch
-from torch.utils.data.dataset import Dataset
 
 from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
 from tqdm import tqdm
 from vp_suite.dataset.dataset_utils import preprocess_img
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 
-class BAIRPushingDataset(Dataset):
+class BAIRPushingDataset(BaseVPDataset):
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, cfg):
+        super(BAIRPushingDataset, self).__init__(data_dir, cfg)
 
-        self.obs_ids = [fn for fn in sorted(os.listdir(data_dir)) if str(fn).endswith("obs.npy")]
-        self.actions_ids = [fn for fn in sorted(os.listdir(data_dir)) if str(fn).endswith("actions.npy")]
+        self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
+        self.actions_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("actions.npy")]
 
         if len(self.obs_ids) != len(self.actions_ids):
             raise ValueError("Different number of obs and action files found -> Delete dataset and prepare again!")
         elif len(self.obs_ids) == 0:
             raise ValueError("No trajectory files (.npy) found! Maybe you forgot to prepare the dataset?")
 
-        self.obs_fps = [os.path.join(data_dir, i) for i in self.obs_ids]
-        self.actions_fps = [os.path.join(data_dir, i) for i in self.actions_ids]
+        self.obs_fps = [os.path.join(self.data_dir, i) for i in self.obs_ids]
+        self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
         self.seq_length = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
 
@@ -39,16 +40,18 @@ class BAIRPushingDataset(Dataset):
     def __len__(self):
         return len(self.obs_fps)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i) -> VPData:
 
         rgb = preprocess_img(np.load(self.obs_fps[i]))  # [t, c, h, w]
-        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
+        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()  # [t, a]
 
         data = {
-            "rgb": rgb,
+            "frames": rgb,
             "actions": actions
         }
         return data
+
+# === BAIR data preparation tools ==============================================
 
 
 def split_bair_traj_files(data_dir, delete_tfrecords):

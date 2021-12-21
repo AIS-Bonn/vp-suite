@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 from vp_suite.losses.loss_image import MSE
-from vp_suite.models.pred_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 

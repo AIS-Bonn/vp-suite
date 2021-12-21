@@ -6,16 +6,15 @@ from pathlib import Path
 import numpy as np
 
 import torch
-from torch.utils.data.dataset import Dataset
 from vp_suite.dataset.dataset_utils import preprocess_img
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
+class MovingMNISTDataset(BaseVPDataset):
 
-class MovingMNISTDataset(Dataset):
-
-    def __init__(self, data_dir):
-
-        self.data_ids = sorted(os.listdir(data_dir))
-        self.data_fps = [os.path.join(data_dir, image_id) for image_id in self.data_ids]
+    def __init__(self, data_dir, cfg):
+        super(MovingMNISTDataset, self).__init__(data_dir, cfg)
+        self.data_ids = sorted(os.listdir(self.data_dir))
+        self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
         self.channels = 3
         self.action_size = 0
 
@@ -24,17 +23,19 @@ class MovingMNISTDataset(Dataset):
     def __len__(self):
         return len(self.data_fps)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i) -> VPData:
 
         rgb_raw = np.load(self.data_fps[i])  # [t, h, w]
         rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t, h, w, c]
         rgb = preprocess_img(rgb_raw)  # [t, c, h, w]
 
         data = {
-            "rgb": rgb,
-            "actions": torch.zeros((rgb.shape[0], 1))  # actions should be disregarded in training logic
+            "frames": rgb,
+            "actions": torch.zeros((rgb.shape[0], 1))  # [t, a], actions should be disregarded in training logic
         }
         return data
+
+# === MMNIST data preparation tools ============================================
 
 
 def split_big_mmnist_file(file_path, out_dir):

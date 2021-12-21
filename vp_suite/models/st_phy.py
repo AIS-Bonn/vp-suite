@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from vp_suite.losses.loss_image import MSE
-from vp_suite.models.pred_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
