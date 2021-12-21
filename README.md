@@ -1,47 +1,63 @@
-# Semantic Video Prediction
+# vp-suite: All things Video Prediction.
 
-This repo contains code to train models that can be used for semantic video prediction:
-- Semantic Segmentation models (e.g. a UNet-like Model)
-- Video Prediction models (on RGB data or Semantic Segmentation information) (using mostly recurrent or convolutional models)
-- Object interaction/feature prediction models (using graph neural networks)
+_Video prediction ('VP') is the task of predicting future frames given some context frames._
 
-Furthermore, it also provides the code to prepare existing [SynPick](http://ais.uni-bonn.de/datasets/synpick/)
-datasets for the training routined provided.
+Like with most Computer Vision sub-domains, scientific contributions in this field exhibit a high variance in the following aspects:
+- **Training protocol** (dataset usage, when to backprop, value ranges etc.)
+- **Technical details of model implementation** (deep learning framework, package dependencies etc.) 
+- **Benchmark selection and execution** (this includes the choice of dataset, number of context/predicted frames, skipping frames in the observed sequences etc.)
+- **Evaluation protocol** (metrics chosen, variations in implementation/reduction modes etc.)
 
-## Installation and Usage
+This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.
 
 ### Installation
 
-We'll be using pip and the Anaconda environment manager.
-The code has been tested with Python 3.8, PyTorch 1.9 and CUDA 10.2.
+The code has been tested with Python 3.8, CUDA 11.3 and PyTorch 1.10.
 
 ```
-git clone git@git.ais.uni-bonn.de:boltres/semantic-video-prediction.git
-cd semantic-video-prediction
+git clone git@github.com:Flunzmas/vp-suite.git
+cd vp-suite
 conda env create -f environment.yml
 ```
 
-This yml file excludes `PyTorch`, `pytorch-geometric`, and `pytorch-geometric-temporal` because getting matching versions is easier done by hand:
-1. Get a version of PyTorch that suits your needs (e.g. CUDA version) from [here](https://pytorch.org/get-started/locally/).
-2. Follow [this](https://pytorch-geometric-temporal.readthedocs.io/en/latest/notes/installation.html) doc to install matching versions of `pytorch-geometric` and `pytorch-geometric-temporal`.
-
 ### Usage
 
+#### Basic Usage
+
 All scripts are run using `argparse`,
-so feel free to check the descriptions for all available parameters using the `-h` option. 
+so feel free to check the descriptions for all available parameters of the provided entry points using the `-h` option. 
 
-**Prepare the SynPick dataset for training** (The resulting datasets for semantic
-segmentation (`img`), video prediction (`vid`) and object interaction learning (`graph`)
-will be put into the `data` folder and its directory name will include the timestamp of creation):
+- Train a VP model:  `TODO`
+- Test one or more (pre-)trained VP models on some dataset: `TODO`
 
-```
-python scripts/prepare_synpick --in-path <path_to_synpick_dataset> --all
-```
+#### Creating new VP models/Integrating existing external models 
 
-**Train in one of the available training modes** (`train_seg, train_pred, train_graph`):
+TODO
 
-```
-python run.py --program <your_training_mode> --data-dir <path_to_prepared_dataset>
-```
+#### Training on new datasets
 
+TODO
 
+#### Custom training procedures
+
+TODO
+
+#### Custom losses, metrics and optimization
+
+TODO
+
+#### Custom logging
+
+TODO
+
+### Contributing
+
+TODO
+
+### Citing
+
+TODO
+
+### License stuffs
+
+TODO
