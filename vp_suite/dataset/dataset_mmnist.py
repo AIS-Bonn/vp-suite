@@ -14,9 +14,12 @@ class MovingMNISTDataset(BaseVPDataset):
     NAME = "Moving MNIST"
     ACTION_SIZE = 0
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
-    def __init__(self, data_dir, cfg):
-        super(MovingMNISTDataset, self).__init__(data_dir, cfg)
+    def __init__(self, cfg, split):
+        super(MovingMNISTDataset, self).__init__(cfg, split)
+
+        self.data_dir = str(Path(cfg.data_dir) / split)
         self.data_ids = sorted(os.listdir(self.data_dir))
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
 

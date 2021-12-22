@@ -12,20 +12,20 @@ class NonConvLSTMModel(VideoPredictionModel):
 
     bottleneck_dim = 1024
     lstm_hidden_dim = 1024
+    lstm_kernel_size = (5, 5)
+    lstm_num_layers = 3
+    can_handle_actions = True
 
-    def __init__(self, in_channels, out_channels, img_size, lstm_kernel_size, num_layers, action_size, device):
-        super(NonConvLSTMModel, self).__init__()
+    @classmethod
+    def model_desc(cls):
+        return "NonConvLSTM"
 
-        self.device = device
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.img_size = img_size
-        self.kernel_size = lstm_kernel_size
-        self.action_size = action_size
-        self.use_actions = action_size > 0
+    def __init__(self, cfg):
+        super(NonConvLSTMModel, self).__init__(cfg)
+
         self.act_fn = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)
-        self.enc1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3)
+        self.enc1 = nn.Conv2d(self.img_c, 64, kernel_size=7, stride=2, padding=3)
         self.enc2 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, padding_mode="replicate")
         self.enc3 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, padding_mode="replicate")
         self.encoder = nn.Sequential(
@@ -33,7 +33,7 @@ class NonConvLSTMModel(VideoPredictionModel):
             self.enc2, self.act_fn,
             self.enc3, self.act_fn,
         )
-        zeros = torch.zeros(1, self.in_channels, *self.img_size)
+        zeros = torch.zeros(1, *self.img_shape)
         encoded_zeros = self.encoder(zeros)
         self.encoded_shape = encoded_zeros.shape[1:]
         self.encoded_numel = encoded_zeros.numel() // encoded_zeros.shape[0]
@@ -44,21 +44,23 @@ class NonConvLSTMModel(VideoPredictionModel):
             self.action_inflate = nn.Linear(self.action_size, inflated_action_size)
         self.rnn_layers = [
             nn.LSTMCell(input_size=self.bottleneck_dim, hidden_size=self.lstm_hidden_dim, device=self.device)
-            for _ in range(num_layers)
+            for _ in range(self.lstm_num_layers)
         ]
         self.from_linear = nn.Linear(self.lstm_hidden_dim, self.encoded_numel)
         self.dec1 = nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1)
-        self.dec2 = nn.ConvTranspose2d(128,  64, kernel_size=3, stride=2, padding=1)
-        self.dec3 = nn.ConvTranspose2d( 64, self.out_channels, kernel_size=7, stride=2, padding=3)
+        self.dec2 = nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1)
+        self.dec3 = nn.ConvTranspose2d(64, self.img_c, kernel_size=7, stride=2, padding=3)
         self.decoder = nn.Sequential(
             self.dec1, self.act_fn,
             self.dec2, self.act_fn,
-            self.dec3, TF.Resize(self.img_size)
+            self.dec3, TF.Resize((self.img_h, self.img_w))
         )
-        self.to(device)
 
-    def encode(self, x): return self.to_linear(self.encoder(x).flatten(1, -1))  # respect batch size
-    def decode(self, x): return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
+    def encode(self, x):
+        return self.to_linear(self.encoder(x).flatten(1, -1))  # respect batch size
+
+    def decode(self, x):
+        return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
 
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)
@@ -68,7 +70,7 @@ class NonConvLSTMModel(VideoPredictionModel):
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         T_in, b, _, h, w = x.shape
-        assert self.img_size == (h, w), "input image does not match specified size"
+        assert self.img_shape == (h, w), "input image does not match specified size"
         encoded_frames = [self.encode(frame) for frame in list(x)]
 
         # actions

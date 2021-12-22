@@ -16,52 +16,51 @@ from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
 
 class STPhy(VideoPredictionModel):
 
-    def __init__(self, img_size, img_channels, enc_channels, phy_channels, num_layers, action_size,
-                 inflated_action_dim, phy_kernel_size, decouple_loss_scale, reconstruction_loss_scale,
-                 moment_loss_scale, device):
-        super(STPhy, self).__init__()
+    phy_kernel_size = (7, 7)
+    phy_cell_channels = 49
+    st_cell_channels = 64
+    num_layers = 3
+    inflated_action_dim = 3
+    reconstruction_loss_scale = 0.1
+    decoupling_loss_scale = 100.0
+    moment_loss_scale = 1.0
+    can_handle_actions = True
 
-        img_height, img_width = img_size
-        self.enc_channels = enc_channels
-        self.phy_channels = phy_channels
-        self.n_layers = num_layers
-        self.dim_st_hidden = [self.enc_channels] * self.n_layers
-        self.dim_phy_hidden = [self.phy_channels] * self.n_layers
-        self.action_size = action_size
-        self.inflated_action_dim = inflated_action_dim
-        self.phy_kernel_size = phy_kernel_size
-        self.decouple_loss_scale = decouple_loss_scale
-        self.reconstruction_loss_scale = reconstruction_loss_scale
-        self.moment_loss_scale = moment_loss_scale
-        self.device = device
+    @classmethod
+    def model_desc(cls):
+        return "ST-Phy"
 
-        self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
+    def __init__(self, cfg):
+        super(STPhy, self).__init__(cfg)
+
+        self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
+        self.dim_phy_hidden = [self.phy_cell_channels] * self.num_layers
+
+        self.autoencoder = Autoencoder(self.img_shape, self.st_cell_channels, self.device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
-        self.action_size = action_size
-        self.use_actions = self.action_size > 0
         self.recurrent_cell = STLSTMCell
 
         if self.use_actions:
             self.recurrent_cell = ActionConditionalSTLSTMCell
-            self.action_inflate = nn.Linear(in_features=action_size,
+            self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
                                             bias=False)
-            self.action_conv_h = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
+            self.action_conv_h = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.st_cell_channels,
                                            kernel_size=(5, 1), padding=(2, 0), bias=False)
-            self.action_conv_w = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
+            self.action_conv_w = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.st_cell_channels,
                                            kernel_size=(1, 5), padding=(0, 2), bias=False)
 
         st_cells, phy_cells, hidden_convs = [], [], []
-        for i in range(self.n_layers):
+        for i in range(self.num_layers):
             st_in_channel = self.dim_st_hidden[0] if i == 0 else self.dim_st_hidden[i - 1]
             st_cells.append(self.recurrent_cell(st_in_channel, self.dim_st_hidden[i], self.enc_h, self.enc_w,
                                        filter_size=5, stride=1, layer_norm=True))
-            phy_cells.append(PhyCell_Cell(input_dim=self.enc_channels, action_size=action_size,
+            phy_cells.append(PhyCell_Cell(input_dim=self.st_cell_channels, action_size=self.action_size,
                                           F_hidden_dim=self.dim_phy_hidden[i],
-                                          kernel_size=self.phy_kernel_size).to(device))
-            hc_bias = i < self.n_layers-1
-            hidden_convs.append(nn.Conv2d(in_channels=self.enc_channels+self.dim_st_hidden[i],
-                                          out_channels=self.enc_channels, kernel_size=(1, 1), bias=hc_bias))
+                                          kernel_size=self.phy_kernel_size).to(self.device))
+            hc_bias = i < self.num_layers - 1
+            hidden_convs.append(nn.Conv2d(in_channels=self.st_cell_channels + self.dim_st_hidden[i],
+                                          out_channels=self.st_cell_channels, kernel_size=(1, 1), bias=hc_bias))
         self.st_cell_list = nn.ModuleList(st_cells)
         self.phy_cell_list = nn.ModuleList(phy_cells)
         self.hidden_conv_list = nn.ModuleList(hidden_convs)
@@ -70,19 +69,13 @@ class STPhy(VideoPredictionModel):
         adapter_dim_hidden = self.dim_st_hidden[0]
         self.adapter = nn.Conv2d(adapter_dim_hidden, adapter_dim_hidden, 1, stride=1, padding=0, bias=False)
 
-        self.constraints = torch.zeros((49, 7, 7)).to(device)
+        self.constraints = torch.zeros((49, 7, 7)).to(self.device)
         ind = 0
         for i in range(0, 7):
             for j in range(0, 7):
                 self.constraints[ind, i, j] = 1
                 ind += 1
         self.criterion = MSE(device=self.device)
-
-        self.to(self.device)
-
-    @classmethod
-    def model_desc(cls):
-        return "ST_Phy"
 
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)
@@ -114,13 +107,13 @@ class STPhy(VideoPredictionModel):
         decouple_loss = []
         phy_h_t = []
 
-        for i in range(self.n_layers):
+        for i in range(self.num_layers):
             zeros = torch.zeros([batch_size, self.dim_st_hidden[i], self.enc_h, self.enc_w]).to(self.device)
             st_h_t.append(zeros)
             st_c_t.append(zeros)
             delta_c_list.append(zeros)
             delta_m_list.append(zeros)
-            phy_h_t.append(torch.zeros(batch_size, self.enc_channels, self.enc_h, self.enc_w).to(self.device))
+            phy_h_t.append(torch.zeros(batch_size, self.st_cell_channels, self.enc_h, self.enc_w).to(self.device))
 
         st_memory = torch.zeros([batch_size, self.dim_st_hidden[0], self.enc_h, self.enc_w]).to(self.device)
 
@@ -161,7 +154,7 @@ class STPhy(VideoPredictionModel):
             out_frames.append(out_frame)
 
             # st decoupling loss
-            for i in range(0, self.n_layers):
+            for i in range(0, self.num_layers):
                 decouple_loss_ = torch.cosine_similarity(delta_c_list[i], delta_m_list[i], dim=2)
             decouple_loss.append(torch.mean(torch.abs(decouple_loss_)))
 
@@ -196,7 +189,7 @@ class STPhy(VideoPredictionModel):
             # loss
             _, loss = loss_provider.get_losses(predictions, target_frames)
             loss += model_losses["reconstruction"] * self.reconstruction_loss_scale
-            loss += model_losses["decouple"] * self.decouple_loss_scale
+            loss += model_losses["decouple"] * self.decoupling_loss_scale
             loss += model_losses["moment"] * self.moment_loss_scale
 
             optimizer.zero_grad()

@@ -11,26 +11,27 @@ from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 class PhyDNet(VideoPredictionModel):
 
-    def __init__(self, img_size, img_channels, phy_cell_channels, phy_kernel_size, moment_loss_scale, action_size, device):
+    moment_loss_scale = 1.0
+    phy_kernel_size = (7, 7)
+    phy_cell_channels = 49
+    can_handle_actions = True
 
-        super(PhyDNet, self).__init__()
+    @classmethod
+    def model_desc(cls):
+        return "PhyDNet"
 
-        self.phy_cell_channels = phy_cell_channels
-        self.phy_kernel_size = phy_kernel_size
-        self.moment_loss_scale = moment_loss_scale
+    def __init__(self, cfg):
+        super(PhyDNet, self).__init__(cfg)
 
-        self.encoder = EncoderRNN(img_size, img_channels, self.phy_cell_channels, self.phy_kernel_size, action_size, device)
-        self.constraints = torch.zeros((self.phy_cell_channels, *self.phy_kernel_size)).to(device)
+        self.criterion = MSE(self.device)
+        self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,
+                                  self.action_size, self.device)
+        self.constraints = torch.zeros((self.phy_cell_channels, *self.phy_kernel_size), device=self.device)
         ind = 0
         for i in range(0, self.phy_kernel_size[0]):
             for j in range(0, self.phy_kernel_size[1]):
                 self.constraints[ind, i, j] = 1
                 ind += 1
-
-        self.criterion = MSE()
-        self.device = device
-        self.action_size = action_size
-        self.use_actions = self.action_size > 0
 
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)

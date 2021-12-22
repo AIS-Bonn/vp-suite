@@ -228,20 +228,21 @@ class DecoderSplit(nn.Module):
 
 class EncoderRNN(torch.nn.Module):
 
-    def __init__(self, img_size, img_channels, phy_cell_channels, phy_kernel_size, action_size, device):
+    def __init__(self, img_shape, phy_cell_channels, phy_kernel_size, action_size, device):
         super(EncoderRNN, self).__init__()
-        self.encoder_E = DCGANEncoder(nc=img_channels).to(device)
+        img_c, _, _ = img_shape
+        self.encoder_E = DCGANEncoder(nc=img_c).to(device)
         self.encoder_Ep = EncoderSplit().to(device)
         self.encoder_Er = EncoderSplit().to(device)
 
-        zeros = torch.zeros((1, img_channels, *img_size), device=device)
+        zeros = torch.zeros((1, img_shape), device=device)
         encoded_zeros = self.encoder_E(zeros)
         self.shape_Ep = self.encoder_Ep(encoded_zeros).shape[1:]
         self.shape_Er = self.encoder_Er(encoded_zeros).shape[1:]
 
         self.decoder_Dp = DecoderSplit().to(device)
         self.decoder_Dr = DecoderSplit().to(device)
-        self.decoder_D = DCGANDecoder(out_size=img_size, nc=img_channels).to(device)
+        self.decoder_D = DCGANDecoder(out_size=img_shape, nc=img_c).to(device)
 
         phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
         self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,

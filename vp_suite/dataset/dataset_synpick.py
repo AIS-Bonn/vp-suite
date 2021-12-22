@@ -22,10 +22,12 @@ class SynpickVideoDataset(BaseVPDataset):
     ACTION_SIZE = 3
     DEFAULT_FRAME_SHAPE = (135, 240, 3)
     SKIP_FIRST_N = 72
+    VALID_SPLITS = ["train", "val", "test"]
 
-    def __init__(self, data_dir, cfg):
-        super(SynpickVideoDataset, self).__init__(data_dir, cfg)
+    def __init__(self, cfg, split):
+        super(SynpickVideoDataset, self).__init__(cfg, split)
 
+        self.data_dir = str(Path(cfg.data_dir) / split)
         images_dir = os.path.join(self.data_dir, 'rgb')
         scene_gt_dir = os.path.join(self.data_dir, 'scene_gt')
 

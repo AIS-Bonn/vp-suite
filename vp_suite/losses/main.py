@@ -18,9 +18,9 @@ class PredictionLossProvider():
         }
         '''
         # FVD loss only available for 2- or 3- channel input
-        if cfg.num_channels in [2, 3]:
+        if cfg.img_c in [2, 3]:
             self.losses["fvd"] = (FVD(device=self.device, num_frames=cfg.pred_frames,
-                                      in_channels=cfg.num_channels),
+                                      in_channels=cfg.img_c),
                                   cfg.fvd_loss_scale)
         '''
 

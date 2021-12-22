@@ -6,111 +6,61 @@ from vp_suite.models.model_blocks.conv import DoubleConv3d, DoubleConv2d
 from vp_suite.models.base_model import VideoPredictionModel
 
 
-class UNet3dModelOld(VideoPredictionModel):
-
-    def __init__(self, in_channels=3, out_channels=3, time_dim=4, features=[8, 16, 32, 64]):
-        super(UNet3dModelOld, self).__init__()
-
-        self.time_dim = time_dim
-        self.downs = nn.ModuleList()
-        self.ups = nn.ModuleList()
-        self.time3ds = nn.ModuleList()
-        self.pool = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-
-        for feature in features:
-            self.downs.append(DoubleConv3d(in_c=in_channels, out_c=feature))
-            self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(time_dim, 1, 1)))
-            in_channels = feature
-
-        self.time3ds.append(nn.Conv3d(in_channels=features[-1], out_channels=features[-1], kernel_size=(time_dim, 1, 1)))
-
-        for feature in reversed(features):
-            self.ups.append(nn.ConvTranspose2d(in_channels=feature*2, out_channels=feature, kernel_size=2, stride=2))
-            self.ups.append(DoubleConv2d(in_c=feature * 2, out_c=feature))
-
-        self.bottleneck = DoubleConv2d(in_c=features[-1], out_c=features[-1] * 2)
-        self.final_conv = nn.Conv2d(in_channels=features[0], out_channels=out_channels, kernel_size=1)
-
-
-    def forward(self, x, **kwargs):
-        # input: T frames: [b, T, c, h, w]
-        # output: single frame: [b, c, h, w]
-        assert x.shape[1] == self.time_dim, f"{self.time_dim} frames needed as pred input, {x.shape[1]} are given"
-        x = x.permute((0, 2, 1, 3, 4))  # [b, c, T, h, w]
-        skip_connections = []
-
-        # DOWN
-        for i in range(len(self.downs)):
-            x = self.downs[i](x)
-
-            skip_connection = self.time3ds[i](x).squeeze(dim=2)
-            skip_connections.append(skip_connection)
-            x = self.pool(x)
-
-        x = self.time3ds[-1](x).squeeze(dim=2)  # from [b, feat[-1], T, h, w] to [b, feat[-1], h, w]
-        x = self.bottleneck(x)
-
-
-        # UP
-        skip_connections = skip_connections[::-1]
-        for i in range(0, len(self.ups), 2):
-            x = self.ups[i](x)
-            skip_connection = skip_connections[i//2]
-
-            if x.shape != skip_connection.shape:
-                x = TF.resize(x, size=skip_connection.shape[2:])
-
-            concat_skip = torch.cat((skip_connection, x), dim=1)
-            x = self.ups[i + 1](concat_skip)
-
-        # FINAL
-        return self.final_conv(x), None
-
-
 class UNet3dModel(VideoPredictionModel):
 
-    def __init__(self, in_channels, out_channels, img_size, time_dim, features, action_size, device):
-        super(UNet3dModel, self).__init__()
+    features = [8, 16, 32, 64]
+    time_dim = None  # if None, use all context frames
+    can_handle_actions = True
 
-        self.time_dim = time_dim
-        self.img_size = img_size
+    @classmethod
+    def model_desc(cls):
+        return "UNet-3D"
+
+    def __init__(self, cfg):
+        super(UNet3dModel, self).__init__(cfg)
+
+        self.time_dim = self.time_dim or cfg.context_frames
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()
         self.pool = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.action_size = action_size
-        self.use_actions = action_size > 0
         if self.use_actions:
             self.action_inflates = nn.ModuleList()
-        self.device = device
 
-        for feature in features:
+        # down
+        cur_in_channels = self.img_c
+        cur_img_h, cur_img_w = self.img_h, self.img_w
+        for feature in self.features:
             if self.use_actions:
-                self.action_inflates.append(nn.Linear(in_features=action_size,
-                                                      out_features=action_size * img_size[0] * img_size[1]))
-                zeros = torch.zeros(1, 1, *img_size)
+                self.action_inflates.append(nn.Linear(in_features=self.action_size,
+                                                      out_features=self.action_size * cur_img_h * cur_img_w))
+                zeros = torch.zeros(1, 1, cur_img_h, cur_img_w)
                 pooled_zeros = self.pool(zeros)
-                img_size = pooled_zeros.shape[-2:]
-                in_channels += self.action_size
-            self.downs.append(DoubleConv3d(in_c=in_channels, out_c=feature))
-            self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(time_dim, 1, 1)))
-            in_channels = feature
+                cur_img_h, cur_img_w = pooled_zeros.shape[-2:]
+                cur_in_channels += self.action_size
+            self.downs.append(DoubleConv3d(in_c=cur_in_channels, out_c=feature))
+            self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(self.time_dim, 1, 1)))
+            cur_in_channels = feature
 
-        self.time3ds.append(nn.Conv3d(in_channels=features[-1], out_channels=features[-1], kernel_size=(time_dim, 1, 1)))
+        # bottleneck
+        bn_h, bn_w = cur_img_h, cur_img_w
+        bn_feat = self.features[-1]
+        self.time3ds.append(nn.Conv3d(in_channels=bn_feat, out_channels=bn_feat, kernel_size=(self.time_dim, 1, 1)))
+        if self.use_actions:
+            self.bottleneck_action_inflate = nn.Linear(in_features=self.action_size,
+                                                       out_features=self.action_size * bn_h * bn_w)
+            self.bottleneck = DoubleConv2d(in_c=bn_feat + self.action_size, out_c=bn_feat * 2)
+        else:
+            self.bottleneck = DoubleConv2d(in_c=bn_feat, out_c=bn_feat * 2)
 
-        for feature in reversed(features):
-            self.ups.append(nn.ConvTranspose2d(in_channels=feature*2, out_channels=feature,
+        # up
+        for feature in reversed(self.features):
+            self.ups.append(nn.ConvTranspose2d(in_channels=feature * 2, out_channels=feature,
                                                kernel_size=(2, 2), stride=(2, 2)))
             self.ups.append(DoubleConv2d(in_c=feature * 2, out_c=feature))
 
-        if self.use_actions:
-            self.bottleneck_action_inflate = nn.Linear(in_features=action_size,
-                                                  out_features=action_size * img_size[0] * img_size[1])
-            self.bottleneck = DoubleConv2d(in_c=features[-1] + self.action_size, out_c=features[-1] * 2)
-        else:
-            self.bottleneck = DoubleConv2d(in_c=features[-1], out_c=features[-1] * 2)
-
-        self.final_conv = nn.Conv2d(in_channels=features[0], out_channels=out_channels, kernel_size=(1, 1))
+        # final
+        self.final_conv = nn.Conv2d(in_channels=self.features[0], out_channels=self.img_c, kernel_size=(1, 1))
 
     def pred_n(self, x, pred_length=1, **kwargs):
         # input: T_in frames: [b, T_in, c, h, w]

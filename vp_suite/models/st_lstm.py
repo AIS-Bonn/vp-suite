@@ -8,35 +8,35 @@ from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalST
 
 
 class STLSTMModel(VideoPredictionModel):
-    def __init__(self, img_size, img_channels, enc_channels, num_layers, action_size, inflated_action_dim,
-                 decouple_loss_scale, reconstruction_loss_scale, device):
-        super(STLSTMModel, self).__init__()
+    
+    enc_channels = 64
+    num_layers = 3
+    reconstruction_loss_scale = 0.1
+    decoupling_loss_scale = 100.0
+    inflated_action_dim = 3
+    can_handle_actions = True
 
-        img_height, img_width = img_size
-        self.enc_channels = enc_channels
-        self.num_layers = num_layers
+    @classmethod
+    def model_desc(cls):
+        return "ST-LSTM"
+    
+    def __init__(self, cfg):
+        super(STLSTMModel, self).__init__(cfg)
+
         self.num_hidden = [self.enc_channels] * self.num_layers
-        self.action_size = action_size
-        self.inflated_action_dim = inflated_action_dim
-        self.decouple_loss_scale = decouple_loss_scale
-        self.reconstruction_loss_scale = reconstruction_loss_scale
-        self.device = device
-
-        self.autoencoder = Autoencoder(img_channels, img_size, self.enc_channels, device)
+        self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, cfg.device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
-        self.use_actions = self.action_size > 0
         self.recurrent_cell = STLSTMCell
 
         if self.use_actions:
             self.recurrent_cell = ActionConditionalSTLSTMCell
-            self.action_inflate = nn.Linear(in_features=action_size,
+            self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
                                             bias=False)
             self.action_conv_h = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
                                            kernel_size=(5, 1), padding=(2, 0), bias=False)
             self.action_conv_w = nn.Conv2d(in_channels=self.inflated_action_dim, out_channels=self.enc_channels,
                                            kernel_size=(5, 1), padding=(2, 0), bias=False)
-
         cells = []
         for i in range(self.num_layers):
             in_channel = self.num_hidden[0] if i == 0 else self.num_hidden[i - 1]
@@ -48,8 +48,6 @@ class STLSTMModel(VideoPredictionModel):
         # shared adapter
         adapter_num_hidden = self.num_hidden[0]
         self.adapter = nn.Conv2d(adapter_num_hidden, adapter_num_hidden, 1, stride=1, padding=0, bias=False)
-
-        self.to(self.device)
 
     def forward(self, x, **kwargs):
         return self.pred_n(x, pred_length=1, **kwargs)
@@ -110,6 +108,6 @@ class STLSTMModel(VideoPredictionModel):
 
         predictions = torch.stack(next_frames[t_in-1:], dim=0).transpose(0, 1)
 
-        decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0)) * self.decouple_loss_scale
+        decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0)) * self.decoupling_loss_scale
 
         return predictions, {"ST-LSTM decouple loss": decouple_loss}

@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import imageio
 import torchfile
+from pathlib import Path
 from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class KTHActionsDataset(BaseVPDataset):
@@ -20,12 +21,11 @@ class KTHActionsDataset(BaseVPDataset):
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
 
-    def __init__(self, data_dir, cfg, split):
-        super(KTHActionsDataset, self).__init__(data_dir, cfg)
+    def __init__(self, cfg, split):
+        super(KTHActionsDataset, self).__init__(cfg, split)
 
-        assert split in ['train', 'test']
         self.split = split
-        self.data_dir = os.path.join(self.data_dir, "processed")
+        self.data_dir = str(Path(cfg.data_dir) / "processed")
         torchfile_name = f'{self.split}_meta{self.DEFAULT_FRAME_SHAPE[0]}x{self.DEFAULT_FRAME_SHAPE[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
 
@@ -48,7 +48,7 @@ class KTHActionsDataset(BaseVPDataset):
 
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))
-        frames = np.zeros((self.seq_len, self.img_size, self.img_size, 3))
+        frames = np.zeros((self.seq_len, *self.DEFAULT_FRAME_SHAPE))
         first_frame = 0 if len(seq) <= self.seq_len else random.randint(0, len(seq) - self.seq_len)
         last_frame = len(seq) - 1 if len(seq) <= self.seq_len else first_frame + self.seq_len - 1
         for i in range(first_frame, last_frame + 1):

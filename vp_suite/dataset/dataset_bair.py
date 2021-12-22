@@ -20,10 +20,12 @@ class BAIRPushingDataset(BaseVPDataset):
     NAME = "BAIR robot pushing"
     ACTION_SIZE = 4
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
-    def __init__(self, data_dir, cfg):
-        super(BAIRPushingDataset, self).__init__(data_dir, cfg)
+    def __init__(self, cfg, split):
+        super(BAIRPushingDataset, self).__init__(cfg, split)
 
+        self.data_dir = str(Path(cfg.data_dir) / "softmotion30_44k" / split)
         self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
         self.actions_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("actions.npy")]
 
@@ -34,9 +36,6 @@ class BAIRPushingDataset(BaseVPDataset):
 
         self.obs_fps = [os.path.join(self.data_dir, i) for i in self.obs_ids]
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
-
-        self.channels = 3
-        self.img_shape = np.load(self.obs_fps[0]).shape[1:3]  # h, w
 
     def __len__(self):
         return len(self.obs_fps)

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from scripts.test_models import test_pred_models
 from dataset.dataset_factory import create_dataset
-from vp_suite.models.model_factory import get_pred_model
+from vp_suite.models.model_factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
 from losses.main import PredictionLossProvider
 from utils.visualization import visualize_vid
@@ -19,10 +19,6 @@ def train(trial=None, cfg=None):
     # PREPARATION pt. 1
     best_val_loss = float("inf")
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
-    num_classes = cfg.dataset_classes + 1 if cfg.include_gripper else cfg.dataset_classes
-    cfg.num_channels = num_classes if cfg.pred_mode == "mask" else 3
-    cfg.num_classes = num_classes
-    vid_type = (cfg.pred_mode, cfg.num_channels)
     cfg.img_processor = ImgProcessor(cfg.tensor_value_range)
 
     random.seed(cfg.seed)
@@ -49,7 +45,7 @@ def train(trial=None, cfg=None):
         wandb.init(config=cfg, project="sem_vp_train_pred", reinit=cfg.use_optuna)
 
     # MODEL AND OPTIMIZER
-    pred_model = get_pred_model(cfg)
+    pred_model = create_pred_model(cfg)
     optimizer = None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)

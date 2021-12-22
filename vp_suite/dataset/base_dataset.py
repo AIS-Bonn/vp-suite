@@ -12,12 +12,14 @@ class BaseVPDataset(Dataset):
     NAME = NotImplemented
     ACTION_SIZE = NotImplemented
     DEFAULT_FRAME_SHAPE = NotImplemented
+    VALID_SPLITS = ["train", "test"]
+    TRAIN_KEEP_RATIO = 0.8
 
-    def __init__(self, data_dir, cfg):
+    def __init__(self, cfg, split):
 
         super(BaseVPDataset, self).__init__()
+        self.check_split(split)
         self.set_seq_len(cfg.data_seq_step, cfg.context_frames, cfg.pred_frames)
-        self.data_dir = data_dir
         self.dataset_cfg = cfg
         self.img_processor = cfg.img_processor
         pass
@@ -32,6 +34,10 @@ class BaseVPDataset(Dataset):
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}"
 
+    def check_split(self, split):
+        assert split in self.VALID_SPLITS,\
+            f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}"
+
     def __len__(self) -> int:
         raise NotImplementedError
 
@@ -40,3 +46,18 @@ class BaseVPDataset(Dataset):
 
     def preprocess_img(self, img):
         return self.img_processor.preprocess_img(img)
+
+    @classmethod
+    def get_train_val_test_split(cls, cfg):
+        if cls.VALID_SPLITS == ["train", "test"]:
+            D_main = cls(cfg, "train")
+            len_train = int(len(D_main) * cls.TRAIN_KEEP_RATIO)
+            len_val = len(D_main) - len_train
+            D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
+        elif cls.VALID_SPLITS == ["train", "val", "test"]:
+            D_train = cls(cfg, "train")
+            D_val = cls(cfg, "val")
+        else:
+            raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
+        D_test = cls(cfg, "test")
+        return D_train, D_val, D_test

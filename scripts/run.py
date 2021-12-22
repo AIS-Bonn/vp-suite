@@ -4,8 +4,8 @@ import torch
 
 from vp_suite.train import train as train_pred_model
 from scripts.test_models import test_pred_models
-from vp_suite.models.model_factory import MODELS
-from vp_suite.dataset.dataset_factory import SUPPORTED_DATASETS
+from vp_suite.models.model_factory import AVAILABLE_MODELS
+from vp_suite.dataset.dataset_factory import AVAILABLE_DATASETS
 from vp_suite.utils.utils import timestamp
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument("--vis-every", type=int, default=10, help="Visualize predictions after every Nth epoch")
     parser.add_argument("--no-wandb", action="store_true", help="If specified, does not invoke WandB for logging")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
-    parser.add_argument("--model-type", type=str, choices=MODELS,
+    parser.add_argument("--model-type", type=str, choices=AVAILABLE_MODELS,
                         default="st_lstm", help="Which prediction model arch to use (See TODO for a full list of available models)")  # TODO full list of available models
     parser.add_argument("--tensor-value-range", type=float, nargs=2, default=[0.0, 1.0],
                         help="Two values specifying the value range of the pytorch tensors processed by the model")
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--out-dir", type=str, default=f"out/{timestamp()}",
                         help="Output path for results (models, visualizations...)")
-    parser.add_argument("--dataset", type=str, choices=SUPPORTED_DATASETS)
+    parser.add_argument("--dataset", type=str, choices=AVAILABLE_DATASETS)
 
     parser.add_argument("--data-seq-step", type=int, default=1,
                         help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
@@ -76,10 +76,6 @@ if __name__ == '__main__':
 
 
     # model-specific hyperparameters
-    # seg.UNet
-    parser.add_argument("--seg-unet-features", nargs="+", type=int, default=[64, 128, 256, 512])
-    # pred.UNet
-    parser.add_argument("--pred-unet-features", nargs="+", type=int, default=[8, 16, 32, 64])
     # pred.ConvLSTM
     parser.add_argument("--pred-lstm-num-layers", type=int, default=3)
     parser.add_argument("--pred-lstm-kernel-size", nargs=2, type=int, default=(3, 3))
