@@ -10,28 +10,28 @@ from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class MovingMNISTDataset(BaseVPDataset):
 
+    MAX_SEQ_LEN = 20  # default MMNIST sequences span 20 frames
+    NAME = "Moving MNIST"
+    ACTION_SIZE = 0
+    DEFAULT_FRAME_SHAPE = (64, 64, 3)
+
     def __init__(self, data_dir, cfg):
         super(MovingMNISTDataset, self).__init__(data_dir, cfg)
         self.data_ids = sorted(os.listdir(self.data_dir))
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
-        self.channels = 3
-        self.action_size = 0
-
-        self.img_shape = np.load(self.data_fps[0]).shape[1:]  # [h, w]
 
     def __len__(self):
         return len(self.data_fps)
 
     def __getitem__(self, i) -> VPData:
 
-        rgb_raw = np.load(self.data_fps[i])  # [t, h, w]
-        rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t, h, w, c]
-        rgb = self.preprocess_img(rgb_raw)  # [t, c, h, w]
+        rgb_raw = np.load(self.data_fps[i])  # [t', h, w]
+        rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t', h, w, c]
+        rgb = self.preprocess_img(rgb_raw)
+        rgb = rgb[:self.seq_len:self.seq_step]  # [t, c, h, w]
+        actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = {
-            "frames": rgb,
-            "actions": torch.zeros((rgb.shape[0], 1))  # [t, a], actions should be disregarded in training logic
-        }
+        data = { "frames": rgb, "actions": actions }
         return data
 
 # === MMNIST data preparation tools ============================================

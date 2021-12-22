@@ -16,6 +16,11 @@ from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class BAIRPushingDataset(BaseVPDataset):
 
+    MAX_SEQ_LEN = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
+    NAME = "BAIR robot pushing"
+    ACTION_SIZE = 4
+    DEFAULT_FRAME_SHAPE = (64, 64, 3)
+
     def __init__(self, data_dir, cfg):
         super(BAIRPushingDataset, self).__init__(data_dir, cfg)
 
@@ -30,10 +35,7 @@ class BAIRPushingDataset(BaseVPDataset):
         self.obs_fps = [os.path.join(self.data_dir, i) for i in self.obs_ids]
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
-        self.seq_length = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
-
         self.channels = 3
-        self.action_size = 4
         self.img_shape = np.load(self.obs_fps[0]).shape[1:3]  # h, w
 
     def __len__(self):
@@ -41,13 +43,13 @@ class BAIRPushingDataset(BaseVPDataset):
 
     def __getitem__(self, i) -> VPData:
 
-        rgb = self.preprocess_img(np.load(self.obs_fps[i]))  # [t, c, h, w]
-        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()  # [t, a]
+        rgb = self.preprocess_img(np.load(self.obs_fps[i]))
+        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
 
-        data = {
-            "frames": rgb,
-            "actions": actions
-        }
+        rgb = rgb[:self.seq_len:self.seq_step]  # [t, c, h, w]
+        actions = actions[:self.seq_len:self.seq_step]  # [t, a]
+
+        data = { "frames": rgb, "actions": actions }
         return data
 
 # === BAIR data preparation tools ==============================================
@@ -94,34 +96,3 @@ def prepare_bair(data_dir, delete_tfrecords):
     test_dir = os.path.join(data_dir, "softmotion30_44k", "test")
     split_bair_traj_files(train_dir, delete_tfrecords)
     split_bair_traj_files(test_dir, delete_tfrecords)
-
-
-if __name__ == '__main__':
-    data_dir = sys.argv[1]
-    prepare_bair(data_dir, delete_tfrecords=True)
-    main_dataset = BAIRPushingDataset(os.path.join(data_dir, "softmotion30_44k", "train"))
-    test_dataset = BAIRPushingDataset(os.path.join(data_dir, "softmotion30_44k", "test"))
-    obs, actions = main_dataset[0]
-    print(len(main_dataset), len(test_dataset), obs.shape, actions.shape)
-
-
-'''
-def load_BAIR_pushing_dataset(dataset_fname, experience_size):
-
-    for i in tqdm(range(len(tfr_files))):
-        cur_tfr_file = tfr_files[i]
-        tfr_fp = str((dataset_fp / cur_tfr_file).resolve())
-        index_fp = tfr_fp + ".index"
-        if not os.path.isfile(index_fp):
-            create_index(tfr_fp, index_fp)
-        dataset = TFRecordDataset(tfr_fp, index_fp)
-        data_list = list(dataset)
-        for ep in range(len(data_list)):
-            for step in range(bair_ep_length):
-                img_data = data_list[ep][str(step) + '/image_aux1/encoded']
-                # img_data = data_list[ep][str(i) + '/image_main/encoded']
-                action = data_list[ep][str(step) + '/action']
-                obs = np.array(img_data).reshape(1, 64, 64, 3).transpose((0, 3, 1, 2))
-                D.append(obs, np.array(action), np.array(0.0), (step + 1) % bair_ep_length == 0)
-    return D
-'''

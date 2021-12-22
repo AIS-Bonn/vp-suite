@@ -41,9 +41,8 @@ if __name__ == '__main__':
                         help="Output path for results (models, visualizations...)")
     parser.add_argument("--dataset", type=str, choices=SUPPORTED_DATASETS)
 
-    parser.add_argument("--data-seq-step", type=int, default=1, help="Use only every nth frame of the video sequence")
-    parser.add_argument("--data-seq-allow-overlap", action="store_true",
-                        help="If specified, allows frames to appear in multiple valid video sequence datapoints")
+    parser.add_argument("--data-seq-step", type=int, default=1,
+                        help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
     parser.add_argument("--context-frames", type=int, default=10, help="Number of input frames for predictor")
     parser.add_argument("--pred-frames", type=int, default=10, help="Number of frames predicted from input")
 

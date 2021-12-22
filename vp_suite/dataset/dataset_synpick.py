@@ -17,8 +17,11 @@ from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class SynpickVideoDataset(BaseVPDataset):
 
-    action_size = 3
-    skip_first_n = 72
+    MAX_SEQ_LEN = 90  # a trajectory in the SynPick dataset is at least 90 frames
+    NAME = "SynPick bin picking"
+    ACTION_SIZE = 3
+    DEFAULT_FRAME_SHAPE = (135, 240, 3)
+    SKIP_FIRST_N = 72
 
     def __init__(self, data_dir, cfg):
         super(SynpickVideoDataset, self).__init__(data_dir, cfg)
@@ -39,29 +42,28 @@ class SynpickVideoDataset(BaseVPDataset):
 
         self.total_len = len(self.image_ids)
         self.step = cfg.data_seq_step  # if >1, (step - 1) frames are skipped between each frame
-        self.sequence_length = (cfg.total_frames - 1) * self.step + 1  # num_frames also includes prediction horizon
-        self.frame_offsets = range(0, cfg.total_frames * self.step, self.step)
+        self.frame_offsets = range(0, (cfg.context_frames + cfg.pred_frames) * self.step, self.step)
 
         # determine which dataset indices are valid for given sequence length T
         self.all_idx = []
         self.valid_idx = []
-        last_valid_idx = -1 * self.sequence_length
-        for idx in range(len(self.image_ids) - self.sequence_length + 1):
+        last_valid_idx = -1 * self.seq_len
+        for idx in range(self.total_len - self.seq_len + 1):
 
             self.all_idx.append(idx)
             ep_nums = [self.ep_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
             frame_nums = [self.frame_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
 
             # first few frames are discarded
-            if frame_nums[0] < self.skip_first_n:
+            if frame_nums[0] < self.SKIP_FIRST_N:
                 continue
 
             # last T frames of an episode mustn't be chosen as the start of a sequence
             if ep_nums[0] != ep_nums[-1]:
                 continue
 
-            # if overlap is not allowed, sequences should not overlap
-            if not self.allow_overlap and idx < last_valid_idx + self.sequence_length:
+            # overlap is not allowed -> sequences should not overlap
+            if idx < last_valid_idx + self.seq_len:
                 continue
 
             # if gripper positions are included, discard sequences without considerable gripper movement
@@ -77,8 +79,6 @@ class SynpickVideoDataset(BaseVPDataset):
             self.valid_idx.append(idx)
             last_valid_idx = idx
 
-        self.img_shape = cv2.cvtColor(cv2.imread(self.image_fps[self.valid_idx[0]]), cv2.COLOR_BGR2RGB).shape[:-1]
-
         if len(self.valid_idx) < 1:
             raise ValueError("No valid indices in generated dataset! "
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
@@ -86,20 +86,18 @@ class SynpickVideoDataset(BaseVPDataset):
     def __getitem__(self, i) -> VPData:
 
         i = self.valid_idx[i]  # only consider valid indices
-        idx = range(i, i + self.sequence_length, self.step)  # create range of indices for frame sequence
+        idx = range(i, i + self.seq_len, self.step)  # create range of indices for frame sequence
 
         ep_num = self.ep_num_from_id(self.image_ids[idx[0]])
         frame_nums = [self.frame_num_from_id(self.image_ids[id_]) for id_ in idx]
         gripper_pos = [self.gripper_pos[ep_num][frame_num] for frame_num in frame_nums]
-        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # sequence length is one less!
+        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # [t, a] sequence length is one less!
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
         imgs = [self.preprocess_img(img) for img in imgs_]
+        rgb = torch.stack(imgs, dim=0)  # [t, c, h, w]
 
-        data = {
-            "frames": torch.stack(imgs, dim=0),  # [t, c, h, w]
-            "actions": actions  # [t, a]
-        }
+        data = { "frames": rgb, "actions": actions }
         return data
 
     def __len__(self):
