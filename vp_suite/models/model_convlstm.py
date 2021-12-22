@@ -7,7 +7,7 @@ from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.base_model import VideoPredictionModel
 
 
-class LSTMModel(VideoPredictionModel):
+class ConvLSTM(VideoPredictionModel):
     '''
     Modified from https://github.com/ndrplz/ConvLSTM_pytorch
     '''
@@ -24,7 +24,7 @@ class LSTMModel(VideoPredictionModel):
         return "ConvLSTM"
 
     def __init__(self, cfg):
-        super(LSTMModel, self).__init__(cfg)
+        super(ConvLSTM, self).__init__(cfg)
 
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 

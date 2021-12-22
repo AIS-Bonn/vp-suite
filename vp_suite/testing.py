@@ -1,6 +1,4 @@
 import sys, random
-from typing import List
-
 sys.path.append("")
 
 from pathlib import Path
@@ -10,29 +8,29 @@ import wandb
 
 import torch
 
-from vp_suite.models.base_model import VideoPredictionModel
-from vp_suite.models.copy_last_frame import CopyLastFrameModel
-from vp_suite.metrics.main import PredictionMetricProvider
+from vp_suite.models.model_copy_last_frame import CopyLastFrame
+from vp_suite.evaluation.metric_provider import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
-from vp_suite.dataset.dataset_factory import create_dataset
+from vp_suite.dataset.factory import create_dataset
 
 
-def test_pred_models(cfg, test_data_and_loader=None):
+def test(cfg, test_data_and_loader=None):
 
     # prep
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
-    dataset_classes = cfg.dataset_classes+1 if cfg.include_gripper else cfg.dataset_classes
     img_processor = ImgProcessor(cfg.tensor_value_range)
 
     # MODELS
     model_fps = cfg.models
-    pred_models : List[VideoPredictionModel] = [torch.load(model_path).to(cfg.device) for model_path in model_fps]
+    pred_models = [torch.load(model_path).to(cfg.device) for model_path in model_fps]
     if cfg.program == "test_pred":
-        pred_models.append(CopyLastFrameModel().to(cfg.device))  # add baseline copy model
+        pred_models.append(CopyLastFrame().to(cfg.device))  # add baseline copy model
         model_fps.append("")
+    for model in pred_models:
+        model.eval()
     models_dict = {model.desc: (model, fp, []) for model, fp in zip(pred_models, model_fps)}
 
     # DATASET
@@ -71,7 +69,7 @@ def test_pred_models(cfg, test_data_and_loader=None):
         num_vis = 5
         vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
         for model_desc, (model, model_fp, _) in models_dict.items():
-            if model_desc == CopyLastFrameModel.desc: continue  # don't print for copy baseline
+            if model_desc == CopyLastFrame.desc: continue  # don't print for copy baseline
             model_dir = str(Path(model_fp).parent.resolve())
             print(model_desc, model_dir)
             visualize_vid(test_data, cfg.context_frames, cfg.pred_frames, model, cfg.device, img_processor,

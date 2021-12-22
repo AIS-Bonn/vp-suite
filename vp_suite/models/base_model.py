@@ -9,11 +9,12 @@ class VideoPredictionModel(nn.Module):
 
     def __init__(self, cfg):
         super(VideoPredictionModel, self).__init__()
-        self.img_shape = cfg.img_shape
-        self.img_c, self.img_h, self.img_w = self.img_shape
-        self.action_size = cfg.action_size
-        self.use_actions = self.action_size > 0 and cfg.use_actions
-        self.device = cfg.device
+        if cfg is not None:
+            self.img_shape = cfg.img_shape
+            self.img_c, self.img_h, self.img_w = self.img_shape
+            self.action_size = cfg.action_size
+            self.use_actions = self.action_size > 0 and cfg.use_actions
+            self.device = cfg.device
 
     @classmethod
     def model_desc(cls):

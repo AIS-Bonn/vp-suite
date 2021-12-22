@@ -7,11 +7,8 @@ def most(l: List[bool], factor=0.67):
     '''
     return sum(l) >= factor * len(l)
 
-def timestamp():
+def timestamp(program):
     """ Obtains a timestamp of the current system time in a human-readable way """
 
-    timestamp = (
-        str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
-    )
-
-    return timestamp
+    timestamp = str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
+    return f"{program}_{timestamp}"

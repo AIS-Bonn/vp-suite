@@ -1,9 +1,7 @@
 import sys
 sys.path.append("")
 
-import numpy as np
-
-from vp_suite.losses.loss_image import LPIPS, MSE, L1, SSIM, PSNR
+from vp_suite.evaluation.image_loss import LPIPS, MSE, L1, SSIM, PSNR
 
 
 class PredictionMetricProvider():

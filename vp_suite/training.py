@@ -7,11 +7,11 @@ import numpy as np
 import torch.nn
 from tqdm import tqdm
 
-from scripts.test_models import test_pred_models
-from dataset.dataset_factory import create_dataset
-from vp_suite.models.model_factory import create_pred_model
+from vp_suite.testing import test
+from dataset.factory import create_dataset
+from vp_suite.models.factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
-from losses.main import PredictionLossProvider
+from evaluation.loss_provider import PredictionLossProvider
 from utils.visualization import visualize_vid
 
 def train(trial=None, cfg=None):
@@ -107,14 +107,14 @@ def train(trial=None, cfg=None):
     print("\nTraining done, testing best model...")
     cfg.models = [best_model_path]
     cfg.full_evaluation = True
-    test_metrics = test_pred_models(cfg, (test_data, test_loader))
+    test_metrics = test(cfg, (test_data, test_loader))  # TODO make testing callable from here again
     if not cfg.no_wandb:
         wandb.log(test_metrics, commit=True)
         wandb.finish()
 
     print("Testing done, bye bye!")
     frames = cfg.pred_frames
-    return test_metrics[f"mse_{frames} (↓)"]
+    return test_metrics[f"mse_{frames} (↓)"]  # TODO return val_rec_loss (indicator loss) for optuna optimization
 
 # ==============================================================================
 

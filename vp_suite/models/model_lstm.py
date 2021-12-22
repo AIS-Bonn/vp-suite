@@ -8,7 +8,7 @@ sys.path.append("")
 from vp_suite.models.base_model import VideoPredictionModel
 
 
-class NonConvLSTMModel(VideoPredictionModel):
+class LSTM(VideoPredictionModel):
 
     bottleneck_dim = 1024
     lstm_hidden_dim = 1024
@@ -21,7 +21,7 @@ class NonConvLSTMModel(VideoPredictionModel):
         return "NonConvLSTM"
 
     def __init__(self, cfg):
-        super(NonConvLSTMModel, self).__init__(cfg)
+        super(LSTM, self).__init__(cfg)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)

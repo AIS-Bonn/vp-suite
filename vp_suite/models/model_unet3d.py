@@ -6,7 +6,7 @@ from vp_suite.models.model_blocks.conv import DoubleConv3d, DoubleConv2d
 from vp_suite.models.base_model import VideoPredictionModel
 
 
-class UNet3dModel(VideoPredictionModel):
+class UNet3D(VideoPredictionModel):
 
     features = [8, 16, 32, 64]
     time_dim = None  # if None, use all context frames
@@ -17,7 +17,7 @@ class UNet3dModel(VideoPredictionModel):
         return "UNet-3D"
 
     def __init__(self, cfg):
-        super(UNet3dModel, self).__init__(cfg)
+        super(UNet3D, self).__init__(cfg)
 
         self.time_dim = self.time_dim or cfg.context_frames
         self.downs = nn.ModuleList()

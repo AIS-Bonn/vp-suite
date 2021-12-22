@@ -3,21 +3,21 @@ sys.path.append("")
 
 import torch
 
-from vp_suite.models.conv_lstm import LSTMModel
-from vp_suite.models.copy_last_frame import CopyLastFrameModel
-from vp_suite.models.phydnet import PhyDNet
-from vp_suite.models.st_lstm import STLSTMModel
-from vp_suite.models.st_phy import STPhy
-from vp_suite.models.unet_3d import UNet3dModel
-from vp_suite.models.non_conv import NonConvLSTMModel
-from vp_suite.models.lin_pred import SimpleV1, SimpleV2
+from vp_suite.models.model_convlstm import ConvLSTM
+from vp_suite.models.model_copy_last_frame import CopyLastFrame
+from vp_suite.models.model_phydnet import PhyDNet
+from vp_suite.models.model_st_lstm import STLSTM
+from vp_suite.models.model_st_phy import STPhy
+from vp_suite.models.model_unet3d import UNet3D
+from vp_suite.models.model_lstm import LSTM
+from vp_suite.models.model_simple import SimpleV1, SimpleV2
 
 pred_models = {
-    "unet": UNet3dModel,
-    "lstm" : LSTMModel,
-    "non_conv" : NonConvLSTMModel,
-    "st_lstm" : STLSTMModel,
-    "copy" : CopyLastFrameModel,
+    "unet": UNet3D,
+    "lstm" : ConvLSTM,
+    "non_conv" : LSTM,
+    "st_lstm" : STLSTM,
+    "copy" : CopyLastFrame,
     "phy" : PhyDNet,
     "st_phy" : STPhy,
     "simplev1": SimpleV1,
@@ -28,7 +28,7 @@ AVAILABLE_MODELS = pred_models.keys()
 
 def create_pred_model(cfg):
     model_class = pred_models.get(cfg.model_type, pred_models["copy"])
-    ac_str = "(action-conditional)" if cfg.include_actions and model_class.can_handle_actions else ""
+    ac_str = "(action-conditional)" if cfg.use_actions and model_class.can_handle_actions else ""
     print(f"Creating prediction model '{model_class.model_desc()}' {ac_str}")
     pred_model = model_class(cfg).to(cfg.device)
     if not pred_model.trainable:
@@ -39,7 +39,7 @@ def create_pred_model(cfg):
     print(f"Model parameters (total / trainable): {total_params} / {trainable_params}")
     return pred_model.to(cfg.device)
 
-def test_all_models(cfg):
+def test_all_models(cfg):  # TODO
     import time
     from itertools import product
 
@@ -50,8 +50,8 @@ def test_all_models(cfg):
     x = torch.randn((cfg.batch_size, cfg.context_frames, cfg.img_c, cfg.img_h, cfg.img_w)).to(cfg.device)
     a = torch.randn((cfg.batch_size, cfg.vid_total_length, cfg.action_size)).to(cfg.device)
 
-    for (include_actions, arch) in product([False, True], AVAILABLE_MODELS):
-        cfg.include_actions = include_actions
+    for (use_actions, arch) in product([False, True], AVAILABLE_MODELS):
+        cfg.use_actions = use_actions
         cfg.pred_arch = arch
         model = create_pred_model(cfg)
 

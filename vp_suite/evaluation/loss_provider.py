@@ -1,7 +1,18 @@
 import torch
 
-from vp_suite.losses.loss_image import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
+from vp_suite.evaluation.image_loss import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
+from vp_suite.evaluation.fvd.fvd import FrechetVideoDistance as FVD
 
+losses = {
+    "mse": MSE,
+    "l1": L1,
+    "smooth_l1": SmoothL1,
+    "lpips": LPIPS,
+    "ssim": SSIM,
+    "psnr": PSNR,
+    "fvd": FVD
+}
+AVAILABLE_LOSSES = losses.keys()
 
 class PredictionLossProvider():
     def __init__(self, cfg):

@@ -7,7 +7,7 @@ from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 
 
-class STLSTMModel(VideoPredictionModel):
+class STLSTM(VideoPredictionModel):
     
     enc_channels = 64
     num_layers = 3
@@ -21,7 +21,7 @@ class STLSTMModel(VideoPredictionModel):
         return "ST-LSTM"
     
     def __init__(self, cfg):
-        super(STLSTMModel, self).__init__(cfg)
+        super(STLSTM, self).__init__(cfg)
 
         self.num_hidden = [self.enc_channels] * self.num_layers
         self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, cfg.device)

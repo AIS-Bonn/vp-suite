@@ -68,15 +68,14 @@ class SynpickVideoDataset(BaseVPDataset):
             if idx < last_valid_idx + self.seq_len:
                 continue
 
-            # if gripper positions are included, discard sequences without considerable gripper movement
-            if self.check_gripper_movement:
-                gripper_pos = [self.gripper_pos[ep_nums[0]][frame_num] for frame_num in frame_nums]
-                gripper_pos_deltas = self.get_gripper_pos_xydist(gripper_pos)
-                gripper_pos_deltas_above_min = [(delta > 1.0) for delta in gripper_pos_deltas]
-                gripper_pos_deltas_below_max = [(delta < 30.0) for delta in gripper_pos_deltas]
-                gripper_movement_ok = most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
-                if not gripper_movement_ok:
-                    continue
+            # discard sequences without considerable gripper movement
+            gripper_pos = [self.gripper_pos[ep_nums[0]][frame_num] for frame_num in frame_nums]
+            gripper_pos_deltas = self.get_gripper_pos_xydist(gripper_pos)
+            gripper_pos_deltas_above_min = [(delta > 1.0) for delta in gripper_pos_deltas]
+            gripper_pos_deltas_below_max = [(delta < 30.0) for delta in gripper_pos_deltas]
+            gripper_movement_ok = most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
+            if not gripper_movement_ok:
+                continue
 
             self.valid_idx.append(idx)
             last_valid_idx = idx
