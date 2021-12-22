@@ -1,3 +1,4 @@
+import json
 import random
 from pathlib import Path
 
@@ -7,8 +8,7 @@ import numpy as np
 import torch.nn
 from tqdm import tqdm
 
-from vp_suite.testing import test
-from dataset.factory import create_dataset
+from dataset.factory import create_train_val_dataset
 from vp_suite.models.factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
 from evaluation.loss_provider import PredictionLossProvider
@@ -20,13 +20,16 @@ def train(trial=None, cfg=None):
     best_val_loss = float("inf")
     best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
     cfg.img_processor = ImgProcessor(cfg.tensor_value_range)
-
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
+    if cfg.opt_direction == "maximize":
+        def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
+    else:
+        def loss_improved(cur_loss, best_loss): return cur_loss < best_loss
 
     # DATA
-    (train_data, val_data, test_data), (train_loader, val_loader, test_loader) = create_dataset(cfg)
+    (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
 
     # Optuna
     if cfg.use_optuna:
@@ -46,7 +49,7 @@ def train(trial=None, cfg=None):
 
     # MODEL AND OPTIMIZER
     pred_model = create_pred_model(cfg)
-    optimizer = None
+    optimizer, optimizer_scheduler = None, None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
         optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
@@ -58,8 +61,11 @@ def train(trial=None, cfg=None):
     if loss_provider.losses.get(cfg.pred_val_criterion, (None, 0.0))[1] <= 1e-7:
         cfg.pred_val_criterion = "mse"
 
+    # PREPARATION pt.2
+    with open(str((Path(cfg.out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:
+        json.dump(vars(cfg), cfg_file)
+
     # MAIN LOOP
-    val_losses = {k: 0 for k in loss_provider.losses.keys()}
     for epoch in range(0, cfg.epochs):
 
         # train
@@ -84,7 +90,7 @@ def train(trial=None, cfg=None):
 
         # save model if last epoch improved indicator loss
         cur_val_loss = indicator_loss.item()
-        if best_val_loss > cur_val_loss:
+        if loss_improved(cur_val_loss, best_val_loss):
             best_val_loss = cur_val_loss
             torch.save(pred_model, best_model_path)
             print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
@@ -103,18 +109,11 @@ def train(trial=None, cfg=None):
         if not cfg.no_wandb:
             wandb.log(val_losses, commit=True)
 
-    # TESTING
-    print("\nTraining done, testing best model...")
-    cfg.models = [best_model_path]
-    cfg.full_evaluation = True
-    test_metrics = test(cfg, (test_data, test_loader))  # TODO make testing callable from here again
-    if not cfg.no_wandb:
-        wandb.log(test_metrics, commit=True)
-        wandb.finish()
-
-    print("Testing done, bye bye!")
-    frames = cfg.pred_frames
-    return test_metrics[f"mse_{frames} (↓)"]  # TODO return val_rec_loss (indicator loss) for optuna optimization
+    # finishing
+    print("\nTraining done, cleaning up...")
+    torch.save(pred_model, str((Path(cfg.out_dir) / 'final_model.pth').resolve()))
+    wandb.finish()
+    return best_val_loss  # return best validation loss for hyperparameter optimization
 
 # ==============================================================================
 
@@ -146,7 +145,6 @@ def train_iter(cfg, loader, pred_model, optimizer, loss_provider):
         # bookkeeping
         loop.set_postfix(loss=total_loss.item())
         # loop.set_postfix(mem=torch.cuda.memory_allocated())
-
 
 def eval_iter(cfg, loader, pred_model, loss_provider):
 

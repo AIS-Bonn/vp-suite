@@ -48,7 +48,7 @@ class BaseVPDataset(Dataset):
         return self.img_processor.preprocess_img(img)
 
     @classmethod
-    def get_train_val_test_split(cls, cfg):
+    def get_train_val(cls, cfg):
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls(cfg, "train")
             len_train = int(len(D_main) * cls.TRAIN_KEEP_RATIO)
@@ -59,5 +59,15 @@ class BaseVPDataset(Dataset):
             D_val = cls(cfg, "val")
         else:
             raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
+        return D_train, D_val
+
+    @classmethod
+    def get_test(cls, cfg):
         D_test = cls(cfg, "test")
+        return D_test
+
+    @classmethod
+    def get_train_val_test(cls, cfg):
+        D_train, D_val = cls.get_train_val(cfg)
+        D_test = cls.get_test(cfg)
         return D_train, D_val, D_test

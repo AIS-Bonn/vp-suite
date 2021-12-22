@@ -67,6 +67,7 @@ if __name__ == '__main__':
     cfg = parser.parse_args()
     Path(cfg.out_dir).mkdir(parents=True, exist_ok=True)
     cfg.total_frames = cfg.context_frames + cfg.pred_frames
+    cfg.opt_direction = "maximize" if AVAILABLE_LOSSES[cfg.val_rec_criterion].bigger_is_better else "minimize"
 
     # enter the training loop
     if cfg.use_optuna:
@@ -76,8 +77,7 @@ if __name__ == '__main__':
         except ImportError:
             raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
         optuna_program = partial(train, cfg=cfg)
-        opt_direction = "maximize" if AVAILABLE_LOSSES[cfg.val_rec_criterion].bigger_is_better else "minimize"
-        study = optuna.create_study(directions=opt_direction)
+        study = optuna.create_study(directions=cfg.opt_direction)
         study.optimize(optuna_program, n_trials=cfg.optuna_n_trials)
     else:
         train(cfg=cfg)

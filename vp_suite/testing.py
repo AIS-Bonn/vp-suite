@@ -12,10 +12,10 @@ from vp_suite.models.model_copy_last_frame import CopyLastFrame
 from vp_suite.evaluation.metric_provider import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
-from vp_suite.dataset.factory import create_dataset
+from vp_suite.dataset.factory import create_test_dataset
 
 
-def test(cfg, test_data_and_loader=None):
+def test(cfg):
 
     # prep
     random.seed(cfg.seed)
@@ -26,33 +26,35 @@ def test(cfg, test_data_and_loader=None):
     # MODELS
     model_fps = cfg.models
     pred_models = [torch.load(model_path).to(cfg.device) for model_path in model_fps]
-    if cfg.program == "test_pred":
-        pred_models.append(CopyLastFrame().to(cfg.device))  # add baseline copy model
-        model_fps.append("")
+    # TODO cfg of loaded model:
+    #  - tensor value range
+    #  - img_shape, use_actions, action_shape
+    #  - ...
+    #  -> compare with test cfg and behave appropriately if diverging
+    #  (e.g. tensor value ranges can be adjusted, but action-conditioned models can't not use actions)
+    pred_models.append(CopyLastFrame().to(cfg.device))  # add baseline copy model
+    model_fps.append("")
     for model in pred_models:
         model.eval()
     models_dict = {model.desc: (model, fp, []) for model, fp in zip(pred_models, model_fps)}
 
     # DATASET
-    if test_data_and_loader is None:
-        (_, _, test_data), (_, _, test_loader) = create_dataset(cfg)
-    else:
-        test_data, test_loader = test_data_and_loader
+    test_data, test_loader = create_test_dataset(cfg)
 
     iter_loader = iter(test_loader)
-    eval_length = len(iter_loader) if cfg.full_test else 10
+    eval_length = 10 if cfg.mini_test else len(iter_loader)
 
     # evaluation / metric calc.
     if eval_length > 0:
         with torch.no_grad():
 
-            metric_provider = PredictionMetricProvider(cfg)
+            metric_provider = PredictionMetricProvider(cfg)  # TODO enable config of which metrics to use
 
             for i in tqdm(range(eval_length)):
                 data = next(iter_loader)
                 img_data = data["frames"].to(cfg.device)
                 input = img_data[:, :cfg.context_frames]
-                target = img_data[:, cfg.context_frames:cfg.vid_total_length]
+                target = img_data[:, cfg.context_frames:cfg.total_frames]
                 actions = data["actions"].to(cfg.device)
 
                 for (model, _, model_metrics_per_dp) in models_dict.values():
@@ -77,7 +79,7 @@ def test(cfg, test_data_and_loader=None):
 
     # log or display metrics
     if eval_length > 0:
-        wandb_full_suffix = " (full test)" if cfg.full_test else ""
+        wandb_full_suffix = "" if cfg.mini_test else "(full test)"
         models_dict_items = models_dict.items()
         for i, (model_desc, (_, model_fp, model_metrics_per_dp)) in enumerate(models_dict_items):
 
@@ -94,14 +96,10 @@ def test(cfg, test_data_and_loader=None):
                 for frame in frame_range
             ]
 
-            # return metrics for the first model if called from another program
-            if cfg.program != "test_pred":
-                return mean_metric_dicts
-
             # Log model to WandB
-            elif not cfg.no_wandb:
+            if not cfg.no_wandb:
                 print("Logging test results to WandB for all models...")
-                wandb.init(config={"full_eval": cfg.full_test, "model_fp": model_fp},
+                wandb.init(config={"mini_test": cfg.mini_test, "model_fp": model_fp},
                            project="sem_vp_test_pred", name=f"{model_desc}{wandb_full_suffix}", reinit=(i > 0))
                 for f, mean_metric_dict in enumerate(mean_metric_dicts):
                     wandb.log({"pred_frames": f+1, **mean_metric_dict})
