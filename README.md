@@ -6,7 +6,7 @@ Like with most Computer Vision sub-domains, scientific contributions in this fie
 - **Training protocol** (dataset usage, when to backprop, value ranges etc.)
 - **Technical details of model implementation** (deep learning framework, package dependencies etc.) 
 - **Benchmark selection and execution** (this includes the choice of dataset, number of context/predicted frames, skipping frames in the observed sequences etc.)
-- **Evaluation protocol** (metrics chosen, variations in implementation/reduction modes etc.)
+- **Evaluation protocol** (metrics chosen, variations in implementation/reduction modes, different ways of creating visualizations etc.)
 
 This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.
 
