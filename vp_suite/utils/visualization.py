@@ -4,7 +4,7 @@ import os
 import numpy as np
 import torch
 
-from vp_suite.dataset.dataset_utils import postprocess_img
+from vp_suite.utils.img_processor import postprocess_img
 
 COLORS = {
     "green": [0, 200, 0],
@@ -95,10 +95,9 @@ def save_vid_vis(out_fp, vid_input_length, mode="gif", **trajs):
             for out_fn in out_paths:
                 os.remove(out_fn)
 
-def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device,
-                  out_dir=".", vid_type=("rgb", 3), num_vis=5, test=False, vis_idx=None, mode="gif"):
+def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device, img_processor,
+                  out_dir=".", num_vis=5, test=False, vis_idx=None, mode="gif"):
 
-    pred_mode, num_channels = vid_type
     out_fn_template = "vis_{}_test.gif" if test else "vis_{}.gif"
     out_filenames = []
 
@@ -110,12 +109,12 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
         out_filenames.append(out_filename)
         data = dataset[n] # [in_l + pred_l, c, h, w]
 
-        gt_rgb_vis = postprocess_img(data["rgb"][:vid_input_length+vid_pred_length])
+        gt_rgb_vis = img_processor.postprocess_img(data["frames"][:vid_input_length+vid_pred_length])
         gt_colorized_vis = data.get("colorized", None)
         if gt_colorized_vis is not None:
-            gt_colorized_vis = postprocess_img(gt_colorized_vis)
+            gt_colorized_vis = img_processor.postprocess_img(gt_colorized_vis)
         actions = data["actions"].to(device).unsqueeze(dim=0)
-        in_traj = data[pred_mode]
+        in_traj = data["frames"]
 
         if pred_model is not None:
             pred_model.eval()
@@ -123,9 +122,7 @@ def visualize_vid(dataset, vid_input_length, vid_pred_length, pred_model, device
                 in_traj = in_traj[:vid_input_length].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model.pred_n(in_traj, vid_pred_length, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
-
-                assert num_channels == 3, "TODO ooooo"
-                pr_traj_vis = postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
+                pr_traj_vis = img_processor.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
 
                 save_vid_vis(out_fp=out_filename, vid_input_length=vid_input_length, GT=gt_rgb_vis,
                     GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)

@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 
 import torch
-from vp_suite.dataset.dataset_utils import preprocess_img
 from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class MovingMNISTDataset(BaseVPDataset):
@@ -27,7 +26,7 @@ class MovingMNISTDataset(BaseVPDataset):
 
         rgb_raw = np.load(self.data_fps[i])  # [t, h, w]
         rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t, h, w, c]
-        rgb = preprocess_img(rgb_raw)  # [t, c, h, w]
+        rgb = self.preprocess_img(rgb_raw)  # [t, c, h, w]
 
         data = {
             "frames": rgb,

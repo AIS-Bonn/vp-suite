@@ -10,6 +10,7 @@ from tqdm import tqdm
 from scripts.test_models import test_pred_models
 from dataset.dataset_factory import create_dataset
 from vp_suite.models.model_factory import get_pred_model
+from vp_suite.utils.img_processor import ImgProcessor
 from losses.main import PredictionLossProvider
 from utils.visualization import visualize_vid
 
@@ -22,6 +23,7 @@ def train(trial=None, cfg=None):
     cfg.num_channels = num_classes if cfg.pred_mode == "mask" else 3
     cfg.num_classes = num_classes
     vid_type = (cfg.pred_mode, cfg.num_channels)
+    cfg.img_processor = ImgProcessor(cfg.tensor_value_range)
 
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -95,7 +97,7 @@ def train(trial=None, cfg=None):
         if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
             print("Saving visualizations...")
             out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
-                                          cfg.device, cfg.out_dir, vid_type, num_vis=10)
+                                          cfg.device, cfg.img_processor, cfg.out_dir, num_vis=10)
 
             if not cfg.no_wandb:
                 log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="gif") for i, out_fn in enumerate(out_filenames)}

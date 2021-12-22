@@ -10,10 +10,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from vp_suite.dataset.dataset_utils import preprocess_img
 from vp_suite.utils.utils import most
 from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
@@ -96,7 +94,7 @@ class SynpickVideoDataset(BaseVPDataset):
         actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # sequence length is one less!
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
-        imgs = [preprocess_img(img) for img in imgs_]
+        imgs = [self.preprocess_img(img) for img in imgs_]
 
         data = {
             "frames": torch.stack(imgs, dim=0),  # [t, c, h, w]

@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import imageio
 import torchfile
-from vp_suite.dataset.dataset_utils import preprocess_img
 from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 
 class KTHActionsDataset(BaseVPDataset):
@@ -59,7 +58,7 @@ class KTHActionsDataset(BaseVPDataset):
         for i in range(last_frame + 1, self.seq_length):
             frames[i] = frames[last_frame]
 
-        rgb = preprocess_img(np.array(frames))  # [t, c, h, w]
+        rgb = self.preprocess_img(np.array(frames))  # [t, c, h, w]
 
         data = {
             "frames": rgb,

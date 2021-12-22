@@ -14,6 +14,7 @@ from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.copy_last_frame import CopyLastFrameModel
 from vp_suite.metrics.main import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
+from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.dataset.dataset_factory import create_dataset
 
 
@@ -24,6 +25,7 @@ def test_pred_models(cfg, test_data_and_loader=None):
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
     dataset_classes = cfg.dataset_classes+1 if cfg.include_gripper else cfg.dataset_classes
+    img_processor = ImgProcessor(cfg.tensor_value_range)
 
     # MODELS
     model_fps = cfg.models
@@ -73,8 +75,8 @@ def test_pred_models(cfg, test_data_and_loader=None):
             if model_desc == CopyLastFrameModel.desc: continue  # don't print for copy baseline
             model_dir = str(Path(model_fp).parent.resolve())
             print(model_desc, model_dir)
-            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, model_dir,
-                          (cfg.pred_mode, num_channels), test=True, vis_idx=vis_idx, mode="mp4")
+            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, img_processor,
+                          model_dir, test=True, vis_idx=vis_idx, mode="mp4")
 
     # log or display metrics
     if eval_length > 0:

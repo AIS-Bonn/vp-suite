@@ -13,6 +13,7 @@ class BaseVPDataset(Dataset):
         super(BaseVPDataset, self).__init__()
         self.data_dir = data_dir
         self.dataset_cfg = cfg
+        self.img_processor = cfg.img_processor
         pass
 
     def __len__(self) -> int:
@@ -20,3 +21,6 @@ class BaseVPDataset(Dataset):
 
     def __getitem__(self, i) -> VPData:
         raise NotImplementedError
+
+    def preprocess_img(self, img):
+        return self.img_processor.preprocess_img(img)
