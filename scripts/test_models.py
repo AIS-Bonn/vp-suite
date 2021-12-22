@@ -52,30 +52,29 @@ def test_pred_models(cfg, test_data_and_loader=None):
 
             for i in tqdm(range(eval_length)):
                 data = next(iter_loader)
-                img_data = data[cfg.pred_mode].to(cfg.device)
-                input = img_data[:, :cfg.vid_input_length]
-                target = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+                img_data = data["frames"].to(cfg.device)
+                input = img_data[:, :cfg.context_frames]
+                target = img_data[:, cfg.context_frames:cfg.vid_total_length]
                 actions = data["actions"].to(cfg.device)
 
                 for (model, _, model_metrics_per_dp) in models_dict.values():
                     if getattr(model, "use_actions", False):
-                        pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
+                        pred, _ = model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
                     else:
-                        pred, _ = model.pred_n(input, pred_length=cfg.vid_pred_length)
+                        pred, _ = model.pred_n(input, pred_length=cfg.pred_frames)
                     cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
                     model_metrics_per_dp.append(cur_metrics)
 
     # save visualizations
     if not cfg.no_vis:
         print(f"Saving visualizations for trained models...")
-        num_channels = dataset_classes if cfg.pred_mode == "mask" else 3
         num_vis = 5
         vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
         for model_desc, (model, model_fp, _) in models_dict.items():
             if model_desc == CopyLastFrameModel.desc: continue  # don't print for copy baseline
             model_dir = str(Path(model_fp).parent.resolve())
             print(model_desc, model_dir)
-            visualize_vid(test_data, cfg.vid_input_length, cfg.vid_pred_length, model, cfg.device, img_processor,
+            visualize_vid(test_data, cfg.context_frames, cfg.pred_frames, model, cfg.device, img_processor,
                           model_dir, test=True, vis_idx=vis_idx, mode="mp4")
 
     # log or display metrics

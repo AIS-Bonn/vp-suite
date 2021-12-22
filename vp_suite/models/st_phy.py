@@ -185,12 +185,12 @@ class STPhy(VideoPredictionModel):
 
             # fwd
             img_data = data[cfg.pred_mode].to(self.device) # [b, T, c, h, w], with T = vid_total_length
-            input_frames = img_data[:, :cfg.vid_input_length]
-            target_frames = img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+            input_frames = img_data[:, :cfg.context_frames]
+            target_frames = img_data[:, cfg.context_frames:cfg.vid_total_length]
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \
-                = self.pred_n(input_frames, pred_length=cfg.vid_pred_length, actions=actions,
+                = self.pred_n(input_frames, pred_length=cfg.pred_frames, actions=actions,
                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss

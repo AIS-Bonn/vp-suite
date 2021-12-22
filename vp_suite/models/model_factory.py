@@ -36,13 +36,13 @@ def get_pred_model(cfg):
     elif arch == "unet":
         print("prediction model: UNet3d")
         pred_model = UNet3dModel(in_channels=cfg.num_channels, out_channels=cfg.num_channels, img_size=cfg.img_shape,
-                                 time_dim=cfg.vid_input_length, features=cfg.pred_unet_features,
+                                 time_dim=cfg.context_frames, features=cfg.pred_unet_features,
                                  action_size=action_size, device=cfg.device)
 
     elif arch == "unet_old":
         print("prediction model: UNet3d (old version)")
         pred_model = UNet3dModelOld(in_channels=cfg.num_channels, out_channels=cfg.num_channels,
-                                    time_dim=cfg.vid_input_length, features=cfg.pred_unet_features)
+                                    time_dim=cfg.context_frames, features=cfg.pred_unet_features)
 
     elif arch == "lstm":
         print("prediction model: LSTM")
@@ -106,7 +106,7 @@ def test_all_models(cfg):
     cfg.img_shape = 135, 240
     cfg.action_size = 3
 
-    x = torch.randn((cfg.batch_size, cfg.vid_input_length, cfg.num_channels, *cfg.img_shape)).to(cfg.device)
+    x = torch.randn((cfg.batch_size, cfg.context_frames, cfg.num_channels, *cfg.img_shape)).to(cfg.device)
     a = torch.randn((cfg.batch_size, cfg.vid_total_length, cfg.action_size)).to(cfg.device)
 
     for (include_actions, arch) in product([False, True], MODELS):
@@ -124,9 +124,9 @@ def test_all_models(cfg):
         t_pred1 = round(time.time() - t_start, 6)
 
         t_start = time.time()
-        preds, _ = model.pred_n(x, cfg.vid_pred_length, actions=a)
+        preds, _ = model.pred_n(x, cfg.pred_frames, actions=a)
         t_preds = round(time.time() - t_start, 6)
 
-        print(f"Pred time (1 out frame / {cfg.vid_pred_length} out frames): {t_pred1}s / {t_preds}s")
-        print(f"Shapes ({cfg.vid_input_length} in frames / 1 out frame / {cfg.vid_pred_length} out frames): "
+        print(f"Pred time (1 out frame / {cfg.pred_frames} out frames): {t_pred1}s / {t_preds}s")
+        print(f"Shapes ({cfg.context_frames} in frames / 1 out frame / {cfg.pred_frames} out frames): "
               f"{list(x.shape)} / {list(pred1.shape)} / {list(preds.shape)}")

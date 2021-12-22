@@ -96,7 +96,7 @@ def train(trial=None, cfg=None):
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
             print("Saving visualizations...")
-            out_filenames = visualize_vid(val_data, cfg.vid_input_length, cfg.vid_pred_length, pred_model,
+            out_filenames = visualize_vid(val_data, cfg.context_frames, cfg.pred_frames, pred_model,
                                           cfg.device, cfg.img_processor, cfg.out_dir, num_vis=10)
 
             if not cfg.no_wandb:
@@ -117,7 +117,7 @@ def train(trial=None, cfg=None):
         wandb.finish()
 
     print("Testing done, bye bye!")
-    frames = cfg.vid_pred_length
+    frames = cfg.pred_frames
     return test_metrics[f"mse_{frames} (↓)"]
 
 # ==============================================================================
@@ -129,11 +129,11 @@ def train_iter(cfg, loader, pred_model, optimizer, loss_provider):
 
         # input
         img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, c, h, w], with T = cfg.vid_total_length
-        input, targets = img_data[:, :cfg.vid_input_length], img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+        input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.vid_total_length]
         actions = data["actions"].to(cfg.device)  # [b, T-1, a]. Action t corresponds to what happens after frame t
 
         # fwd
-        predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
+        predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
 
         # loss
         _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -164,10 +164,10 @@ def eval_iter(cfg, loader, pred_model, loss_provider):
 
             # fwd
             img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, h, w], with T = vid_total_length
-            input, targets = img_data[:, :cfg.vid_input_length], img_data[:, cfg.vid_input_length:cfg.vid_total_length]
+            input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.vid_total_length]
             actions = data["actions"].to(cfg.device)
 
-            predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.vid_pred_length, actions=actions)
+            predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
 
             # metrics
             loss_values, _ = loss_provider.get_losses(predictions, targets, eval=True)
