@@ -12,12 +12,13 @@ This repo aims at providing a suite that facilitates scientific work in the subf
 
 ### Installation
 
-The code has been tested with Python 3.8, CUDA 11.3 and PyTorch 1.10.
+The code has been tested with Python 3.8, CUDA 11.3 and PyTorch 1.10. We'll use the conda package manager 
 
 ```
 git clone git@github.com:Flunzmas/vp-suite.git
 cd vp-suite
 conda env create -f environment.yml
+conda activate vp-suite
 ```
 
 ### Usage
