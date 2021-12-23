@@ -4,7 +4,7 @@ import random
 
 from tqdm import tqdm
 
-from vp_suite.evaluation.image_loss import MSE
+from vp_suite.measure.image_wise import MSE
 from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 

@@ -5,8 +5,8 @@ import torch
 from vp_suite.training import train
 from vp_suite.models.factory import AVAILABLE_MODELS
 from vp_suite.dataset.factory import AVAILABLE_DATASETS
-from vp_suite.evaluation.loss_provider import AVAILABLE_LOSSES
-from vp_suite.utils.utils import timestamp
+from vp_suite.measure.loss_provider import AVAILABLE_LOSSES
+from vp_suite.utils.utils import timestamp, StoreDictKeyPair
 
 if __name__ == '__main__':
 
@@ -30,34 +30,23 @@ if __name__ == '__main__':
     parser.add_argument("--load-pretrained", action="store_true")
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"],
                         default=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+    parser.add_argument("--losses-and-scales", action=StoreDictKeyPair, default={"mse": 1.0}, nargs="+", metavar="KEY=VAL",
+                        help="All mentioned measures will be calculated/logged. Also, if the scale value is non-zero, "
+                             "they will be scaled and added to the loss for backprop.")
+    parser.add_argument("--context-frames", type=int, default=10, help="Number of input frames for predictor")
+    parser.add_argument("--pred-frames", type=int, default=10, help="Number of frames predicted from input")
+    parser.add_argument("--val-rec-criterion", type=str, choices=AVAILABLE_LOSSES, default="mse",
+                        help="Reconstruction loss type to use for performance assessment during validation")
+
     parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--out-dir", type=str, default=f"out/{timestamp('train')}",
                         help="Output path for results (models, visualizations...)")
     parser.add_argument("--dataset", type=str, choices=AVAILABLE_DATASETS)
-
     parser.add_argument("--data-seq-step", type=int, default=1,
                         help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
-    parser.add_argument("--context-frames", type=int, default=10, help="Number of input frames for predictor")
-    parser.add_argument("--pred-frames", type=int, default=10, help="Number of frames predicted from input")
-
-    parser.add_argument("--mse-loss-scale", type=float, default=1.0)
-    parser.add_argument("--l1-loss-scale", type=float, default=0.0)
-    parser.add_argument("--smoothl1-loss-scale", type=float, default=0.0)
-    parser.add_argument("--lpips-loss-scale", type=float, default=0.0)
-    parser.add_argument("--ssim-loss-scale", type=float, default=0.0)
-    parser.add_argument("--psnr-loss-scale", type=float, default=0.0)
-    parser.add_argument("--fvd-loss-scale", type=float, default=0.0)
-    parser.add_argument("--calc-zero-loss-scales", action="store_true", help="if specified, also calculates loss scores"
-                                                                             "for those losses not used for backprop")
-    parser.add_argument("--train-rec-criterion", type=str, choices=AVAILABLE_LOSSES, default="mse",
-                        help="Reconstruction loss type to use for optimization during training")  # TODO enable optional specification of loss scales
-    parser.add_argument("--val-rec-criterion", type=str, choices=AVAILABLE_LOSSES, default="mse",
-                        help="Reconstruction loss type to use for performance assessment during validation")
-    # dataset-specific arguments
     parser.add_argument("--use-actions", action="store_true",
                         help="If specified, do action-conditional learning if both the dataset and the model allow it")
 
-    # hyperparameter optimization
     parser.add_argument("--use-optuna", action="store_true",
                         help="If specified, starts an optuna hyperparameter optimization.")
     parser.add_argument("--optuna-n-trials", type=int, default=30,

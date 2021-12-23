@@ -11,7 +11,7 @@ from tqdm import tqdm
 from dataset.factory import create_train_val_dataset, update_cfg_from_dataset
 from vp_suite.models.factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
-from evaluation.loss_provider import PredictionLossProvider
+from measure.loss_provider import PredictionLossProvider
 from utils.visualization import visualize_vid
 
 def train(trial=None, cfg=None):
@@ -32,7 +32,7 @@ def train(trial=None, cfg=None):
     (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
     cfg = update_cfg_from_dataset(cfg, train_data)
 
-    # Optuna
+    # Optuna TODO
     if cfg.use_optuna:
         cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
         cfg.mse_loss_scale = trial.suggest_float("mse_loss_scale", 1e-7, 1.0)
@@ -58,9 +58,9 @@ def train(trial=None, cfg=None):
 
     # LOSSES
     loss_provider = PredictionLossProvider(cfg)
-    # Check if indicator loss available
-    if loss_provider.losses.get(cfg.pred_val_criterion, (None, 0.0))[1] <= 1e-7:
-        cfg.pred_val_criterion = "mse"
+    if cfg.val_rec_criterion not in cfg.losses_and_scales:
+        raise ValueError(f"ERROR: Validation criterion '{cfg.val_rec_criterion}' has to be "
+                         f"one of the chosen losses: {list(cfg.losses_and_scales.keys())}")
 
     # PREPARATION pt.2
     with open(str((Path(cfg.out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:

@@ -3,9 +3,8 @@ from pathlib import Path
 import torch
 
 from vp_suite.testing import test
-from vp_suite.models.factory import AVAILABLE_MODELS
 from vp_suite.dataset.factory import AVAILABLE_DATASETS
-from vp_suite.evaluation.loss_provider import AVAILABLE_LOSSES
+from vp_suite.measure.metric_provider import AVAILABLE_METRICS
 from vp_suite.utils.utils import timestamp
 
 if __name__ == '__main__':
@@ -34,7 +33,8 @@ if __name__ == '__main__':
     parser.add_argument("--pred-frames", type=int, default=None, help="Number of frames predicted from input") # TODO infer from model cfg if None!
     parser.add_argument("--mini-test", action="store_true",
                         help="If specified, the models are tested only on a few datapoints of the test set")
-    # TODO let user choose which metrics to test on
+    parser.add_argument("--metrics", type=str, nargs="+", default="all", choices=AVAILABLE_METRICS,
+                        help="Specify the metrics to use (if left unspecified, all available metrics will be used")
 
     # parse args and adjust as needed
     cfg = parser.parse_args()

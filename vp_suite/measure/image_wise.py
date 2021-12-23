@@ -6,23 +6,10 @@ import piqa
 # expected data type: torch.tensor (torch.float)
 # expected shape: [..., h, w] ([..., 3, h, w] for LPIPS and SSIM)
 # expected value range: [-1.0, 1.0]
-
-class Loss(nn.Module):
-
-    bigger_is_better = False
-
-    def __init__(self, device):
-        super(Loss, self).__init__()
-        self.to(device)
-
-    def forward(self, pred, target):
-        pass
-
-    @classmethod
-    def loss_to_display(cls, x): return x
+from vp_suite.measure.base_measure import BaseMeasure
 
 
-class MSE(Loss):
+class MSE(BaseMeasure):
     def __init__(self, device):
         super(MSE, self).__init__(device)
         self.criterion = nn.MSELoss(reduction="none").to(device)
@@ -32,7 +19,7 @@ class MSE(Loss):
         return value.sum(dim=(-1, -2)).mean()
 
 
-class L1(Loss):
+class L1(BaseMeasure):
     def __init__(self, device):
         super(L1, self).__init__(device)
         self.criterion = nn.L1Loss(reduction="none").to(device)
@@ -42,7 +29,7 @@ class L1(Loss):
         return value.sum(dim=(-1, -2)).mean()
 
 
-class SmoothL1(Loss):
+class SmoothL1(BaseMeasure):
     def __init__(self, device):
         super(SmoothL1, self).__init__(device)
         self.criterion = nn.SmoothL1Loss(reduction="none").to(device)
@@ -52,7 +39,7 @@ class SmoothL1(Loss):
         return value.sum(dim=(-1, -2)).mean()
 
 
-class PSNR(Loss):
+class PSNR(BaseMeasure):
     def __init__(self, device):
         super(PSNR, self).__init__(device)
         self.criterion = piqa.psnr.PSNR().to(device)
@@ -68,10 +55,10 @@ class PSNR(Loss):
         return -self.criterion(pred, target)
 
     @classmethod
-    def loss_to_display(cls, x): return -x
+    def to_display(cls, x): return -x
 
 
-class LPIPS(Loss):
+class LPIPS(BaseMeasure):
     def __init__(self, device):
         super(LPIPS, self).__init__(device)
         self.criterion = piqa.lpips.LPIPS().to(device)
@@ -86,7 +73,7 @@ class LPIPS(Loss):
         return self.criterion(pred, target)  # scalar
 
 
-class SSIM(Loss):
+class SSIM(BaseMeasure):
     def __init__(self, device):
         super(SSIM, self).__init__(device)
         self.criterion = piqa.ssim.SSIM().to(device)
@@ -101,4 +88,4 @@ class SSIM(Loss):
         target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)
 
-    def loss_to_display(cls, x): return 1.0 - x
+    def to_display(cls, x): return 1.0 - x

@@ -11,7 +11,7 @@ import torch.nn as nn
 import torchvision.transforms as TF
 
 from vp_suite.models.model_copy_last_frame import CopyLastFrame
-from vp_suite.evaluation.metric_provider import PredictionMetricProvider
+from vp_suite.measure.metric_provider import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.dataset.factory import create_test_dataset, update_cfg_from_dataset

@@ -10,10 +10,10 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
-from vp_suite.evaluation.fvd.pytorch_i3d import InceptionI3d
+from vp_suite.measure.fvd.pytorch_i3d import InceptionI3d
+from vp_suite.measure.base_measure import BaseMeasure
 
-
-class FrechetVideoDistance(nn.Module):
+class FrechetVideoDistance(BaseMeasure):
     '''
     INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
     '''
@@ -26,31 +26,28 @@ class FrechetVideoDistance(nn.Module):
     input_chunks = 1
     drop_last_chunk = False
 
-    def __init__(self, device, num_frames, in_channels=3):
-        super(FrechetVideoDistance, self).__init__()
-
-        self.pred_frames = num_frames
-        _ = self.has_valid_num_pred_frames()
+    def __init__(self, device, in_channels=3):
+        super(FrechetVideoDistance, self).__init__(device)
 
         self.i3d = InceptionI3d(num_classes=self.i3d_num_classes, in_channels=in_channels)
         self.i3d.load_state_dict(torch.load(Path(__file__).parent / self.i3d_ckpt_file))
-        self.i3d.to(device)
+        self.i3d.to(self.device)
         self.i3d.eval()  # don't train the pre-trained I3D
-        self.to(device)
+        self.to(self.device)
 
     @classmethod
     def valid_T(cls, x):
         return x >= cls.min_T and x <= cls.max_T
 
-    def has_valid_num_pred_frames(self):
+    def valid_frame_count(self, num_frames):
         ok = True
-        if self.pred_frames < self.min_T:
+        if num_frames < self.min_T:
             print(f"The I3D Module used for FVD needs at least"
-                             f" 9 input frames (given: {self.pred_frames}) -> returning None as loss value!")
+                             f" 9 input frames (given: {num_frames}) -> returning None as loss value!")
             ok = False
-        elif self.pred_frames > self.max_T:
-            self.determine_number_of_chunks(self.pred_frames)
-            print(f"Warning: The I3D Module used for FVD handles at most 16 input frames (given: {self.pred_frames})"
+        elif num_frames > self.max_T:
+            self.determine_number_of_chunks(num_frames)
+            print(f"Warning: The I3D Module used for FVD handles at most 16 input frames (given: {num_frames})"
                   f" -> input video will be chunked into {self.input_chunks} chunks!")
             ok = True
         return ok
@@ -81,8 +78,8 @@ class FrechetVideoDistance(nn.Module):
         if vid_shape != real.shape:
             raise ValueError("FrechetVideoDistance.get_distance(pred, real): vid shapes not equal!")
 
-        if not self.has_valid_num_pred_frames():
-            print(pred.shape, real.shape)
+        num_frames = vid_shape[1]
+        if not self.valid_frame_count(num_frames):
             return None
 
         # resize images in video to 224x224 because the I3D network needs that
