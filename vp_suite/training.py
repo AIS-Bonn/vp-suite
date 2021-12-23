@@ -8,7 +8,7 @@ import numpy as np
 import torch.nn
 from tqdm import tqdm
 
-from dataset.factory import create_train_val_dataset
+from dataset.factory import create_train_val_dataset, update_cfg_from_dataset
 from vp_suite.models.factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
 from evaluation.loss_provider import PredictionLossProvider
@@ -30,6 +30,7 @@ def train(trial=None, cfg=None):
 
     # DATA
     (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
+    cfg = update_cfg_from_dataset(cfg, train_data)
 
     # Optuna
     if cfg.use_optuna:
@@ -77,7 +78,7 @@ def train(trial=None, cfg=None):
             else:
                 train_iter(cfg, train_loader, pred_model, optimizer, loss_provider)
         else:
-            print("Skipping trianing loop.")
+            print("Skipping training loop.")
 
         # eval
         print("Validating...")

@@ -16,12 +16,11 @@ if __name__ == '__main__':
     parser.add_argument("--no-vis", action="store_true", help="If specified, no visualizations are generated")
     parser.add_argument("--no-wandb", action="store_true", help="If specified, does not invoke WandB for logging")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
-    parser.add_argument("--tensor-value-range", type=float, nargs=2, default=[0.0, 1.0],
-                        help="Two values specifying the value range of the pytorch tensors processed by the model")  # TODO infer from model cfg!
     parser.add_argument("--out-dir", type=str, default=f"out/{timestamp('test')}",
                         help="Output path for results (models, visualizations...)")
     parser.add_argument("--tensor-value-range", type=float, nargs=2, default=[0.0, 1.0],
-                        help="Two values specifying the value range of the pytorch tensors processed by the model")
+                        help="Two values specifying the value range of the pytorch tensors evaluated my the metrics."
+                             "This range can be different from what was used to train the models")
 
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"],
                         default=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
@@ -29,14 +28,13 @@ if __name__ == '__main__':
     parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--data-seq-step", type=int, default=1,
                         help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
-    parser.add_argument("--context-frames", type=int, default=10, help="Number of input frames for predictor")  # TODO optionally infer from model cfg!
-    parser.add_argument("--pred-frames", type=int, default=10, help="Number of frames predicted from input") # TODO optionally infer from model cfg!
-    parser.add_argument("--test-metrics", type=str, nargs="+", default="all")
+    parser.add_argument("--context-frames", type=int, default=None,
+                        help="Number of input frames for predictor."
+                             "Restrictions may apply to models that are not fully autoregressive")  # TODO infer from model cfg if None!
+    parser.add_argument("--pred-frames", type=int, default=None, help="Number of frames predicted from input") # TODO infer from model cfg if None!
     parser.add_argument("--mini-test", action="store_true",
                         help="If specified, the models are tested only on a few datapoints of the test set")
-
-    parser.add_argument("--use-actions", action="store_true",
-                        help="If specified, do action-conditional learning if both the dataset and the model allow it")  # TODO infer from model cfg!
+    # TODO let user choose which metrics to test on
 
     # parse args and adjust as needed
     cfg = parser.parse_args()
