@@ -6,6 +6,7 @@ class VideoPredictionModel(nn.Module):
 
     trainable = True  # most implemented models will be trainable
     can_handle_actions = False  # models by default won't be able to handle actions
+    min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
 
     def __init__(self, cfg):
         super(VideoPredictionModel, self).__init__()

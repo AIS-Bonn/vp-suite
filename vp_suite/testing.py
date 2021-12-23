@@ -78,6 +78,16 @@ def get_test_adapters(test_cfg, model_cfg, model):
         model_preprocessing.append(TF.Resize((model_h, model_w)))
         model_postprocessing.append(TF.Resize((test_h, test_w)))
 
+    # context frames and pred. horizon
+    if test_cfg.context_frames is None:
+        test_cfg.context_frames = model_cfg.context_frames
+    elif test_cfg.context_frames < model.min_context_frames:
+        raise ValueError(f"ERROR: Model '{model.desc}' (loaded from {model_cfg['out_dir']}) needs at least "
+                         f"{model.min_context_frames} context frames as it uses temporal convolution "
+                         f"with said number as kernel size")
+    if test_cfg.pred_frames is None:
+        test_cfg.pred_frames = model_cfg.pred_frames
+
     # TODO are there other model configurations that can be bridged?
 
     model_preprocessing = nn.Sequential(*model_preprocessing)
@@ -103,6 +113,8 @@ def test(test_cfg):
         with open(os.path.join(model_dir, "run_cfg.json"), "r") as cfg_file:
             model_cfg = json.load(cfg_file)
         # get adapters to make model work with test cfg
+        if test_cfg.context_frames is None or test_cfg.pred_frames is None:
+            print("INFO: context frames and/or pred_frames unspecified -> will default to models' respective values")
         preprocessing, postprocessing = get_test_adapters(test_cfg, model_cfg, model)
         models_dict[model.desc] = (model, model_cfg, preprocessing, postprocessing, [])
 

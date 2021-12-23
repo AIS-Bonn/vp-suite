@@ -9,7 +9,7 @@ from vp_suite.models.base_model import VideoPredictionModel
 class UNet3D(VideoPredictionModel):
 
     features = [8, 16, 32, 64]
-    time_dim = None  # if None, use all context frames
+    temporal_dim = None  # if None, use all context frames
     can_handle_actions = True
 
     @classmethod
@@ -19,7 +19,8 @@ class UNet3D(VideoPredictionModel):
     def __init__(self, cfg):
         super(UNet3D, self).__init__(cfg)
 
-        self.time_dim = self.time_dim or cfg.context_frames
+        self.temporal_dim = self.temporal_dim or cfg.context_frames
+        self.min_context_frames = self.temporal_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()
@@ -39,13 +40,13 @@ class UNet3D(VideoPredictionModel):
                 cur_img_h, cur_img_w = pooled_zeros.shape[-2:]
                 cur_in_channels += self.action_size
             self.downs.append(DoubleConv3d(in_c=cur_in_channels, out_c=feature))
-            self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(self.time_dim, 1, 1)))
+            self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(self.temporal_dim, 1, 1)))
             cur_in_channels = feature
 
         # bottleneck
         bn_h, bn_w = cur_img_h, cur_img_w
         bn_feat = self.features[-1]
-        self.time3ds.append(nn.Conv3d(in_channels=bn_feat, out_channels=bn_feat, kernel_size=(self.time_dim, 1, 1)))
+        self.time3ds.append(nn.Conv3d(in_channels=bn_feat, out_channels=bn_feat, kernel_size=(self.temporal_dim, 1, 1)))
         if self.use_actions:
             self.bottleneck_action_inflate = nn.Linear(in_features=self.action_size,
                                                        out_features=self.action_size * bn_h * bn_w)
@@ -94,7 +95,7 @@ class UNet3D(VideoPredictionModel):
     def forward(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]
         # output: single frame: [b, c, h, w]
-        assert x.shape[1] == self.time_dim, f"{self.time_dim} frames needed as pred input, {x.shape[1]} are given"
+        assert x.shape[1] == self.temporal_dim, f"{self.temporal_dim} frames needed as pred input, {x.shape[1]} are given"
         x = x.permute((0, 2, 1, 3, 4))  # [b, c, T, h, w]
         b, _, T, _, _ = x.shape
         skip_connections = []

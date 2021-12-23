@@ -7,7 +7,8 @@ from vp_suite.models.base_model import VideoPredictionModel
 
 class SimpleV1(VideoPredictionModel):
 
-    time_dim = 5
+    min_context_frames = 5
+    temporal_dim = min_context_frames
 
     @classmethod
     def model_desc(cls):
@@ -17,24 +18,25 @@ class SimpleV1(VideoPredictionModel):
         super(SimpleV1, self).__init__(cfg)
 
         self.act_fn = nn.ReLU(inplace=True)
-        self.cnn = nn.Conv3d(self.img_c, self.img_c, (self.time_dim, 5, 5), (1, 1, 1), (0, 2, 2), bias=False)
+        self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
+                             stride=(1, 1, 1), padding=(0, 2, 2), bias=False)
         self.init_to_clf()
 
     def init_to_clf(self):
-        clf_weights = torch.zeros(self.img_c, self.img_c, self.time_dim, 5, 5)
+        clf_weights = torch.zeros(self.img_c, self.img_c, self.temporal_dim, 5, 5)
         for i in range(self.img_c):
             clf_weights[i, i, -1, 2, 2] = 1.0
         self.cnn.weight.data = clf_weights
 
     def forward(self, x, **kwargs):
-        assert x.shape[2] == self.time_dim, "invalid number of frames given"
+        assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
         return self.cnn(x)
 
     def pred_n(self, x, pred_length=1, **kwargs):
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
         for t in range(pred_length):
-            input = x[:, :, -self.time_dim:]
+            input = x[:, :, -self.temporal_dim:]
             output_frames.append(self.forward(input))
         return torch.cat(output_frames, dim=2).transpose(1, 2), None
 
@@ -42,7 +44,8 @@ class SimpleV1(VideoPredictionModel):
 class SimpleV2(VideoPredictionModel):
 
     hidden_channels = 64
-    time_dim = 5
+    min_context_frames = 5
+    temporal_dim = min_context_frames
 
     @classmethod
     def model_desc(cls):
@@ -53,7 +56,7 @@ class SimpleV2(VideoPredictionModel):
 
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(
-            nn.Conv3d(self.img_c, self.hidden_channels, (self.time_dim, 5, 5), (1, 1, 1), (0, 2, 2), bias=False),
+            nn.Conv3d(self.img_c, self.hidden_channels, (self.temporal_dim, 5, 5), (1, 1, 1), (0, 2, 2), bias=False),
             nn.Conv3d(self.hidden_channels, self.hidden_channels, (1, 5, 5), (1, 1, 1), (0, 2, 2), bias=False),
             nn.Conv3d(self.hidden_channels, self.img_c, (1, 5, 5), (1, 1, 1), (0, 2, 2), bias=False)
 
@@ -69,7 +72,7 @@ class SimpleV2(VideoPredictionModel):
         self.final_merge.weight.data = clf_weights
 
     def forward(self, x, **kwargs):
-        assert x.shape[2] == self.time_dim, "invalid number of frames given"
+        assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
         last_frame = x[:, :, -1]  # [b, c, h, w]
         big_branch = self.big_branch(x).squeeze(2)  # [b, c, h, w]
         out = self.final_merge(torch.cat([big_branch, last_frame], dim=1))
@@ -79,7 +82,7 @@ class SimpleV2(VideoPredictionModel):
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
         for t in range(pred_length):
-            input = x[:, :, -self.time_dim:]
+            input = x[:, :, -self.temporal_dim:]
             output_frames.append(self.forward(input))
         return torch.stack(output_frames, dim=1), None
 
