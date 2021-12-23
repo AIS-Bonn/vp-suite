@@ -107,7 +107,7 @@ def train(trial=None, cfg=None):
                                           cfg.device, cfg.img_processor, cfg.out_dir, num_vis=10)
 
             if not cfg.no_wandb:
-                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="gif") for i, out_fn in enumerate(out_filenames)}
+                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="mp4") for i, out_fn in enumerate(out_filenames)}  # TODO gif vs. mp4
                 wandb.log(log_vids, commit=False)
 
         # final bookkeeping
