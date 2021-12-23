@@ -73,9 +73,9 @@ class PhyDNet(VideoPredictionModel):
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[cfg.pred_mode].to(self.device)  # [b, T, c, h, w], with T = vid_total_length
+            img_data = data["frames"].to(self.device)  # [b, T, c, h, w], with T = total_frames
             input_tensor = img_data[:, :cfg.context_frames]
-            target_tensor = img_data[:, cfg.context_frames:cfg.vid_total_length]
+            target_tensor = img_data[:, cfg.context_frames:cfg.total_frames]
 
             actions = data["actions"].to(self.device)
             empty_actions = torch.zeros(img_data.shape[0], img_data.shape[1], device=self.device)

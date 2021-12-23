@@ -1,3 +1,5 @@
+import sys
+sys.path.append(".")
 import argparse
 from pathlib import Path
 import torch

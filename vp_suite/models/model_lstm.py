@@ -69,8 +69,9 @@ class LSTM(VideoPredictionModel):
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
-        T_in, b, _, h, w = x.shape
-        assert self.img_shape == (h, w), "input image does not match specified size"
+        T_in, b, c, h, w = x.shape
+        assert self.img_shape == (c, h, w),\
+            f"input image does not match specified size (input image shape: {x.shape}, specified: {self.img_shape})"
         encoded_frames = [self.encode(frame) for frame in list(x)]
 
         # actions

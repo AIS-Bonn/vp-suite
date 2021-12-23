@@ -48,7 +48,7 @@ def test_all_models(cfg):  # TODO
     cfg.action_size = 3
 
     x = torch.randn((cfg.batch_size, cfg.context_frames, cfg.img_c, cfg.img_h, cfg.img_w)).to(cfg.device)
-    a = torch.randn((cfg.batch_size, cfg.vid_total_length, cfg.action_size)).to(cfg.device)
+    a = torch.randn((cfg.batch_size, cfg.total_frames, cfg.action_size)).to(cfg.device)
 
     for (use_actions, arch) in product([False, True], AVAILABLE_MODELS):
         cfg.use_actions = use_actions

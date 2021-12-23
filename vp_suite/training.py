@@ -8,11 +8,11 @@ import numpy as np
 import torch.nn
 from tqdm import tqdm
 
-from dataset.factory import create_train_val_dataset, update_cfg_from_dataset
+from vp_suite.dataset.factory import create_train_val_dataset, update_cfg_from_dataset
 from vp_suite.models.factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
-from measure.loss_provider import PredictionLossProvider
-from utils.visualization import visualize_vid
+from vp_suite.measure.loss_provider import PredictionLossProvider
+from vp_suite.utils.visualization import visualize_vid
 
 def train(trial=None, cfg=None):
 
@@ -46,10 +46,14 @@ def train(trial=None, cfg=None):
 
     # WandB
     if not cfg.no_wandb:
-        wandb.init(config=cfg, project="sem_vp_train_pred", reinit=cfg.use_optuna)
+        wandb.init(config=cfg, project="vp-suite-training", reinit=cfg.use_optuna)
 
     # MODEL AND OPTIMIZER
-    pred_model = create_pred_model(cfg)
+    if cfg.pretrained_model != "":
+        pred_model = torch.load(cfg.pretrained_model)   # TODO test this
+        print(f"INFO: loaded pre-trained model '{pred_model.desc}' from {cfg.pretrained_model}")
+    else:
+        pred_model = create_pred_model(cfg)
     optimizer, optimizer_scheduler = None, None
     if not cfg.no_train:
         optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
@@ -64,7 +68,7 @@ def train(trial=None, cfg=None):
 
     # PREPARATION pt.2
     with open(str((Path(cfg.out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:
-        json.dump(vars(cfg), cfg_file)
+        json.dump(vars(cfg), cfg_file, default=lambda o: '<not serializable>', indent=4)
 
     # MAIN LOOP
     for epoch in range(0, cfg.epochs):
@@ -94,7 +98,7 @@ def train(trial=None, cfg=None):
         if loss_improved(cur_val_loss, best_val_loss):
             best_val_loss = cur_val_loss
             torch.save(pred_model, best_model_path)
-            print(f"Minimum indicator loss ({cfg.pred_val_criterion}) reduced -> model saved!")
+            print(f"Minimum indicator loss ({cfg.val_rec_criterion}) reduced -> model saved!")
 
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
@@ -124,8 +128,8 @@ def train_iter(cfg, loader, pred_model, optimizer, loss_provider):
     for batch_idx, data in enumerate(loop):
 
         # input
-        img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, c, h, w], with T = cfg.vid_total_length
-        input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.vid_total_length]
+        img_data = data["frames"].to(cfg.device)  # [b, T, c, h, w], with T = cfg.total_frames
+        input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.total_frames]
         actions = data["actions"].to(cfg.device)  # [b, T-1, a]. Action t corresponds to what happens after frame t
 
         # fwd
@@ -158,19 +162,20 @@ def eval_iter(cfg, loader, pred_model, loss_provider):
         for batch_idx, data in enumerate(loop):
 
             # fwd
-            img_data = data[cfg.pred_mode].to(cfg.device)  # [b, T, h, w], with T = vid_total_length
-            input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.vid_total_length]
+            img_data = data["frames"].to(cfg.device)  # [b, T, h, w], with T = total_frames
+            input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.total_frames]
             actions = data["actions"].to(cfg.device)
 
             predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
 
             # metrics
-            loss_values, _ = loss_provider.get_losses(predictions, targets, eval=True)
+            loss_values, _ = loss_provider.get_losses(predictions, targets)
             if model_losses is not None:
                 for k, v in model_losses.items():
                     loss_values[k] = v
+                    print(f"{k}: {v}")
             all_losses.append(loss_values)
-            indicator_losses.append(loss_values[cfg.pred_val_criterion])
+            indicator_losses.append(loss_values[cfg.val_rec_criterion])
 
     indicator_loss = torch.stack(indicator_losses).mean()
     all_losses = {

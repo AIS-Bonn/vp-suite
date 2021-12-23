@@ -14,19 +14,19 @@ COLORS = {
 
 def get_color_array(color):
     r_g_b = COLORS.get(color, COLORS["white"])
-    return np.array(r_g_b, dtype=np.uint8)[np.newaxis, ..., np.newaxis, np.newaxis]
+    return np.array(r_g_b, dtype=np.uint8)[np.newaxis, np.newaxis, np.newaxis, ...]
 
 def add_border_around_vid(vid, c_and_l, b_width=10):
 
-    _, _, h, w = vid.shape
-    color_bars_vertical = [np.tile(get_color_array(c), (l, 1, h, b_width)) for (c, l) in c_and_l]
+    _, h, w, _ = vid.shape
+    color_bars_vertical = [np.tile(get_color_array(c), (l, h, b_width, 1)) for (c, l) in c_and_l]
     cbv = np.concatenate(color_bars_vertical, axis=0)
 
-    color_bars_horizontal = [np.tile(get_color_array(c), (l, 1, b_width, w + 2 * b_width)) for (c, l) in c_and_l]
+    color_bars_horizontal = [np.tile(get_color_array(c), (l, b_width, w + 2 * b_width, 1)) for (c, l) in c_and_l]
     cbh = np.concatenate(color_bars_horizontal, axis=0)
 
-    vid = np.concatenate([cbv, vid, cbv], axis=-1)   # add bars in the width dim
-    vid = np.concatenate([cbh, vid, cbh], axis=-2)   # add bars in the height dim
+    vid = np.concatenate([cbv, vid, cbv], axis=-2)   # add bars in the width dim
+    vid = np.concatenate([cbh, vid, cbh], axis=-3)   # add bars in the height dim
     return vid
 
 def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
@@ -42,7 +42,7 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
         else:
             trajs[key] = add_border_around_vid(traj, [("green", T_in), ("red", T_pred)], b_width=16)
 
-    if mode == "gif":  # gif visualizations with matplotlib
+    if mode == "gif":  # gif visualizations with matplotlib  # TODO fix it
         try:
             from matplotlib import pyplot as PLT
             from matplotlib.animation import FuncAnimation
@@ -63,7 +63,7 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
                 PLT.xticks([])
                 PLT.yticks([])
                 PLT.title(' '.join(name.split('_')).title())
-                PLT.imshow(traj[t].transpose(1, 2, 0))
+                PLT.imshow(traj[t])
 
         anim = FuncAnimation(fig, update, frames=np.arange(T), interval=500)
         anim.save(out_fp, writer="imagemagick", dpi=200)
@@ -84,9 +84,9 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
             frames = list(traj)
             out_paths = []
             for t, frame in enumerate(frames):
-                out_fn = f"{out_fp[:-4]}_{name}_t{t}.gif"
+                out_fn = f"{out_fp[:-4]}_{name}_t{t}.jpg"
                 out_paths.append(out_fn)
-                out_frame_BGR = frame[::-1].transpose((1, 2, 0))
+                out_frame_BGR = frame[:, :, ::-1]
                 cv.imwrite(out_fn, out_frame_BGR)
             clip = ImageSequenceClip(out_paths, fps=2)
             clip.write_videofile(f"{out_fp[:-4]}_{name}.mp4", fps=2)
@@ -94,9 +94,9 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
                 os.remove(out_fn)
 
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device, img_processor,
-                  out_dir=".", num_vis=5, test=False, vis_idx=None, mode="gif"):
+                  out_dir=".", num_vis=5, test=False, vis_idx=None, mode="mp4"):
 
-    out_fn_template = "vis_{}_test.gif" if test else "vis_{}.gif"
+    out_fn_template = "vis_{}_test." + mode if test else "vis_{}." + mode
     out_filenames = []
 
     if vis_idx is None:
@@ -110,7 +110,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device, img_
         gt_rgb_vis = img_processor.postprocess_img(data["frames"][:context_frames+pred_frames])
         gt_colorized_vis = data.get("colorized", None)
         if gt_colorized_vis is not None:
-            gt_colorized_vis = img_processor.postprocess_img(gt_colorized_vis)
+            gt_colorized_vis = img_processor.postprocess_img(gt_colorized_vis)  # [in_l, h, w, c]
         actions = data["actions"].to(device).unsqueeze(dim=0)
         in_traj = data["frames"]
 
@@ -120,7 +120,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device, img_
                 in_traj = in_traj[:context_frames].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model.pred_n(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
-                pr_traj_vis = img_processor.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, c, h, w]
+                pr_traj_vis = img_processor.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
 
                 save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
                     GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)
