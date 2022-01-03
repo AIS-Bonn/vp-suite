@@ -44,5 +44,3 @@ def test_PSNR_posinf_for_equal_tensors():
     _, _, dim5_randn, cpu = setup_tensors_cpu()
     loss = PSNR(device=cpu)
     assert not torch.isposinf(loss(dim5_randn, dim5_randn))
-
-# TODO continue...

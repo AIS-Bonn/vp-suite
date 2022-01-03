@@ -28,13 +28,13 @@ def train(trial=None, cfg=None):
         def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
     else:
         def loss_improved(cur_loss, best_loss): return cur_loss < best_loss
+    if cfg.use_optuna:
+        cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
 
     # DATA
     (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
     cfg = update_cfg_from_dataset(cfg, train_data)
 
-    if cfg.use_optuna:
-        cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
 
     # WandB
     if not cfg.no_wandb:

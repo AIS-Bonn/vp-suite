@@ -1,10 +1,7 @@
 import math
-import sys
 from pathlib import Path
 
 from torch import linalg as linalg
-
-sys.path.append("../metrics/prediction")
 
 import torch
 import torch.nn as nn
@@ -22,7 +19,7 @@ class FrechetVideoDistance(BaseMeasure):
     max_T = 16
     i3d_in_shape = (224, 224)
     i3d_num_classes = 400
-    i3d_ckpt_file = "rgb_imagenet.pt"  # TODO make rgb_charades.pt choosable
+    i3d_ckpt_file = "rgb_imagenet.pt"
     input_chunks = 1
     drop_last_chunk = False
 

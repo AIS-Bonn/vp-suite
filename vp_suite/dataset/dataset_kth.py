@@ -67,5 +67,3 @@ class KTHActionsDataset(BaseVPDataset):
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
 # === KTH data preparation tools ===============================================
-
-# TODO
