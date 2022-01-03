@@ -20,7 +20,8 @@ if __name__ == '__main__':
     parser.add_argument("--no-wandb", action="store_true", help="If specified, does not invoke WandB for logging")
     parser.add_argument("--seed", type=int, default=42, metavar="s", help="Seed for RNGs (python, numpy, pytorch)")
     parser.add_argument("--model-type", type=str, choices=AVAILABLE_MODELS, default="st_phy",
-                        help="Which prediction model arch to use (See TODO for a full list of available models)")  # TODO full list of available models
+                        help="Which prediction model arch to use "
+                             "(See documentation for an explanation of the available models)")
     parser.add_argument("--tensor-value-range", type=float, nargs=2, default=[0.0, 1.0],
                         help="Two values specifying the value range of the pytorch tensors processed by the model")
     parser.add_argument("--pretrained-model", type=str, default="",

@@ -31,12 +31,14 @@ if __name__ == '__main__':
                         help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
     parser.add_argument("--context-frames", type=int, default=None,
                         help="Number of input frames for predictor."
-                             "Restrictions may apply to models that are not fully autoregressive")  # TODO infer from model cfg if None!
-    parser.add_argument("--pred-frames", type=int, default=None, help="Number of frames predicted from input") # TODO infer from model cfg if None!
+                             "Restrictions may apply to models that are not fully autoregressive")
+    parser.add_argument("--pred-frames", type=int, default=None, help="Number of frames predicted from input")
     parser.add_argument("--mini-test", action="store_true",
                         help="If specified, the models are tested only on a few datapoints of the test set")
     parser.add_argument("--metrics", type=str, nargs="+", default="all", choices=AVAILABLE_METRICS,
                         help="Specify the metrics to use (if left unspecified, all available metrics will be used")
+    parser.add_argument("--use-actions", action="store_true",
+                        help="If specified, do action-conditional learning if both the dataset and the model allow it")
 
     # parse args and adjust as needed
     cfg = parser.parse_args()

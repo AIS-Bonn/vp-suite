@@ -43,7 +43,7 @@ class PhyDNet(VideoPredictionModel):
         in_length = frames.shape[1]
         out_frames = []
 
-        empty_actions = torch.zeros(frames.shape[0], frames.shape[1], device=self.device)
+        empty_actions = torch.zeros(frames.shape[0], in_length + pred_length, device=self.device)
         actions = kwargs.get("actions", empty_actions)
         if self.use_actions:
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:

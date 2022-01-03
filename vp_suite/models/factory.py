@@ -39,7 +39,7 @@ def create_pred_model(cfg):
     print(f"Model parameters (total / trainable): {total_params} / {trainable_params}")
     return pred_model.to(cfg.device)
 
-def test_all_models(cfg):  # TODO
+def test_all_models(cfg):
     import time
     from itertools import product
 

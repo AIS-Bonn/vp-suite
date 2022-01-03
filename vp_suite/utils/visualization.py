@@ -94,9 +94,9 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
                 os.remove(out_fn)
 
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device, img_processor,
-                  out_path, num_vis=5, test=False, vis_idx=None, mode="mp4"):
+                  out_path, num_vis=5, vis_idx=None, mode="mp4"):
 
-    out_fn_template = "vis_{}_test." + mode if test else "vis_{}." + mode
+    out_fn_template = "vis_{}." + mode
 
     if vis_idx is None:
         vis_idx = np.random.choice(len(dataset), num_vis, replace=False)

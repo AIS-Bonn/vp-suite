@@ -33,7 +33,6 @@ def train(trial=None, cfg=None):
     (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
     cfg = update_cfg_from_dataset(cfg, train_data)
 
-    # Optuna TODO
     if cfg.use_optuna:
         cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
         cfg.mse_loss_scale = trial.suggest_float("mse_loss_scale", 1e-7, 1.0)
@@ -51,7 +50,7 @@ def train(trial=None, cfg=None):
 
     # MODEL AND OPTIMIZER
     if cfg.pretrained_model != "":
-        pred_model = torch.load(cfg.pretrained_model)   # TODO test this
+        pred_model = torch.load(cfg.pretrained_model)
         print(f"INFO: loaded pre-trained model '{pred_model.desc}' from {cfg.pretrained_model}")
     else:
         pred_model = create_pred_model(cfg)
@@ -175,10 +174,6 @@ def eval_iter(cfg, loader, pred_model, loss_provider):
 
             # metrics
             loss_values, _ = loss_provider.get_losses(predictions, targets)
-            if model_losses is not None:
-                for k, v in model_losses.items():
-                    loss_values[k] = v
-                    print(f"{k}: {v}")
             all_losses.append(loss_values)
             indicator_losses.append(loss_values[cfg.val_rec_criterion])
 

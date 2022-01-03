@@ -49,6 +49,7 @@ def get_test_adapters(test_cfg, model_cfg, model):
     Some differences (e.g. action-conditioning vs. not) cannot be bridged and will lead to failure.
     '''
     model_preprocessing, model_postprocessing = [], []
+
     # value range
     model_value_range = list(model_cfg["tensor_value_range"])
     test_value_range = list(test_cfg.tensor_value_range)
@@ -89,8 +90,7 @@ def get_test_adapters(test_cfg, model_cfg, model):
     if test_cfg.pred_frames is None:
         test_cfg.pred_frames = model_cfg.pred_frames
 
-    # TODO are there other model configurations that can be bridged?
-
+    # finalize pre-/postprocessing modules
     model_preprocessing = nn.Sequential(*model_preprocessing)
     model_postprocessing = nn.Sequential(*model_postprocessing)
     return model_preprocessing, model_postprocessing
@@ -121,7 +121,7 @@ def test(test_cfg):
 
     # add baseline copy model
     clf_baseline = CopyLastFrame().to(test_cfg.device)
-    models_dict[clf_baseline.desc] = (clf_baseline, test_cfg, nn.Identity(), nn.Identity(), [])
+    models_dict[clf_baseline.desc] = (clf_baseline, vars(test_cfg), nn.Identity(), nn.Identity(), [])
 
     iter_loader = iter(test_loader)
     eval_length = 10 if test_cfg.mini_test else len(iter_loader)
@@ -130,7 +130,7 @@ def test(test_cfg):
     if eval_length > 0:
         with torch.no_grad():
 
-            metric_provider = PredictionMetricProvider(test_cfg)  # TODO enable config of which metrics to use
+            metric_provider = PredictionMetricProvider(test_cfg)
 
             for i in tqdm(range(eval_length)):
                 data = next(iter_loader)
@@ -139,7 +139,7 @@ def test(test_cfg):
                 target = img_data[:, test_cfg.context_frames:test_cfg.total_frames]
                 actions = data["actions"].to(test_cfg.device)
 
-                for (model, model_cfg, preprocess, postprocess, model_metrics_per_dp) in models_dict.values():
+                for (model, _, preprocess, postprocess, model_metrics_per_dp) in models_dict.values():
                     input = preprocess(input)  # test format to model format
                     if getattr(model, "use_actions", False):
                         pred, _ = model.pred_n(input, pred_length=test_cfg.pred_frames, actions=actions)
@@ -154,20 +154,18 @@ def test(test_cfg):
         print(f"Saving visualizations for trained models...")
         num_vis = 5
         vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
-        for i, (model_desc, (model, model_fp, _)) in enumerate(models_dict.items()):
+        for i, (model_desc, (model, model_cfg, _, _, _)) in enumerate(models_dict.items()):
             if model_desc == CopyLastFrame.desc: continue  # don't print for copy baseline
-            vis_out_path = Path(test_cfg.out_dir) / f"vis_model{i:02d}_{model_desc}"
-            vis_out_path.mkdir()
-            vis_out_dir = Path(model_fp).parent / f"vis_test_{timestamp('test')}"
+            vis_out_dir = Path(model_cfg['out_dir']) / f"vis_{timestamp('test')}"
             vis_out_dir.mkdir()
             visualize_vid(test_data, test_cfg.context_frames, test_cfg.pred_frames, model, test_cfg.device,
-                          test_cfg.img_processor, vis_out_dir, test=True, vis_idx=vis_idx, mode="mp4")
+                          test_cfg.img_processor, vis_out_dir, vis_idx=vis_idx, mode="mp4")
 
     # log or display metrics
     if eval_length > 0:
         wandb_full_suffix = "" if test_cfg.mini_test else "(full test)"
         models_dict_items = models_dict.items()
-        for i, (model_desc, (_, model_fp, model_metrics_per_dp)) in enumerate(models_dict_items):
+        for i, (model_desc, (_, model_cfg, _, _, model_metrics_per_dp)) in enumerate(models_dict_items):
 
             # model_metrics_per_dp: list of N lists of F metric dicts (called D).
             # each D_{n, f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
@@ -185,7 +183,7 @@ def test(test_cfg):
             # Log model to WandB
             if not test_cfg.no_wandb:
                 print("Logging test results to WandB for all models...")
-                wandb.init(config={"mini_test": test_cfg.mini_test, "model_fp": model_fp},
+                wandb.init(config={"mini_test": test_cfg.mini_test, "model_dir": model_cfg['out_dir']},
                            project="vp-suite-testing", name=f"{model_desc}{wandb_full_suffix}", reinit=(i > 0))
                 for f, mean_metric_dict in enumerate(mean_metric_dicts):
                     wandb.log({"pred_frames": f+1, **mean_metric_dict})
@@ -195,7 +193,7 @@ def test(test_cfg):
             # Per-model/per-pred.-horizon console log of the metrics
             else:
                 print("Printing out test results to terminal...")
-                print(f"\n{model_desc} (path: {model_fp}): ")
+                print(f"\n{model_desc} (path: {model_cfg['out_dir']}): ")
                 for f, mean_metric_dict in enumerate(mean_metric_dicts):
                     print(f"pred_frames: {f + 1}")
                     for (k, v) in mean_metric_dict.items():
