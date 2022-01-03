@@ -235,14 +235,14 @@ class EncoderRNN(torch.nn.Module):
         self.encoder_Ep = EncoderSplit().to(device)
         self.encoder_Er = EncoderSplit().to(device)
 
-        zeros = torch.zeros((1, img_shape), device=device)
+        zeros = torch.zeros((1, *img_shape), device=device)
         encoded_zeros = self.encoder_E(zeros)
         self.shape_Ep = self.encoder_Ep(encoded_zeros).shape[1:]
         self.shape_Er = self.encoder_Er(encoded_zeros).shape[1:]
 
         self.decoder_Dp = DecoderSplit().to(device)
         self.decoder_Dr = DecoderSplit().to(device)
-        self.decoder_D = DCGANDecoder(out_size=img_shape, nc=img_c).to(device)
+        self.decoder_D = DCGANDecoder(out_size=img_shape[1:], nc=img_c).to(device)
 
         phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
         self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,
