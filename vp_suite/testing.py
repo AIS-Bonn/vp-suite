@@ -159,7 +159,7 @@ def test(test_cfg):
             vis_out_dir = Path(model_cfg['out_dir']) / f"vis_{timestamp('test')}"
             vis_out_dir.mkdir()
             visualize_vid(test_data, test_cfg.context_frames, test_cfg.pred_frames, model, test_cfg.device,
-                          test_cfg.img_processor, vis_out_dir, vis_idx=vis_idx, mode="mp4")
+                          test_cfg.img_processor, vis_out_dir, vis_idx=vis_idx)
 
     # log or display metrics
     if eval_length > 0:

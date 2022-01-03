@@ -32,7 +32,7 @@ def add_border_around_vid(vid, c_and_l, b_width=10):
 def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
 
     trajs = {k: v for k, v in trajs.items() if v is not None}  # filter out 'None' trajs
-    T, _, h, w = list(trajs.values())[0].shape
+    T, h, w, _ = list(trajs.values())[0].shape
     T_in, T_pred = context_frames, T-context_frames
     for key, traj in trajs.items():
         if "true_" in key.lower() or "gt_" in key.lower() or key.lower() == "gt":
@@ -45,6 +45,7 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
     if mode == "gif":  # gif visualizations with matplotlib  # TODO fix it
         try:
             from matplotlib import pyplot as PLT
+            PLT.rcParams.update({'axes.titlesize': 'small'})
             from matplotlib.animation import FuncAnimation
         except ImportError:
             raise ImportError("importing from matplotlib failed "
@@ -94,7 +95,7 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
                 os.remove(out_fn)
 
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device, img_processor,
-                  out_path, num_vis=5, vis_idx=None, mode="mp4"):
+                  out_path, num_vis=5, vis_idx=None, mode="gif"):
 
     out_fn_template = "vis_{}." + mode
 
