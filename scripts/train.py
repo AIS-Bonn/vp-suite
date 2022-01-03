@@ -13,6 +13,13 @@ from vp_suite.utils.utils import timestamp, StoreDictKeyPair
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="vp-suite")
+
+    # required args
+    parser.add_argument("--dataset", required=True, type=str, choices=AVAILABLE_DATASETS,
+                        help="Which dataset type is used for the training (see supported dataset types)")
+    parser.add_argument("--data-dir", required=True, type=str, help="Path to dataset directory")
+
+    # optional args
     parser.add_argument("--no-train", action="store_true", help="If specified, the training loop is skipped")
     parser.add_argument("--no-val", action="store_true", help="If specified, the validation loop is skipped")
     parser.add_argument("--no-vis", action="store_true", help="If specified, no visualizations are generated")
@@ -42,16 +49,12 @@ if __name__ == '__main__':
     parser.add_argument("--val-rec-criterion", type=str, choices=AVAILABLE_LOSSES, default="mse",
                         help="Loss type to use for reconstruction quality assessment during validation (default: mse)")
 
-    parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--out-dir", type=str, default=f"out/{timestamp('train')}",
                         help="Output path for results (models, visualizations...)")
-    parser.add_argument("--dataset", type=str, choices=AVAILABLE_DATASETS,
-                        help="Which dataset type is used for the training (see supported dataset types)")
     parser.add_argument("--data-seq-step", type=int, default=1, metavar="N_step",
                         help="Use every nth frame of the video sequence. If N_step=1, no frames are skipped.")
     parser.add_argument("--use-actions", action="store_true",
                         help="If specified, do action-conditional learning if both the dataset and the model allow it")
-
     parser.add_argument("--use-optuna", action="store_true",
                         help="If specified, starts an optuna hyperparameter optimization.")
     parser.add_argument("--optuna-n-trials", type=int, default=30, metavar="N_hyp",

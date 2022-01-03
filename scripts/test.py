@@ -13,7 +13,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="vp-suite")
 
-    parser.add_argument("--model-dirs", type=str, nargs="+", required=True)
+    # required args
+    parser.add_argument("--model-dirs", required=True, type=str, nargs="+")
+    parser.add_argument("--dataset", required=True, type=str, choices=AVAILABLE_DATASETS)
+    parser.add_argument("--data-dir", required=True, type=str, help="Path to dataset directory")
+
+    # optional args
     parser.add_argument("--no-vis", action="store_true", help="If specified, no visualizations are generated")
     parser.add_argument("--no-wandb", action="store_true", help="If specified, does not invoke WandB for logging")
     parser.add_argument("--seed", type=int, default=42, help="Seed for RNGs (python, numpy, pytorch)")
@@ -25,8 +30,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"],
                         default=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
-    parser.add_argument("--dataset", type=str, choices=AVAILABLE_DATASETS)
-    parser.add_argument("--data-dir", type=str, help="Path to dataset directory")
     parser.add_argument("--data-seq-step", type=int, default=1,
                         help="Use every nth frame of the video sequence. If n=1, no frames are skipped.")
     parser.add_argument("--context-frames", type=int, default=None,
