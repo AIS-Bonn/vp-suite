@@ -1,4 +1,5 @@
 import json
+import os
 import random
 from pathlib import Path
 
@@ -103,11 +104,15 @@ def train(trial=None, cfg=None):
         # visualize current model performance every nth epoch, using eval mode and validation data.
         if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
             print("Saving visualizations...")
-            out_filenames = visualize_vid(val_data, cfg.context_frames, cfg.pred_frames, pred_model,
-                                          cfg.device, cfg.img_processor, cfg.out_dir, num_vis=10)
+            vis_out_path = Path(cfg.out_dir) / f"vis_ep_{epoch+1:03d}"
+            vis_out_path.mkdir()
+            visualize_vid(val_data, cfg.context_frames, cfg.pred_frames, pred_model,
+                          cfg.device, cfg.img_processor, vis_out_path, num_vis=10)
 
             if not cfg.no_wandb:
-                log_vids = {f"vis_{i}": wandb.Video(out_fn, fps=4,format="mp4") for i, out_fn in enumerate(out_filenames)}  # TODO gif vs. mp4
+                vid_filenames = sorted(os.listdir(str(vis_out_path)))
+                log_vids = {fn: wandb.Video(str(vis_out_path / fn), fps=4, format=fn.split(".")[-1])
+                            for i, fn in enumerate(vid_filenames)}
                 wandb.log(log_vids, commit=False)
 
         # final bookkeeping

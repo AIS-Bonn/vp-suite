@@ -12,6 +12,7 @@ import torchvision.transforms as TF
 
 from vp_suite.models.model_copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
+from vp_suite.utils.utils import timestamp
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.dataset.factory import create_test_dataset, update_cfg_from_dataset
@@ -108,9 +109,9 @@ def test(test_cfg):
 
     # MODELS
     models_dict = {}  # desc: (model, model_cfg, preprocessing, postprocessing, test_metrics (initialized empty))
-    for model_dir in test_cfg.model_dirs:
-        model = torch.load(os.path.join(model_dir, "best_model.pth")).to(test_cfg.device)
-        with open(os.path.join(model_dir, "run_cfg.json"), "r") as cfg_file:
+    for vis_out_dir in test_cfg.model_dirs:
+        model = torch.load(os.path.join(vis_out_dir, "best_model.pth")).to(test_cfg.device)
+        with open(os.path.join(vis_out_dir, "run_cfg.json"), "r") as cfg_file:
             model_cfg = json.load(cfg_file)
         # get adapters to make model work with test cfg
         if test_cfg.context_frames is None or test_cfg.pred_frames is None:
@@ -153,12 +154,14 @@ def test(test_cfg):
         print(f"Saving visualizations for trained models...")
         num_vis = 5
         vis_idx = np.random.choice(len(test_data), num_vis, replace=False)
-        for model_desc, (model, model_fp, _) in models_dict.items():
+        for i, (model_desc, (model, model_fp, _)) in enumerate(models_dict.items()):
             if model_desc == CopyLastFrame.desc: continue  # don't print for copy baseline
-            model_dir = str(Path(model_fp).parent.resolve())
-            print(model_desc, model_dir)
-            visualize_vid(test_data, test_cfg.context_frames, test_cfg.pred_frames, model, test_cfg.device, test_cfg.img_processor,
-                          model_dir, test=True, vis_idx=vis_idx, mode="mp4")
+            vis_out_path = Path(test_cfg.out_dir) / f"vis_model{i:02d}_{model_desc}"
+            vis_out_path.mkdir()
+            vis_out_dir = Path(model_fp).parent / f"vis_test_{timestamp('test')}"
+            vis_out_dir.mkdir()
+            visualize_vid(test_data, test_cfg.context_frames, test_cfg.pred_frames, model, test_cfg.device,
+                          test_cfg.img_processor, vis_out_dir, test=True, vis_idx=vis_idx, mode="mp4")
 
     # log or display metrics
     if eval_length > 0:
