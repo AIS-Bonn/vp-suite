@@ -71,7 +71,7 @@ if __name__ == '__main__':
         except ImportError:
             raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
         optuna_program = partial(train, cfg=cfg)
-        study = optuna.create_study(directions=cfg.opt_direction)
+        study = optuna.create_study(direction=cfg.opt_direction)
         study.optimize(optuna_program, n_trials=cfg.optuna_n_trials)
     else:
         train(cfg=cfg)

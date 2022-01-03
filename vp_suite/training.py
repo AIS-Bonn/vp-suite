@@ -35,14 +35,6 @@ def train(trial=None, cfg=None):
 
     if cfg.use_optuna:
         cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
-        cfg.mse_loss_scale = trial.suggest_float("mse_loss_scale", 1e-7, 1.0)
-        cfg.l1_loss_scale = trial.suggest_float("l1_loss_scale", 1e-7, 1.0)
-        cfg.smoothl1_loss_scale = trial.suggest_float("smoothl1_loss_scale", 1e-7, 1.0)
-        cfg.lpips_loss_scale = trial.suggest_float("lpips_loss_scale", 1e-7, 1000.0)
-        cfg.fvd_loss_scale = trial.suggest_float("fvd_loss_scale", 1e-7, 1.0)
-        cfg.pred_st_decouple_loss_scale = trial.suggest_float("pred_st_decouple_loss_scale", 1e-7, 10000.0, log=True)
-        cfg.pred_st_rec_loss_scale = trial.suggest_float("pred_st_rec_loss_scale", 1e-7, 1.0, log=True)
-        cfg.pred_phy_moment_loss_scale = trial.suggest_float("pred_phy_moment_loss_scale", 1e-7, 10.0, log=True)
 
     # WandB
     if not cfg.no_wandb:
