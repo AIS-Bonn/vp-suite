@@ -30,37 +30,52 @@ conda activate vp-suite
 All scripts are run using `argparse`,
 so feel free to check the descriptions for all available parameters of the provided entry points using the `-h` option. 
 
-- Train a VP model:  `TODO`
-- Test one or more (pre-)trained VP models on some dataset: `TODO`
+- Train a VP model:  `python scripts/train.py --dataset <dataset_ID> --data-dir <path/to/dataset/folder>`
+- Test one or more (pre-)trained VP models on some dataset: `python scripts/test.py --model-dirs <path/to/model1/folder> <...> --dataset <dataset_ID> --data-dir <path/to/dataset/folder>`
 
 #### Creating new VP models/Integrating existing external models 
 
-TODO
+1. Create a file `model_<your name>.py` in the folder `vp_suite/models`.
+2. Create a class that derives from `vp_suite.models.base_model.VideoPredictionModel` and override the things you need.
+3. Write your model code or import existing code so that the superclass interface is still served. If desired, you can implement a custom training loop iteration `train_iter(cfg, train_loader, optimizer, loss_provider, epoch)` that gets called instead of the default training loop iteration.
+4. Write tests for your model (`test/test_models.py`) and register it in the `pred_models` dict of `vp_suite/models/factory.py`.
+5. Check training performance on different datasets, fix things and contribute to the project 😊
 
 #### Training on new datasets
 
-TODO
-
-#### Custom training procedures
-
-TODO
+1. Create a file `dataset_<your name>.py` in the folder `vp_suite/dataset`.
+2. Create a class that derives from `vp_suite.dataset.base_dataset.BaseVPDataset` and override the things you need.
+3. Write your dataset code or import existing code so that the superclass interface is served and the dataset initialization with `vp_suite/dataset/factory.py` still works.
+4. Write tests for your dataset (`test/test_dataset.py`) and register it in the `dataset_classes` dict of `vp_suite/dataset/factory.py`.
+5. Check training performance with different models, fix things and contribute to the project 😊
 
 #### Custom losses, metrics and optimization
 
-TODO
-
-#### Custom logging
-
-TODO
+1. Create a new file in `vp_suite/measure`, containing your loss or metric.
+2. Make `vp_suite.measure.base_measure.BaseMeasure` its superclass and provide all needed implementations and attributes.
+3. Register the measure in the `METRICS` dict of `vp_suite/measure/metric_provider.py` and, if it can also be used as a loss, in the `LOSSES` dict of `vp_suite/measure/loss_provider.py`.
+4. Write tests for the measure (`test/test_measures.py`).
+5. Check training/evaluation performance with different models and datasets, fix things and contribute to the project 😊
 
 ### Contributing
 
-TODO
+This project is always open to extension! If you're adding models, datasets or measures, just be sure to subclass the according base classes and write tests so that the code can be used by others.
+
+Other kinds of contributions are also welcome.
 
 ### Citing
 
-TODO
+```
+@misc{vp_suite,
+  Author = {Boltres, Andreas},
+  Title = {vp-suite: A Framework for Training and Evaluating Video Prediction Models},
+  Year = {2022},
+  Publisher = {GitHub},
+  Journal = {GitHub repository},
+  Howpublished = {\url{https://github.com/Flunzmas/vp-suite}}
+}
+```
 
 ### License stuffs
 
-TODO
+This project comes with an [MIT License](https://github.com/Flunzmas/vp-suite/blob/main/LICENSE).
