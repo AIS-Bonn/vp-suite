@@ -4,9 +4,9 @@ import argparse
 from pathlib import Path
 import torch
 
-from vp_suite.training import train
-from vp_suite.models.factory import AVAILABLE_MODELS
-from vp_suite.dataset.factory import AVAILABLE_DATASETS
+#from vp_suite.training import train
+from vp_suite.models._factory import AVAILABLE_MODELS
+from vp_suite.dataset._factory import AVAILABLE_DATASETS
 from vp_suite.measure.loss_provider import AVAILABLE_LOSSES, LOSSES
 from vp_suite.utils.utils import timestamp, StoreDictKeyPair
 
@@ -77,4 +77,9 @@ if __name__ == '__main__':
         study = optuna.create_study(direction=cfg.opt_direction)
         study.optimize(optuna_program, n_trials=cfg.optuna_n_trials)
     else:
-        train(cfg=cfg)
+        import yaml, json
+        with open('vp_suite/config.yml', 'w') as f:
+            yaml.dump(vars(cfg), f)
+        with open('vp_suite/config.json', 'w') as f:
+            json.dump(vars(cfg), f, default=lambda o: '<not serializable>', indent=4)
+        # train(cfg=cfg)

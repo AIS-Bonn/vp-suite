@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 import sys
 sys.path.append("")
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 
 
 class SimpleV1(VideoPredictionModel):
@@ -14,8 +14,8 @@ class SimpleV1(VideoPredictionModel):
     def model_desc(cls):
         return "SimpleV1"
 
-    def __init__(self, cfg):
-        super(SimpleV1, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(SimpleV1, self).__init__(trainer_cfg)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
@@ -51,8 +51,8 @@ class SimpleV2(VideoPredictionModel):
     def model_desc(cls):
         return "SimpleV2"
 
-    def __init__(self, cfg):
-        super(SimpleV2, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(SimpleV2, self).__init__(trainer_cfg)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(

@@ -35,10 +35,12 @@ vp_trainer = Trainer()
 ```
 
 2. Load one of the provided datasets (or create your own TODO link):
+
 ```python
 # check available datasets
-from vp_suite.dataset.factory import dataset_classes
-print(dataset_classes.keys())
+from vp_suite.dataset._factory import DATASET_CLASSES
+
+print(DATASET_CLASSES.keys())
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (TODO see docs for customization options)
@@ -46,13 +48,15 @@ vp_trainer.load_dataset("MM")
 ```
 
 3. Create video prediction model (either from scratch or from a pretrained checkpoint, can be one of the provided models or your own):
+
 ```python
 model_checkpoint = ""  # set to valid model path to load a checkpoint
 if model_checkpoint != "":
     vp_trainer.load_model(model_checkpoint)
-else:   
+else:
     # check available model types
-    from vp_suite.models.factory import pred_models
+    from vp_suite.models._factory import pred_models
+
     print({k: v.desc for k, v in pred_models.items()})
     # should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...}
     vp_trainer.create_model('lstm')
@@ -75,10 +79,12 @@ vp_tester = Tester()
 ```
 
 2. Load one of the provided datasets (or create your own TODO link):
+
 ```python
 # check available datasets
-from vp_suite.dataset.factory import dataset_classes
-print(dataset_classes.keys())
+from vp_suite.dataset._factory import DATASET_CLASSES
+
+print(DATASET_CLASSES.keys())
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (TODO see docs for customization options)

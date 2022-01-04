@@ -11,7 +11,7 @@ from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
 from tqdm import tqdm
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
 
 
 class BAIRPushingDataset(BaseVPDataset):

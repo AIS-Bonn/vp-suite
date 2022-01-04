@@ -3,7 +3,7 @@ from torch import nn as nn
 from torchvision.transforms import functional as TF
 
 from vp_suite.models.model_blocks.conv import DoubleConv3d, DoubleConv2d
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 
 
 class UNet3D(VideoPredictionModel):
@@ -16,10 +16,10 @@ class UNet3D(VideoPredictionModel):
     def model_desc(cls):
         return "UNet-3D"
 
-    def __init__(self, cfg):
-        super(UNet3D, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(UNet3D, self).__init__(trainer_cfg)
 
-        self.temporal_dim = self.temporal_dim or cfg.context_frames
+        self.temporal_dim = self.temporal_dim or trainer_cfg["context_frames"]
         self.min_context_frames = self.temporal_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()

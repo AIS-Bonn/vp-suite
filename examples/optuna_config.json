@@ -1,0 +1,16 @@
+{
+  "lr": {
+    "type": "float",
+    "min": 1e-5,
+    "max": 1e-3,
+    "scale": "log"
+  },
+  "seed": {
+    "type": "int",
+    "min": 1,
+    "max": 100
+  },
+  "model_type": {
+    "choices": ["unet", "lstm", "copy"]
+  }
+}

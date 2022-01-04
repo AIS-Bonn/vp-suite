@@ -2,177 +2,258 @@ import json
 import os
 import random
 from pathlib import Path
+from copy import deepcopy
 
 import wandb
 
 import numpy as np
 import torch.nn
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from vp_suite.dataset.factory import create_train_val_dataset, update_cfg_from_dataset
-from vp_suite.models.factory import create_pred_model
+from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
+from vp_suite.models._factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
-from vp_suite.measure.loss_provider import PredictionLossProvider
+from vp_suite.measure.loss_provider import PredictionLossProvider, LOSSES
 from vp_suite.utils.visualization import visualize_vid
+from vp_suite.utils.utils import timestamp, check_model_compatibility
 
-def train(trial=None, cfg=None):
+class Trainer():
 
-    # PREPARATION pt. 1
-    best_val_loss = float("inf")
-    best_model_path = str((Path(cfg.out_dir) / 'best_model.pth').resolve())
-    cfg.img_processor = ImgProcessor(cfg.tensor_value_range)
-    random.seed(cfg.seed)
-    np.random.seed(cfg.seed)
-    torch.manual_seed(cfg.seed)
-    if cfg.opt_direction == "maximize":
-        def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
-    else:
-        def loss_improved(cur_loss, best_loss): return cur_loss < best_loss
-    if cfg.use_optuna:
-        cfg.lr = trial.suggest_float("lr", 5e-5, 5e-3, log=True)
+    def __init__(self):
+        with open('trainer_config.json', 'r') as tc_file:
+            self.config = json.load(tc_file)
+            self.config["total_frames"] = self.config["context_frames"] + self.config["pred_frames"]
+            self.config["opt_direction"] = "maximize" if LOSSES[self.config["val_rec_criterion"]].bigger_is_better \
+                else "minimize"
+            self.config["img_processor"] = ImgProcessor(self.config["tensor_value_range"])
+            self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            random.seed(self.config["seed"])
+            np.random.seed(self.config["seed"])
+            torch.manual_seed(self.config["seed"])
 
-    # DATA
-    (train_data, val_data), (train_loader, val_loader) = create_train_val_dataset(cfg)
-    cfg = update_cfg_from_dataset(cfg, train_data)
+            self.datasets_loaded = False
+            self.model_ready = False
 
+    def load_dataset(self, dataset="MM", **kwargs):
+        dataset_class = DATASET_CLASSES[dataset]
+        self.train_data, self.val_data = dataset_class.get_train_val(**kwargs)
+        self.config = update_cfg_from_dataset(self.config, self.train_data)
+        self.datasets_loaded = True
 
-    # WandB
-    if not cfg.no_wandb:
-        wandb.init(config=cfg, project="vp-suite-training", reinit=cfg.use_optuna)
+    def load_model(self, model_dir, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
+        model_ckpt = os.path.join(model_dir, ckpt_name)
+        loaded_model = torch.load(model_ckpt)
+        with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
+            model_config = json.load(cfg_file)
+        _, _, = check_model_compatibility(model_config, self.config, loaded_model, strict_mode=True)
+        self.pred_model = loaded_model
+        self.loaded_model_config = model_config
+        print(f"INFO: loaded pre-trained model '{self.pred_model.desc}' from {model_ckpt}")
+        self.model_ready = True
 
-    # MODEL AND OPTIMIZER
-    if cfg.pretrained_model != "":
-        pred_model = torch.load(cfg.pretrained_model)
-        print(f"INFO: loaded pre-trained model '{pred_model.desc}' from {cfg.pretrained_model}")
-    else:
-        pred_model = create_pred_model(cfg)
-    optimizer, optimizer_scheduler = None, None
-    if not cfg.no_train:
-        optimizer = torch.optim.Adam(params=pred_model.parameters(), lr=cfg.lr)
-        optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
-                                                                         min_lr=1e-6, verbose=True)
+    def create_model(self, model_type, **model_args):
+        self.pred_model = create_pred_model(self.config, model_type, **model_args)
+        self.model_ready = True
 
-    # LOSSES
-    loss_provider = PredictionLossProvider(cfg)
-    if cfg.val_rec_criterion not in cfg.losses_and_scales:
-        raise ValueError(f"ERROR: Validation criterion '{cfg.val_rec_criterion}' has to be "
-                         f"one of the chosen losses: {list(cfg.losses_and_scales.keys())}")
+    def _prepare_training(self, **training_kwargs):
 
-    # PREPARATION pt.2
-    with open(str((Path(cfg.out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:
-        json.dump(vars(cfg), cfg_file, default=lambda o: '<not serializable>', indent=4)
+        assert self.datasets_loaded, "No datasets loaded. Load a dataset before starting training"
+        assert self.model_ready, "No model available. Load a pretrained model or create a new instance before starting training"
 
-    # MAIN LOOP
-    for epoch in range(0, cfg.epochs):
+        updated_config = deepcopy(self.config).update(training_kwargs)
+        loaded_model_config = getattr(self, "loaded_model_config", None)
+        if loaded_model_config is not None:
+            _, _, = check_model_compatibility(loaded_model_config, self.config, self.pred_model, strict_mode=True)
+        self.config = updated_config
 
-        # train
-        print(f'\nTraining (epoch: {epoch+1} of {cfg.epochs})')
-        if not cfg.no_train:
-            # use prediction model's own training loop if available
-            if callable(getattr(pred_model, "train_iter", None)):
-                pred_model.train_iter(cfg, train_loader, optimizer, loss_provider, epoch)
+    def _set_optuna_cfg(self, optuna_cfg : dict):
+        self.optuna_cfg = optuna_cfg if optuna_cfg else {}
+        for parameter, p_dict in self.optuna_cfg:
+            assert isinstance(p_dict, dict)
+            if "choices" in p_dict.keys():
+                assert(isinstance(p_dict["choices"], list))
             else:
-                train_iter(cfg, train_loader, pred_model, optimizer, loss_provider)
+                assert {"type", "min", "max"}.issubset(set(p_dict.keys()))
+                assert p_dict["min"] <= p_dict["max"]
+                if p_dict["type"] == "float":
+                    assert p_dict.get("scale", '') in ["log", "uniform"]
+
+    def hyperopt(self, optuna_cfg=None, n_trials=30, **kwargs):
+        self._set_optuna_cfg(optuna_cfg)
+        from functools import partial
+        try:
+            import optuna
+        except ImportError:
+            raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
+        optuna_program = partial(self.train, **kwargs)
+        study = optuna.create_study(direction=self.config["opt_direction"])
+        study.optimize(optuna_program, n_trials=n_trials)
+        print(study.best_params)
+
+    def train(self, trial=None, **kwargs):
+
+        # PREPARATION pt. 1
+        self._prepare_training(**kwargs)
+        assert self.datasets_loaded
+        train_loader = DataLoader(self.train_data, batch_size=self.config["batch_size"], shuffle=True, num_workers=4,
+                                  drop_last=True)
+        val_loader = DataLoader(self.val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
+        best_val_loss = float("inf")
+        out_dir = f"out/{timestamp('train')}"
+        best_model_path = str((Path(out_dir) / 'best_model.pth').resolve())
+
+        if self.config["opt_direction"] == "maximize":
+            def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
         else:
-            print("Skipping training loop.")
+            def loss_improved(cur_loss, best_loss): return cur_loss < best_loss
 
-        # eval
-        print("Validating...")
-        val_losses, indicator_loss = eval_iter(cfg, val_loader, pred_model, loss_provider)
-        if not cfg.no_train:
-            optimizer_scheduler.step(indicator_loss)
-        print("Validation losses (mean over entire validation set):")
-        for k, v in val_losses.items():
-            print(f" - {k}: {v}")
+        # HYPERPARAMETER OPTIMIZATION
+        using_optuna = trial is not None
+        if using_optuna:
+            assert self.optuna_cfg is not None, "optuna_cfg is None -> can't hyperopt"
+            for param, p_dict in self.optuna_cfg:
+                if "choices" in p_dict.keys():
+                    self.config[param] = trial.suggest_categorical(param, p_dict["choices"])
+                else:
+                    log_scale = p_dict.get("scale", "uniform") == "log"
+                    step = 1 if log_scale else p_dict.get("step", 1)
+                    suggest = trial.suggest_int if p_dict["type"] == "int" else trial.suggest_float
+                    self.config[param] = suggest(param, p_dict["low"], p_dict["high"], step=step, log=log_scale)
 
-        # save model if last epoch improved indicator loss
-        cur_val_loss = indicator_loss.item()
-        if loss_improved(cur_val_loss, best_val_loss):
-            best_val_loss = cur_val_loss
-            torch.save(pred_model, best_model_path)
-            print(f"Minimum indicator loss ({cfg.val_rec_criterion}) reduced -> model saved!")
+        # WandB
+        if not self.config["no_wandb"]:
+            wandb_reinit = using_optuna and trial.number > 0
+            wandb.init(config=self.config, project="vp-suite-training", reinit=wandb_reinit)
 
-        # visualize current model performance every nth epoch, using eval mode and validation data.
-        if (epoch+1) % cfg.vis_every == 0 and not cfg.no_vis:
-            print("Saving visualizations...")
-            vis_out_path = Path(cfg.out_dir) / f"vis_ep_{epoch+1:03d}"
-            vis_out_path.mkdir()
-            visualize_vid(val_data, cfg.context_frames, cfg.pred_frames, pred_model,
-                          cfg.device, cfg.img_processor, vis_out_path, num_vis=10)
+        # OPTIMIZER
+        optimizer, optimizer_scheduler = None, None
+        if not self.config["no_train"]:
+            optimizer = torch.optim.Adam(params=self.pred_model.parameters(), lr=self.config["lr"])
+            optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
+                                                                             min_lr=1e-6, verbose=True)
 
-            if not cfg.no_wandb:
-                vid_filenames = sorted(os.listdir(str(vis_out_path)))
-                log_vids = {fn: wandb.Video(str(vis_out_path / fn), fps=4, format=fn.split(".")[-1])
-                            for i, fn in enumerate(vid_filenames)}
-                wandb.log(log_vids, commit=False)
+        # LOSSES
+        loss_provider = PredictionLossProvider(self.config)
+        if self.config['val_rec_criterion'] not in self.config['losses_and_scales']:
+            raise ValueError(f"ERROR: Validation criterion '{self.config['val_rec_criterion']}' has to be "
+                             f"one of the chosen losses: {list(self.config['losses_and_scales'].keys())}")
 
-        # final bookkeeping
-        if not cfg.no_wandb:
-            wandb.log(val_losses, commit=True)
+        # PREPARATION pt.2
+        with open(str((Path(out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:
+            json.dump(vars(self.config), cfg_file, default=lambda o: '<not serializable>', indent=4)
 
-    # finishing
-    print("\nTraining done, cleaning up...")
-    torch.save(pred_model, str((Path(cfg.out_dir) / 'final_model.pth').resolve()))
-    wandb.finish()
-    return best_val_loss  # return best validation loss for hyperparameter optimization
+        # MAIN LOOP
+        for epoch in range(0, self.config["epochs"]):
 
-# ==============================================================================
+            # train
+            print(f'\nTraining (epoch: {epoch+1} of {self.config["epochs"]})')
+            if not self.config["no_train"]:
+                # use prediction model's own training loop if available
+                if callable(getattr(self.pred_model, "train_iter", None)):
+                    self.pred_model.train_iter(self.config, train_loader, optimizer, loss_provider, epoch)
+                else:
+                    self.train_iter(train_loader, optimizer, loss_provider)
+            else:
+                print("Skipping training loop.")
 
-def train_iter(cfg, loader, pred_model, optimizer, loss_provider):
+            # eval
+            print("Validating...")
+            val_losses, indicator_loss = self.eval_iter(val_loader, loss_provider)
+            if not self.config["no_train"]:
+                optimizer_scheduler.step(indicator_loss)
+            print("Validation losses (mean over entire validation set):")
+            for k, v in val_losses.items():
+                print(f" - {k}: {v}")
 
-    loop = tqdm(loader)
-    for batch_idx, data in enumerate(loop):
+            # save model if last epoch improved indicator loss
+            cur_val_loss = indicator_loss.item()
+            if loss_improved(cur_val_loss, best_val_loss):
+                best_val_loss = cur_val_loss
+                torch.save(self.pred_model, best_model_path)
+                print(f"Minimum indicator loss ({self.config['val_rec_criterion']}) reduced -> model saved!")
 
-        # input
-        img_data = data["frames"].to(cfg.device)  # [b, T, c, h, w], with T = cfg.total_frames
-        input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.total_frames]
-        actions = data["actions"].to(cfg.device)  # [b, T-1, a]. Action t corresponds to what happens after frame t
+            # visualize current model performance every nth epoch, using eval mode and validation data.
+            if (epoch+1) % self.config["vis_every"] == 0 and not self.config["no_vis"]:
+                print("Saving visualizations...")
+                vis_out_path = Path(out_dir) / f"vis_ep_{epoch+1:03d}"
+                vis_out_path.mkdir()
+                visualize_vid(self.val_data, self.config["context_frames"], self.config["pred_frames"], self.pred_model,
+                              self.config["device"], self.config["img_processor"], vis_out_path, num_vis=10)
 
-        # fwd
-        predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
+                if not self.config["no_wandb"]:
+                    vid_filenames = sorted(os.listdir(str(vis_out_path)))
+                    log_vids = {fn: wandb.Video(str(vis_out_path / fn), fps=4, format=fn.split(".")[-1])
+                                for i, fn in enumerate(vid_filenames)}
+                    wandb.log(log_vids, commit=False)
 
-        # loss
-        _, total_loss = loss_provider.get_losses(predictions, targets)
-        if model_losses is not None:
-            for value in model_losses.values():
-                total_loss += value
+            # final bookkeeping
+            if not self.config["no_wandb"]:
+                wandb.log(val_losses, commit=True)
 
-        # bwd
-        optimizer.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(pred_model.parameters(), 100)
-        optimizer.step()
+        # finishing
+        print("\nTraining done, cleaning up...")
+        torch.save(self.pred_model, str((Path(out_dir) / 'final_model.pth').resolve()))
+        wandb.finish()
+        return best_val_loss  # return best validation loss for hyperparameter optimization
 
-        # bookkeeping
-        loop.set_postfix(loss=total_loss.item())
-        # loop.set_postfix(mem=torch.cuda.memory_allocated())
-
-def eval_iter(cfg, loader, pred_model, loss_provider):
-
-    pred_model.eval()
-    loop = tqdm(loader)
-    all_losses = []
-    indicator_losses = []
-
-    with torch.no_grad():
+    def train_iter(self, loader, optimizer, loss_provider):
+        loop = tqdm(loader)
         for batch_idx, data in enumerate(loop):
 
+            # input
+            img_data = data["frames"].to(self.config["device"])  # [b, T, c, h, w], with T = total_frames
+            input = img_data[:, :self.config["context_frames"]]
+            targets = img_data[:, self.config["context_frames"] : self.config["total_frames"]]
+            actions = data["actions"].to(self.config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
+
             # fwd
-            img_data = data["frames"].to(cfg.device)  # [b, T, h, w], with T = total_frames
-            input, targets = img_data[:, :cfg.context_frames], img_data[:, cfg.context_frames:cfg.total_frames]
-            actions = data["actions"].to(cfg.device)
+            predictions, model_losses = self.pred_model.pred_n(input, pred_length=self.config["pred_frames"],
+                                                               actions=actions)
 
-            predictions, model_losses = pred_model.pred_n(input, pred_length=cfg.pred_frames, actions=actions)
+            # loss
+            _, total_loss = loss_provider.get_losses(predictions, targets)
+            if model_losses is not None:
+                for value in model_losses.values():
+                    total_loss += value
 
-            # metrics
-            loss_values, _ = loss_provider.get_losses(predictions, targets)
-            all_losses.append(loss_values)
-            indicator_losses.append(loss_values[cfg.val_rec_criterion])
+            # bwd
+            optimizer.zero_grad()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.pred_model.parameters(), 100)
+            optimizer.step()
 
-    indicator_loss = torch.stack(indicator_losses).mean()
-    all_losses = {
-        k: torch.stack([loss_values[k] for loss_values in all_losses]).mean().item() for k in all_losses[0].keys()
-    }
-    pred_model.train()
+            # bookkeeping
+            loop.set_postfix(loss=total_loss.item())
+            # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
-    return all_losses, indicator_loss
+    def eval_iter(self, loader, loss_provider):
+        self.pred_model.eval()
+        loop = tqdm(loader)
+        all_losses = []
+        indicator_losses = []
+
+        with torch.no_grad():
+            for batch_idx, data in enumerate(loop):
+
+                # fwd
+                img_data = data["frames"].to(self.config["device"])  # [b, T, h, w], with T = total_frames
+                input = img_data[:, :self.config["context_frames"]]
+                targets = img_data[:, self.config["context_frames"]: self.config["total_frames"]]
+                actions = data["actions"].to(self.config["device"])
+
+                predictions, model_losses = self.pred_model.pred_n(input, pred_length=self.config["pred_frames"],
+                                                                   actions=actions)
+
+                # metrics
+                loss_values, _ = loss_provider.get_losses(predictions, targets)
+                all_losses.append(loss_values)
+                indicator_losses.append(loss_values[self.config["val_rec_criterion"]])
+
+        indicator_loss = torch.stack(indicator_losses).mean()
+        all_losses = {
+            k: torch.stack([loss_values[k] for loss_values in all_losses]).mean().item() for k in all_losses[0].keys()
+        }
+        self.pred_model.train()
+
+        return all_losses, indicator_loss

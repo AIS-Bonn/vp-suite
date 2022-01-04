@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 import torch
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
 
 class MovingMNISTDataset(BaseVPDataset):
 

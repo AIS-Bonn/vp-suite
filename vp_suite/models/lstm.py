@@ -5,7 +5,7 @@ from torchvision import transforms as TF
 import sys
 sys.path.append("")
 
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 
 
 class LSTM(VideoPredictionModel):
@@ -20,8 +20,8 @@ class LSTM(VideoPredictionModel):
     def model_desc(cls):
         return "NonConvLSTM"
 
-    def __init__(self, cfg):
-        super(LSTM, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(LSTM, self).__init__(trainer_cfg)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)

@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 
@@ -20,11 +20,11 @@ class STLSTM(VideoPredictionModel):
     def model_desc(cls):
         return "ST-LSTM"
     
-    def __init__(self, cfg):
-        super(STLSTM, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(STLSTM, self).__init__(trainer_cfg)
 
         self.num_hidden = [self.enc_channels] * self.num_layers
-        self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, cfg.device)
+        self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, trainer_cfg["device"])
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
         self.recurrent_cell = STLSTMCell
 

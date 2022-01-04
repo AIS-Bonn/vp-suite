@@ -8,14 +8,14 @@ class VideoPredictionModel(nn.Module):
     can_handle_actions = False  # models by default won't be able to handle actions
     min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
 
-    def __init__(self, cfg):
+    def __init__(self, trainer_cfg, **model_args):
         super(VideoPredictionModel, self).__init__()
-        if cfg is not None:
-            self.img_shape = cfg.img_shape
+        if trainer_cfg is not None:
+            self.img_shape = trainer_cfg["img_shape"]
             self.img_c, self.img_h, self.img_w = self.img_shape
-            self.action_size = cfg.action_size
-            self.use_actions = cfg.use_actions  # in that case, action_size > 0
-            self.device = cfg.device
+            self.action_size = trainer_cfg["action_size"]
+            self.use_actions = trainer_cfg["use_actions"]  # in that case, action_size > 0
+            self.device = trainer_cfg["device"]
 
     @classmethod
     def model_desc(cls):

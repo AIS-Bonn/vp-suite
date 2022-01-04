@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 from vp_suite.measure.image_wise import MSE
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 
@@ -20,8 +20,8 @@ class PhyDNet(VideoPredictionModel):
     def model_desc(cls):
         return "PhyDNet"
 
-    def __init__(self, cfg):
-        super(PhyDNet, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(PhyDNet, self).__init__(trainer_cfg)
 
         self.criterion = MSE(self.device)
         self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,

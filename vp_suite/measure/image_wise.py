@@ -6,7 +6,7 @@ import piqa
 # expected data type: torch.tensor (torch.float)
 # expected shape: [..., h, w] ([..., 3, h, w] for LPIPS and SSIM)
 # expected value range: [-1.0, 1.0]
-from vp_suite.measure.base_measure import BaseMeasure
+from vp_suite.measure._base_measure import BaseMeasure
 
 
 class MSE(BaseMeasure):

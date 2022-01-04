@@ -5,7 +5,7 @@ import torch
 import imageio
 import torchfile
 from pathlib import Path
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
 
 class KTHActionsDataset(BaseVPDataset):
 

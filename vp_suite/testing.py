@@ -8,92 +8,14 @@ import wandb
 
 import torch
 import torch.nn as nn
-import torchvision.transforms as TF
 
-from vp_suite.models.model_copy_last_frame import CopyLastFrame
+from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
-from vp_suite.utils.utils import timestamp
+from vp_suite.utils.utils import timestamp, check_model_compatibility
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
-from vp_suite.dataset.factory import create_test_dataset, update_cfg_from_dataset
+from vp_suite.dataset._factory import create_test_dataset, update_cfg_from_dataset
 
-
-class ScaleToTest(nn.Module):
-    def __init__(self, model_value_range, test_value_range):
-        super(ScaleToTest, self).__init__()
-        self.m_min, self.m_max = model_value_range
-        self.t_min, self.t_max = test_value_range
-
-    def forward(self, img : torch.Tensor):
-        ''' input: [model_val_min, model_val_max] '''
-        img = (img - self.m_min) / (self.m_max - self.m_min)  # [0., 1.]
-        img = img * (self.t_max - self.t_min) + self.t_min  # [test_val_min, test_val_max]
-        return img
-
-class ScaleToModel(nn.Module):
-    def __init__(self, model_value_range, test_value_range):
-        super(ScaleToModel, self).__init__()
-        self.m_min, self.m_max = model_value_range
-        self.t_min, self.t_max = test_value_range
-
-    def forward(self, img: torch.Tensor):
-        ''' input: [test_val_min, test_val_max] '''
-        img = (img - self.t_min) / (self.t_max - self.t_min)  # [0., 1.]
-        img = img * (self.m_max - self.m_min) + self.m_min  # [model_val_min, model_val_max]
-        return img
-
-def get_test_adapters(test_cfg, model_cfg, model):
-    '''
-    Checks consistency of model configuration with test configuration. Creates appropriate adapter modules
-    to make the testing work with that model if the differences can be bridged.
-    Some differences (e.g. action-conditioning vs. not) cannot be bridged and will lead to failure.
-    '''
-    model_preprocessing, model_postprocessing = [], []
-
-    # value range
-    model_value_range = list(model_cfg["tensor_value_range"])
-    test_value_range = list(test_cfg.tensor_value_range)
-    if model_value_range != test_value_range:
-        model_preprocessing.append(ScaleToModel(model_value_range, test_value_range))
-        model_postprocessing.append(ScaleToTest(model_value_range, test_value_range))
-
-    # action conditioning
-    if model.can_handle_actions:
-        if model_cfg["use_actions"] != test_cfg.use_actions:
-            raise ValueError(f"ERROR: Action-conditioned model '{model.desc}' (loaded from {model_cfg['out_dir']}) "
-                             f"can't be invoked without using actions -> set 'use_actions' to True in test cfg!")
-        assert model_cfg["action_size"] == test_cfg.action_size,\
-            f"ERROR: Action-conditioned model '{model.desc}' (loaded from {model_cfg['out_dir']}) " \
-            f"was trained with action size {model_cfg['action_size']}, " \
-            f"which is different from the test action size ({test_cfg.action_size})"
-    elif test_cfg.use_actions:
-        print(f"WARNING: Model '{model.desc}' (loaded from {model_cfg['out_dir']}) can't handle actions"
-              f" -> Testing it without using the actions provided by the dataset")
-
-    # img_shape
-    model_c, model_h, model_w = model_cfg["img_shape"]
-    test_c, test_h, test_w = test_cfg.img_shape
-    if model_c != test_c:
-        raise ValueError(f"ERROR: Test dataset provides {test_c}-channel images but "
-                         f"Model '{model.desc}' (loaded from {model_cfg['out_dir']}) expects {model_c} channels")
-    elif model_h != test_h or model_w != test_w:
-        model_preprocessing.append(TF.Resize((model_h, model_w)))
-        model_postprocessing.append(TF.Resize((test_h, test_w)))
-
-    # context frames and pred. horizon
-    if test_cfg.context_frames is None:
-        test_cfg.context_frames = model_cfg.context_frames
-    elif test_cfg.context_frames < model.min_context_frames:
-        raise ValueError(f"ERROR: Model '{model.desc}' (loaded from {model_cfg['out_dir']}) needs at least "
-                         f"{model.min_context_frames} context frames as it uses temporal convolution "
-                         f"with said number as kernel size")
-    if test_cfg.pred_frames is None:
-        test_cfg.pred_frames = model_cfg.pred_frames
-
-    # finalize pre-/postprocessing modules
-    model_preprocessing = nn.Sequential(*model_preprocessing)
-    model_postprocessing = nn.Sequential(*model_postprocessing)
-    return model_preprocessing, model_postprocessing
 
 def test(test_cfg):
 
@@ -116,7 +38,7 @@ def test(test_cfg):
         # get adapters to make model work with test cfg
         if test_cfg.context_frames is None or test_cfg.pred_frames is None:
             print("INFO: context frames and/or pred_frames unspecified -> will default to models' respective values")
-        preprocessing, postprocessing = get_test_adapters(test_cfg, model_cfg, model)
+        preprocessing, postprocessing = check_model_compatibility(test_cfg, model_cfg, model)
         models_dict[model.desc] = (model, model_cfg, preprocessing, postprocessing, [])
 
     # add baseline copy model

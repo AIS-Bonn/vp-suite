@@ -3,14 +3,14 @@ sys.path.append("")
 
 import torch
 
-from vp_suite.models.model_convlstm import ConvLSTM
-from vp_suite.models.model_copy_last_frame import CopyLastFrame
-from vp_suite.models.model_phydnet import PhyDNet
-from vp_suite.models.model_st_lstm import STLSTM
-from vp_suite.models.model_st_phy import STPhy
-from vp_suite.models.model_unet3d import UNet3D
-from vp_suite.models.model_lstm import LSTM
-from vp_suite.models.model_simple import SimpleV1, SimpleV2
+from vp_suite.models.convlstm import ConvLSTM
+from vp_suite.models.copy_last_frame import CopyLastFrame
+from vp_suite.models.phydnet import PhyDNet
+from vp_suite.models.st_lstm import STLSTM
+from vp_suite.models.st_phy import STPhy
+from vp_suite.models.unet3d import UNet3D
+from vp_suite.models.lstm import LSTM
+from vp_suite.models.simple import SimpleV1, SimpleV2
 
 pred_models = {
     "unet": UNet3D,
@@ -26,20 +26,20 @@ pred_models = {
 
 AVAILABLE_MODELS = pred_models.keys()
 
-def create_pred_model(cfg):
-    model_class = pred_models.get(cfg.model_type, pred_models["copy"])
-    ac_str = "(action-conditional)" if cfg.use_actions and model_class.can_handle_actions else ""
-    print(f"Creating prediction model '{model_class.model_desc()}' {ac_str}")
-    pred_model = model_class(cfg).to(cfg.device)
+def create_pred_model(trainer_config, model_type, **model_args):
+    model_class = pred_models.get(model_type, pred_models["copy"])
+    ac_str = "(action-conditional)" if trainer_config["use_actions"] and model_class.can_handle_actions else ""
+    print(f"INFO: Creating prediction model '{model_class.model_desc()}' {ac_str}")
+    pred_model = model_class(trainer_config, **model_args).to(trainer_config["device"])
     if not pred_model.trainable:
-        cfg.no_train = True
+        trainer_config["no_train"] = True
 
     total_params = sum(p.numel() for p in pred_model.parameters())
     trainable_params = sum(p.numel() for p in pred_model.parameters() if p.requires_grad)
     print(f"Model parameters (total / trainable): {total_params} / {trainable_params}")
-    return pred_model.to(cfg.device)
+    return pred_model.to(trainer_config["device"])
 
-def test_all_models(cfg):
+def test_all_models(cfg):  # TODO replace by tests in tests/...
     import time
     from itertools import product
 

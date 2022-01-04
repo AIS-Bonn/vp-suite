@@ -1,4 +1,4 @@
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 
 
 class CopyLastFrame(VideoPredictionModel):
@@ -9,8 +9,8 @@ class CopyLastFrame(VideoPredictionModel):
     def model_desc(cls):
         return "CopyLastFrame"
 
-    def __init__(self, cfg=None):
-        super(CopyLastFrame, self).__init__(cfg)
+    def __init__(self, trainer_cfg=None, **model_args):
+        super(CopyLastFrame, self).__init__(trainer_cfg)
 
     def forward(self, x, **kwargs):
         return x[:, -1, :, :, :], None

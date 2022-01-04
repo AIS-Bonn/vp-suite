@@ -33,6 +33,7 @@ class BaseVPDataset(Dataset):
             f"Dataset '{self.NAME}' supports videos with up to {self.MAX_SEQ_LEN} frames, " \
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}"
+        self.frame_offsets = range(0, (context_frames + pred_frames) * seq_step, seq_step)
 
     def check_split(self, split):
         assert split in self.VALID_SPLITS,\

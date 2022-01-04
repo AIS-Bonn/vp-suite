@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from vp_suite.measure.image_wise import MSE
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.models._base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
@@ -30,8 +30,8 @@ class STPhy(VideoPredictionModel):
     def model_desc(cls):
         return "ST-Phy"
 
-    def __init__(self, cfg):
-        super(STPhy, self).__init__(cfg)
+    def __init__(self, trainer_cfg, **model_args):
+        super(STPhy, self).__init__(trainer_cfg)
 
         self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
         self.dim_phy_hidden = [self.phy_cell_channels] * self.num_layers
