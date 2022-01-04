@@ -12,28 +12,117 @@ Furthermore, while many contributors nowadays do share their code, seemingly min
 
 This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.
 
-### Installation
+### Installation (required: Python >= 3.8)
 
-The code has been tested with Python 3.8, CUDA 11.3 and PyTorch 1.10. We'll use the conda package manager 
-
+From PyPi: 
 ```
-git clone git@github.com:Flunzmas/vp-suite.git
-cd vp-suite
-conda env create -f environment.yml
-conda activate vp-suite
+pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ vp-suite
+```
+
+From source:
+```
+pip install git+https://github.com/Flunzmas/vp-suite.git
 ```
 
 ### Usage
 
-#### Basic Usage
+#### Training models
 
-All scripts are run using `argparse`,
-so feel free to check the descriptions for all available parameters of the provided entry points using the `-h` option. 
+1. Set up the trainer:
+```python
+from vp_suite.training import Trainer
+vp_trainer = Trainer()
+```
 
-- Train a VP model:  `python scripts/train.py --dataset <dataset_ID> --data-dir <path/to/dataset/folder>`
-- Test one or more (pre-)trained VP models on some dataset: `python scripts/test.py --model-dirs <path/to/model1/folder> <...> --dataset <dataset_ID> --data-dir <path/to/dataset/folder>`
+2. Load one of the provided datasets (or create your own TODO link):
+```python
+# check available datasets
+from vp_suite.dataset.factory import dataset_classes
+print(dataset_classes.keys())
+# should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
-#### Creating new VP models/Integrating existing external models 
+# load moving MNIST dataset from default location (TODO see docs for customization options)
+vp_trainer.load_dataset("MM")
+```
+
+3. Create video prediction model (either from scratch or from a pretrained checkpoint, can be one of the provided models or your own):
+```python
+model_checkpoint = ""  # set to valid model path to load a checkpoint
+if model_checkpoint != "":
+    vp_trainer.load_model(model_checkpoint)
+else:   
+    # check available model types
+    from vp_suite.models.factory import pred_models
+    print({k: v.desc for k, v in pred_models.items()})
+    # should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...}
+    vp_trainer.create_model('lstm')
+```
+
+4. Run the training loop, optionally providing custom configuration
+```python
+vp_trainer.train(lr=2e-4, epochs=100)
+```
+
+This will train the model, log training progress to the console (and optionally to [Weights & Biases](https://wandb.ai)),
+save model checkpoints on improvement and, optionally, generate and save prediction visualizations.
+
+#### Evaluating models
+
+1. Set up the tester:
+```python
+from vp_suite.testing import Tester
+vp_tester = Tester()
+```
+
+2. Load one of the provided datasets (or create your own TODO link):
+```python
+# check available datasets
+from vp_suite.dataset.factory import dataset_classes
+print(dataset_classes.keys())
+# should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
+
+# load moving MNIST dataset from default location (TODO see docs for customization options)
+vp_tester.load_dataset("MM")
+```
+
+3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/Flunzmas/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded):
+```python
+# get the filepaths to the models you'd like to test
+model_paths = ["out/foo/best_model.pth", "out/bar/best_model.pth"]
+vp_tester.load_models(model_paths)
+```
+
+4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
+```python
+vp_tester.test(context_frames=5, pred_frames=10)
+```
+
+This code will evaluate the loaded models on the loaded dataset (its test portion, if avaliable), creating detailed summaries of prediction performance across a customizable set of metrics.
+Optionally, the results as well as prediction visualizations can be saved and logged to [Weights & Biases](https://wandb.ai).
+
+_Note: if the specified evaluation protocol or the loaded dataset is incompatible with one of the models, this will raise an error with an explanation._ 
+
+#### Hyperparameter Optimization
+
+This package uses [optuna](https://github.com/optuna/optuna) to provide hyperparameter optimization functionalities.
+Instead of calling `vp_trainer.train()`, do the following:
+```python
+optuna_cfg : dict = vp_trainer.get_default_optuna_config()
+# optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
+vp_trainer.hyperopt(optuna_cfg, trials=30)
+```
+This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to a file.
+
+_Note 1: For hyperopt, visualization, logging and model checkpointing is minimized to reduce IO strain._
+
+_Note 2: Despite optuna's trial pruning capabilities, running a high number of trials might still take a lot of time.
+In that case, consider e.g. reducing the number of training epochs._
+
+### Customization
+
+While this package comes with a few pre-defined models/datasets/metrics etc. for your convenience, it was designed with quick extensibility in mind. See the sections below for how to add new models, datasets or metrics.
+
+#### Creating new VP models or integrating existing external models 
 
 1. Create a file `model_<your name>.py` in the folder `vp_suite/models`.
 2. Create a class that derives from `vp_suite.models.base_model.VideoPredictionModel` and override the things you need.
@@ -41,7 +130,7 @@ so feel free to check the descriptions for all available parameters of the provi
 4. Write tests for your model (`test/test_models.py`) and register it in the `pred_models` dict of `vp_suite/models/factory.py`.
 5. Check training performance on different datasets, fix things and contribute to the project 😊
 
-#### Training on new datasets
+#### Training on new/custom datasets
 
 1. Create a file `dataset_<your name>.py` in the folder `vp_suite/dataset`.
 2. Create a class that derives from `vp_suite.dataset.base_dataset.BaseVPDataset` and override the things you need.
@@ -59,11 +148,14 @@ so feel free to check the descriptions for all available parameters of the provi
 
 ### Contributing
 
-This project is always open to extension! If you're adding models, datasets or measures, just be sure to subclass the according base classes and write tests so that the code can be used by others.
+This project is always open to extension! It grows especially powerful with more models and datasets, so if you've made your code work on custom models/datasets/metrics/etc., feel free to submit a merge request!
 
-Other kinds of contributions are also welcome.
+Other kinds of contributions are also very welcome - just check the open issues on the
+[tracker](https://github.com/Flunzmas/vp-suite/issues) or open up a new issue there.
 
 ### Citing
+
+If you use this package/repository for your academic work, please consider citing it as follows:
 
 ```
 @misc{vp_suite,
