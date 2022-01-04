@@ -58,9 +58,9 @@ setup(
     setup_requires=[],
     install_requires=_load_requirements(str(here)),
     project_urls={
-        "Bug Tracker": "https://github.com/Flunzmas/vp-suite/issues",
-        "Documentation": "NONE",
-        "Source Code": "https://github.com/Flunzmas/vp-suite",
+        #"Documentation": about.__docs_url__,
+        "Source": about.__source_url__,
+        "Tracker": about.__tracker_url__,
     },
     classifiers=[
         "Environment :: Console",
