@@ -20,7 +20,7 @@ from vp_suite.utils.utils import timestamp, check_model_compatibility
 
 class Trainer:
 
-    DEFAULT_TRAINER_CONFIG = 'vp_suite/config.json'
+    DEFAULT_TRAINER_CONFIG = 'resources/run_config.json'
 
     def __init__(self):
         with open(self.DEFAULT_TRAINER_CONFIG, 'r') as tc_file:

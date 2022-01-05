@@ -20,7 +20,7 @@ from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 
 class Tester:
 
-    DEFAULT_TESTER_CONFIG = 'vp_suite/config.json'
+    DEFAULT_TESTER_CONFIG = 'resources/run_config.json'
 
     def __init__(self):
         with open(self.DEFAULT_TESTER_CONFIG, 'r') as tc_file:

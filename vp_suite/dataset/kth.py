@@ -71,5 +71,5 @@ class KTHActionsDataset(BaseVPDataset):
 
     def download_and_prepare_dataset(self):
         from subprocess import check_call
-        check_call(['examples/download_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
-        check_call(['examples/convert_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
+        check_call(['resources/download_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
+        check_call(['resources/convert_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
