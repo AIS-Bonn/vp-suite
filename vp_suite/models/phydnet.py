@@ -75,7 +75,7 @@ class PhyDNet(VideoPredictionModel):
             # fwd
             img_data = data["frames"].to(self.device)  # [b, T, c, h, w], with T = total_frames
             input_tensor = img_data[:, :config["context_frames"]]
-            target_tensor = img_data[:, config["context_frames"]:config["total_frames"]]
+            target_tensor = img_data[:, config["context_frames"]:config["context_frames"] + config["pred_frames"]]
 
             actions = data["actions"].to(self.device)
             empty_actions = torch.zeros(img_data.shape[0], img_data.shape[1], device=self.device)

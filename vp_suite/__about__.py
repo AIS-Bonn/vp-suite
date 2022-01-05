@@ -11,7 +11,6 @@ __homepage__ = "https://github.com/Flunzmas/vp-suite"
 #__docs_url__ = "NONE"
 __source_url__ = "https://github.com/Flunzmas/vp-suite"
 __tracker_url__ = "https://github.com/Flunzmas/vp-suite/issues"
-# this has to be simple string, see: https://github.com/pypa/twine/issues/522
 __docs__ = ( "A Framework for Training and Evaluating Video Prediction Models" )
 
 __all__ = ["__name__", "__author__", "__author_email__", "__copyright__", "__docs__",

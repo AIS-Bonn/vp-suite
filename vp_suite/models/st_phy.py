@@ -179,7 +179,7 @@ class STPhy(VideoPredictionModel):
             # fwd
             img_data = data["frames"].to(self.device) # [b, T, c, h, w], with T = total_frames
             input_frames = img_data[:, :config["context_frames"]]
-            target_frames = img_data[:, config["context_frames"]:config["total_frames"]]
+            target_frames = img_data[:, config["context_frames"]:config["context_frames"] + config["pred_frames"]]
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \

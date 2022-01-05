@@ -18,14 +18,13 @@ from vp_suite.measure.loss_provider import PredictionLossProvider, LOSSES
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.utils import timestamp, check_model_compatibility
 
-class Trainer():
+class Trainer:
 
-    DEFAULT_TRAINER_CONFIG = 'vp_suite/trainer_config.json'
+    DEFAULT_TRAINER_CONFIG = 'vp_suite/config.json'
 
     def __init__(self):
         with open(self.DEFAULT_TRAINER_CONFIG, 'r') as tc_file:
             self.config = json.load(tc_file)
-        self.config["total_frames"] = self.config["context_frames"] + self.config["pred_frames"]
         self.config["opt_direction"] = "maximize" if LOSSES[self.config["val_rec_criterion"]].bigger_is_better \
             else "minimize"
         self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,7 +87,7 @@ class Trainer():
 
         assert self.datasets_loaded, "No datasets loaded. Load a dataset before starting training"
         assert self.model_ready, "No model available. Load a pretrained model or create a new instance before starting training"
-        updated_config = deepcopy(self.config)
+        updated_config = deepcopy(self.config)  # TODO limit which args can be specified
         updated_config.update(training_kwargs)
 
         # prepare datasets for training
@@ -142,6 +141,7 @@ class Trainer():
         out_path = Path(f"out/{timestamp('train')}")
         out_path.mkdir(parents=True)
         best_model_path = str((out_path / 'best_model.pth').resolve())
+        with_training = self.pred_model.trainable and not self.config["no_train"]
 
         if self.config["opt_direction"] == "maximize":
             def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
@@ -168,7 +168,7 @@ class Trainer():
 
         # OPTIMIZER
         optimizer, optimizer_scheduler = None, None
-        if not self.config["no_train"]:
+        if with_training:
             optimizer = torch.optim.Adam(params=self.pred_model.parameters(), lr=self.config["lr"])
             optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
                                                                              min_lr=1e-6, verbose=True)
@@ -189,7 +189,7 @@ class Trainer():
 
             # train
             print(f'\nTraining (epoch: {epoch+1} of {self.config["epochs"]})')
-            if self.pred_model.trainable and not self.config["no_train"]:
+            if with_training:
                 # use prediction model's own training loop if available
                 if callable(getattr(self.pred_model, "train_iter", None)):
                     self.pred_model.train_iter(self.config, train_loader, optimizer, loss_provider, epoch)
@@ -201,7 +201,7 @@ class Trainer():
             # eval
             print("Validating...")
             val_losses, indicator_loss = self.eval_iter(val_loader, loss_provider)
-            if not self.config["no_train"]:
+            if with_training:
                 optimizer_scheduler.step(indicator_loss)
             print("Validation losses (mean over entire validation set):")
             for k, v in val_losses.items():
@@ -245,7 +245,8 @@ class Trainer():
             # input
             img_data = data["frames"].to(self.config["device"])  # [b, T, c, h, w], with T = total_frames
             input = img_data[:, :self.config["context_frames"]]
-            targets = img_data[:, self.config["context_frames"] : self.config["total_frames"]]
+            targets = img_data[:, self.config["context_frames"]
+                                  : self.config["context_frames"] + self.config["pred_frames"]]
             actions = data["actions"].to(self.config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
 
             # fwd
@@ -280,7 +281,8 @@ class Trainer():
                 # fwd
                 img_data = data["frames"].to(self.config["device"])  # [b, T, h, w], with T = total_frames
                 input = img_data[:, :self.config["context_frames"]]
-                targets = img_data[:, self.config["context_frames"]: self.config["total_frames"]]
+                targets = img_data[:, self.config["context_frames"]
+                                      : self.config["context_frames"] + self.config["pred_frames"]]
                 actions = data["actions"].to(self.config["device"])
 
                 predictions, model_losses = self.pred_model.pred_n(input, pred_length=self.config["pred_frames"],

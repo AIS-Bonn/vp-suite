@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 import torch
 
-from vp_suite.testing import test
+from vp_suite.tester import test
 from vp_suite.dataset._factory import AVAILABLE_DATASETS
 from vp_suite.measure.metric_provider import AVAILABLE_METRICS
 from vp_suite.utils.utils import timestamp

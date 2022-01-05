@@ -29,8 +29,10 @@ pip install git+https://github.com/Flunzmas/vp-suite.git
 #### Training models
 
 1. Set up the trainer:
+
 ```python
-from vp_suite.training import Trainer
+from vp_suite.trainer import Trainer
+
 vp_trainer = Trainer()
 ```
 
@@ -73,8 +75,10 @@ save model checkpoints on improvement and, optionally, generate and save predict
 #### Evaluating models
 
 1. Set up the tester:
+
 ```python
-from vp_suite.testing import Tester
+from vp_suite.tester import Tester
+
 vp_tester = Tester()
 ```
 
