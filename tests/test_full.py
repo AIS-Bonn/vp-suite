@@ -1,7 +1,9 @@
 import sys
 sys.path.append(".")
+import pytest
 from vp_suite.training import Trainer
 
+@pytest.mark.slow
 def test_full_sanity():
     vp_trainer = Trainer()
     data_dir = "/home/data/datasets/video_prediction/kth_actions"

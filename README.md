@@ -161,9 +161,9 @@ Other kinds of contributions are also very welcome - just check the open issues 
 
 When submitting a merge request, please make sure all tests run through (execute from root folder):
 ```
-python -m pytest
+python -m pytest --runslow
 ```
-_Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest)._
+_Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest). Omit the `runslow` argument to speed up testing by removing training/testing tests._
 
 ### Citing
 
