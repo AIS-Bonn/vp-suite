@@ -16,11 +16,11 @@ LOSSES = {
 AVAILABLE_LOSSES = LOSSES.keys()
 
 class PredictionLossProvider():
-    def __init__(self, cfg):
+    def __init__(self, config):
 
-        self.device = cfg.device
-        loss_scales = cfg.losses_and_scales
-        if "fvd" in loss_scales.keys() and cfg.img_c not in [2, 3]:
+        self.device = config["device"]
+        loss_scales = config["losses_and_scales"]
+        if "fvd" in loss_scales.keys() and config["img_c"] not in [2, 3]:
             print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
             loss_scales.pop("fvd")
         self.losses = {k: (LOSSES[k](device=self.device), scale) for k, scale in loss_scales.items()}

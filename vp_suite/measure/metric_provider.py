@@ -14,11 +14,12 @@ METRICS = {
 AVAILABLE_METRICS = METRICS.keys()
 
 class PredictionMetricProvider():
-    def __init__(self, cfg):
+    def __init__(self, config):
 
-        self.device = cfg.device
-        self.available_metrics = METRICS if cfg.metrics == "all" else {k: METRICS[k] for k in cfg.metrics}
-        if cfg.img_c not in [2, 3]:
+        self.device = config["device"]
+        self.available_metrics = METRICS if config["metrics"] == "all" \
+            else {k: METRICS[k] for k in config["metrics"]}
+        if config["img_c"] not in [2, 3]:
             print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
             self.available_metrics.pop("fvd")
         self.metrics = {k: metric(device=self.device) for k, metric in self.available_metrics.items()}

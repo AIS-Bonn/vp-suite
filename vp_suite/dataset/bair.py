@@ -22,10 +22,10 @@ class BAIRPushingDataset(BaseVPDataset):
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
-    def __init__(self, cfg, split):
-        super(BAIRPushingDataset, self).__init__(cfg, split)
+    def __init__(self, split, **dataset_kwargs):
+        super(BAIRPushingDataset, self).__init__(split, **dataset_kwargs)
 
-        self.data_dir = str(Path(cfg.data_dir) / "softmotion30_44k" / split)
+        self.data_dir = str(Path(self.data_dir) / "softmotion30_44k" / split)
         self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
         self.actions_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("actions.npy")]
 

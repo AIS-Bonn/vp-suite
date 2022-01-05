@@ -21,11 +21,10 @@ class KTHActionsDataset(BaseVPDataset):
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
 
-    def __init__(self, cfg, split):
-        super(KTHActionsDataset, self).__init__(cfg, split)
+    def __init__(self, split, **dataset_kwargs):
+        super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
 
-        self.split = split
-        self.data_dir = str(Path(cfg.data_dir) / "processed")
+        self.data_dir = str(Path(self.data_dir) / "processed")
         torchfile_name = f'{self.split}_meta{self.DEFAULT_FRAME_SHAPE[0]}x{self.DEFAULT_FRAME_SHAPE[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
 

@@ -70,7 +70,7 @@ def check_model_compatibility(model_config, run_config, model, strict_mode=False
 
     # value range
     model_value_range = list(model_config["tensor_value_range"])
-    test_value_range = list(run_config.tensor_value_range)
+    test_value_range = list(run_config["tensor_value_range"])
     if model_value_range != test_value_range:
         if strict_mode:
             raise ValueError(f"ERROR: model and run value ranges differ")
@@ -79,20 +79,20 @@ def check_model_compatibility(model_config, run_config, model, strict_mode=False
 
     # action conditioning
     if model.can_handle_actions:
-        if model_config["use_actions"] != run_config.use_actions:
+        if model_config["use_actions"] != run_config["use_actions"]:
             raise ValueError(f"ERROR: Action-conditioned model '{model.desc}' (loaded from {model_config['out_dir']}) "
                              f"can't be invoked without using actions -> set 'use_actions' to True in test cfg!")
-        assert model_config["action_size"] == run_config.action_size,\
+        assert model_config["action_size"] == run_config["action_size"],\
             f"ERROR: Action-conditioned model '{model.desc}' (loaded from {model_config['out_dir']}) " \
             f"was trained with action size {model_config['action_size']}, " \
-            f"which is different from the test action size ({run_config.action_size})"
-    elif run_config.use_actions:
+            f"which is different from the test action size ({run_config['action_size']})"
+    elif run_config["use_actions"]:
         print(f"WARNING: Model '{model.desc}' (loaded from {model_config['out_dir']}) can't handle actions"
               f" -> Testing it without using the actions provided by the dataset")
 
     # img_shape
     model_c, model_h, model_w = model_config["img_shape"]
-    test_c, test_h, test_w = run_config.img_shape
+    test_c, test_h, test_w = run_config["img_shape"]
     if model_c != test_c:
         raise ValueError(f"ERROR: Test dataset provides {test_c}-channel images but "
                          f"Model '{model.desc}' (loaded from {model_config['out_dir']}) expects {model_c} channels")
@@ -103,14 +103,14 @@ def check_model_compatibility(model_config, run_config, model, strict_mode=False
         model_postprocessing.append(TF.Resize((test_h, test_w)))
 
     # context frames and pred. horizon
-    if run_config.context_frames is None:
-        run_config.context_frames = model_config.context_frames
-    elif run_config.context_frames < model.min_context_frames:
+    if run_config["context_frames"] is None:
+        run_config["context_frames"] = model_config["context_frames"]
+    elif run_config["context_frames"] < model.min_context_frames:
         raise ValueError(f"ERROR: Model '{model.desc}' (loaded from {model_config['out_dir']}) needs at least "
                          f"{model.min_context_frames} context frames as it uses temporal convolution "
                          f"with said number as kernel size")
-    if run_config.pred_frames is None:
-        run_config.pred_frames = model_config.pred_frames
+    if run_config["pred_frames"] is None:
+        run_config["pred_frames"] = model_config["pred_frames"]
 
     # finalize pre-/postprocessing modules
     model_preprocessing = nn.Sequential(*model_preprocessing)

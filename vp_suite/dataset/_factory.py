@@ -23,15 +23,15 @@ def create_test_dataset(cfg):
     L_test = DataLoader(D_test, batch_size=1, shuffle=True, num_workers=0)
     return D_test, L_test
 
-def update_cfg_from_dataset(cfg, D):
+def update_cfg_from_dataset(config, D):
     D_ = D.dataset if type(D) == Subset else D
-    cfg.action_size = D_.ACTION_SIZE
-    if cfg.action_size < 1 and cfg.use_actions:
+    config["action_size"] = D_.ACTION_SIZE
+    if config["action_size"] < 1 and config["use_actions"]:
         print(f"INFO: dataset {D_.NAME} doesn't support actions -> action-conditioning is turned off.")
-        cfg.use_actions = False
-    cfg.img_h, cfg.img_w, cfg.img_c = D_.DEFAULT_FRAME_SHAPE
-    cfg.img_shape = cfg.img_c, cfg.img_h, cfg.img_w
-    return cfg
+        config["use_actions"] = False
+    config["img_h"], config["img_w"], config["img_c"] = D_.DEFAULT_FRAME_SHAPE
+    config["img_shape"] = config["img_c"], config["img_h"], config["img_w"]
+    return config
 
 DATASET_CLASSES = {
     "MM": MovingMNISTDataset,
