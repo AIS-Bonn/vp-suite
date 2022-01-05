@@ -109,7 +109,7 @@ class Trainer:
 
     def _set_optuna_cfg(self, optuna_cfg : dict):
         self.optuna_cfg = optuna_cfg if optuna_cfg else {}
-        for parameter, p_dict in self.optuna_cfg:
+        for parameter, p_dict in self.optuna_cfg.items():
             assert isinstance(p_dict, dict)
             if "choices" in p_dict.keys():
                 assert(isinstance(p_dict["choices"], list))
@@ -129,7 +129,9 @@ class Trainer:
         optuna_program = partial(self.train, **training_kwargs)
         study = optuna.create_study(direction=self.config["opt_direction"])
         study.optimize(optuna_program, n_trials=n_trials)
-        print(study.best_params)
+        print("\nHyperparameter optimization complete. Best performing parameters:")
+        for k, v in study.best_params.items():
+            print(f" - {k}: {v}")
 
     def train(self, trial=None, **training_kwargs):
 
@@ -153,14 +155,20 @@ class Trainer:
         using_optuna = trial is not None
         if using_optuna:
             assert self.optuna_cfg is not None, "optuna_cfg is None -> can't hyperopt"
-            for param, p_dict in self.optuna_cfg:
+            for param, p_dict in self.optuna_cfg.items():
                 if "choices" in p_dict.keys():
+                    if param == "model_type":
+                        print(f"WARNING: hyperopt across different model types is not yet supported "
+                              f"-> using {self.pred_model.desc}")
                     self.config[param] = trial.suggest_categorical(param, p_dict["choices"])
                 else:
-                    log_scale = p_dict.get("scale", "uniform") == "log"
-                    step = 1 if log_scale else p_dict.get("step", 1)
                     suggest = trial.suggest_int if p_dict["type"] == "int" else trial.suggest_float
-                    self.config[param] = suggest(param, p_dict["low"], p_dict["high"], step=step, log=log_scale)
+                    log_scale = p_dict.get("scale", "uniform") == "log"
+                    if log_scale:
+                        self.config[param] = suggest(param, p_dict["min"], p_dict["max"], log=log_scale)
+                    else:
+                        step = p_dict.get("step", 1)
+                        self.config[param] = suggest(param, p_dict["min"], p_dict["max"], step=step)
 
         # WandB
         if not self.config["no_wandb"]:
@@ -221,7 +229,7 @@ class Trainer:
                 vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
                 vis_out_path.mkdir()
                 visualize_vid(self.val_data, self.config["context_frames"], self.config["pred_frames"], self.pred_model,
-                              self.config["device"], self.config["img_processor"], vis_out_path, num_vis=10)
+                              self.config["device"], self.img_processor, vis_out_path, num_vis=10)
 
                 if not self.config["no_wandb"]:
                     vid_filenames = sorted(os.listdir(str(vis_out_path)))

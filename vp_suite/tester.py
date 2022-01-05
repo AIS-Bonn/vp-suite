@@ -124,8 +124,8 @@ class Tester:
             num_vis = 5
             vis_idx = np.random.choice(len(self.test_data), num_vis, replace=False)
             for i, (model_desc, (model, model_dir, model_cfg, _, _, _)) in enumerate(self.models_dict.items()):
-                if model_desc == CopyLastFrame.desc:
-                    continue  # don't print for copy baseline
+                if model_dir is None:
+                    continue  # don't print for models that don't have a run dir (i.e. baseline models)
                 vis_out_dir = Path(model_dir) / f"vis_{timestamp('test')}"
                 vis_out_dir.mkdir()
                 visualize_vid(self.test_data, self.config["context_frames"], self.config["pred_frames"], model, self.config["device"],

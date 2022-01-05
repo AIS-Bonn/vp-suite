@@ -11,6 +11,6 @@
     "max": 100
   },
   "model_type": {
-    "choices": ["unet", "lstm", "copy"]
+    "choices": ["non_conv", "lstm", "unet"]
   }
 }
