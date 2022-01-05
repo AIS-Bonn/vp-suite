@@ -159,6 +159,12 @@ This project is always open to extension! It grows especially powerful with more
 Other kinds of contributions are also very welcome - just check the open issues on the
 [tracker](https://github.com/Flunzmas/vp-suite/issues) or open up a new issue there.
 
+When submitting a merge request, please make sure all tests run through (execute from root folder):
+```
+python -m pytest
+```
+_Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest)._
+
 ### Citing
 
 If you use this package/repository for your academic work, please consider citing it as follows:

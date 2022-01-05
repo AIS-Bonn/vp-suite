@@ -21,8 +21,8 @@ class KTHActionsDataset(BaseVPDataset):
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
 
-    def __init__(self, split, **dataset_kwargs):
-        super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
+    def __init__(self, split, img_processor, **dataset_kwargs):
+        super(KTHActionsDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str(Path(self.data_dir) / "processed")
         torchfile_name = f'{self.split}_meta{self.DEFAULT_FRAME_SHAPE[0]}x{self.DEFAULT_FRAME_SHAPE[1]}.t7'
@@ -66,8 +66,6 @@ class KTHActionsDataset(BaseVPDataset):
         return data
 
     def __len__(self):
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
 # === KTH data preparation tools ===============================================

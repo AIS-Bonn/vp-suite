@@ -1,10 +1,4 @@
-import pytest
-import sys
-sys.path.append(".")
-
 from vp_suite.measure.image_wise import MSE, SSIM, SmoothL1, LPIPS, L1, PSNR
-from vp_suite.measure.fvd.fvd import FrechetVideoDistance as FVD
-
 import torch
 
 def setup_tensors_cpu():

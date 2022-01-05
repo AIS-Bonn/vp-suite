@@ -16,16 +16,14 @@ class MovingMNISTDataset(BaseVPDataset):
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
-    def __init__(self, split, **dataset_kwargs):
-        super(MovingMNISTDataset, self).__init__(split, **dataset_kwargs)
+    def __init__(self, split, img_processor, **dataset_kwargs):
+        super(MovingMNISTDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str(Path(self.data_dir) / split)
         self.data_ids = sorted(os.listdir(self.data_dir))
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
 
     def __len__(self):
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return len(self.data_fps)
 
     def __getitem__(self, i) -> VPData:

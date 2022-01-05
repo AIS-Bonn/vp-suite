@@ -8,7 +8,7 @@ import wandb
 
 import numpy as np
 import torch.nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
@@ -20,24 +20,26 @@ from vp_suite.utils.utils import timestamp, check_model_compatibility
 
 class Trainer():
 
-    def __init__(self):
-        with open('trainer_config.json', 'r') as tc_file:
-            self.config = json.load(tc_file)
-            self.config["total_frames"] = self.config["context_frames"] + self.config["pred_frames"]
-            self.config["opt_direction"] = "maximize" if LOSSES[self.config["val_rec_criterion"]].bigger_is_better \
-                else "minimize"
-            self.config["img_processor"] = ImgProcessor(self.config["tensor_value_range"])
-            self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            random.seed(self.config["seed"])
-            np.random.seed(self.config["seed"])
-            torch.manual_seed(self.config["seed"])
+    DEFAULT_TRAINER_CONFIG = 'vp_suite/trainer_config.json'
 
-            self.datasets_loaded = False
-            self.model_ready = False
+    def __init__(self):
+        with open(self.DEFAULT_TRAINER_CONFIG, 'r') as tc_file:
+            self.config = json.load(tc_file)
+        self.config["total_frames"] = self.config["context_frames"] + self.config["pred_frames"]
+        self.config["opt_direction"] = "maximize" if LOSSES[self.config["val_rec_criterion"]].bigger_is_better \
+            else "minimize"
+        self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.img_processor = ImgProcessor(self.config["tensor_value_range"])
+        random.seed(self.config["seed"])
+        np.random.seed(self.config["seed"])
+        torch.manual_seed(self.config["seed"])
+
+        self.datasets_loaded = False
+        self.model_ready = False
 
     def load_dataset(self, dataset="MM", **dataset_kwargs):
         dataset_class = DATASET_CLASSES[dataset]
-        self.train_data, self.val_data = dataset_class.get_train_val(**dataset_kwargs)
+        self.train_data, self.val_data = dataset_class.get_train_val(self.img_processor, **dataset_kwargs)
         self.config = update_cfg_from_dataset(self.config, self.train_data)
         self.datasets_loaded = True
 
@@ -64,11 +66,18 @@ class Trainer():
 
         assert self.datasets_loaded, "No datasets loaded. Load a dataset before starting training"
         assert self.model_ready, "No model available. Load a pretrained model or create a new instance before starting training"
-        updated_config = deepcopy(self.config).update(training_kwargs)
+        updated_config = deepcopy(self.config)
+        updated_config.update(training_kwargs)
 
         # prepare datasets for training
-        self.train_data.set_seq_len(self.config["context_frames"], self.config["pred_frames"], self.config["seq_step"])
-        self.val_data.set_seq_len(self.config["context_frames"], self.config["pred_frames"], self.config["seq_step"])
+        if isinstance(self.train_data, Subset):
+            self.train_data.dataset.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
+                                    updated_config["seq_step"])
+        else:
+            self.train_data.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
+                                        updated_config["seq_step"])
+            self.val_data.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
+                                      updated_config["seq_step"])
 
         # check model compatibility
         loaded_model_config = getattr(self, "loaded_model_config", None)
@@ -103,14 +112,15 @@ class Trainer():
 
     def train(self, trial=None, **training_kwargs):
 
-        # PREPARATION pt. 1
+        # PREPARATION
         self._prepare_training(**training_kwargs)
         train_loader = DataLoader(self.train_data, batch_size=self.config["batch_size"], shuffle=True, num_workers=4,
                                   drop_last=True)
         val_loader = DataLoader(self.val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
         best_val_loss = float("inf")
-        out_dir = f"out/{timestamp('train')}"
-        best_model_path = str((Path(out_dir) / 'best_model.pth').resolve())
+        out_path = Path(f"out/{timestamp('train')}")
+        out_path.mkdir(parents=True)
+        best_model_path = str((out_path / 'best_model.pth').resolve())
 
         if self.config["opt_direction"] == "maximize":
             def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
@@ -148,11 +158,12 @@ class Trainer():
             raise ValueError(f"ERROR: Validation criterion '{self.config['val_rec_criterion']}' has to be "
                              f"one of the chosen losses: {list(self.config['losses_and_scales'].keys())}")
 
-        # PREPARATION pt.2
-        with open(str((Path(out_dir) / 'run_cfg.json').resolve()), "w") as cfg_file:
-            json.dump(vars(self.config), cfg_file, default=lambda o: '<not serializable>', indent=4)
+        # save run config
+        with open(str((out_path / 'run_cfg.json').resolve()), "w") as cfg_file:
+            json.dump(self.config, cfg_file, indent=4,
+                      default=lambda o: str(o) if callable(getattr(o, "__str__", None)) else '<not serializable>')
 
-        # MAIN LOOP
+        # --- MAIN LOOP ---
         for epoch in range(0, self.config["epochs"]):
 
             # train
@@ -185,7 +196,7 @@ class Trainer():
             # visualize current model performance every nth epoch, using eval mode and validation data.
             if (epoch+1) % self.config["vis_every"] == 0 and not self.config["no_vis"]:
                 print("Saving visualizations...")
-                vis_out_path = Path(out_dir) / f"vis_ep_{epoch+1:03d}"
+                vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
                 vis_out_path.mkdir()
                 visualize_vid(self.val_data, self.config["context_frames"], self.config["pred_frames"], self.pred_model,
                               self.config["device"], self.config["img_processor"], vis_out_path, num_vis=10)
@@ -202,7 +213,7 @@ class Trainer():
 
         # finishing
         print("\nTraining done, cleaning up...")
-        torch.save(self.pred_model, str((Path(out_dir) / 'final_model.pth').resolve()))
+        torch.save(self.pred_model, str((out_path / 'final_model.pth').resolve()))
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
 

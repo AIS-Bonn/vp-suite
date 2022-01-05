@@ -22,8 +22,8 @@ class BAIRPushingDataset(BaseVPDataset):
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
-    def __init__(self, split, **dataset_kwargs):
-        super(BAIRPushingDataset, self).__init__(split, **dataset_kwargs)
+    def __init__(self, split, img_processor, **dataset_kwargs):
+        super(BAIRPushingDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str(Path(self.data_dir) / "softmotion30_44k" / split)
         self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
@@ -38,8 +38,6 @@ class BAIRPushingDataset(BaseVPDataset):
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
     def __len__(self):
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return len(self.obs_fps)
 
     def __getitem__(self, i) -> VPData:

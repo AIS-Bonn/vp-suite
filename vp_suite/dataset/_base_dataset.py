@@ -17,42 +17,38 @@ class BaseVPDataset(Dataset):
     VALID_SPLITS = ["train", "test"]
     TRAIN_KEEP_RATIO = 0.8
 
-    def __init__(self, split, **dataset_kwargs):
+    def __init__(self, split, img_processor, **dataset_kwargs):
 
         super(BaseVPDataset, self).__init__()
         assert split in self.VALID_SPLITS, \
             f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}"
         self.split = split
-        self.seq_step = dataset_kwargs.get("step", 1)
+        self.seq_step = dataset_kwargs.get("seq_step", 1)
         self.data_dir = dataset_kwargs.get("data_dir", None)
         if self.data_dir is None:
             if self.default_available(self.split, **dataset_kwargs):
                 self.data_dir = self.DEFAULT_DATA_DIR
             else:
                 self.download_and_prepare_dataset()
-        #self.img_processor = cfg.img_processor  # TODO don't give to dataset
+        self.img_processor = img_processor
         self.ready_for_usage = False  # becomes True once sequence length has been set
 
-    def set_seq_len(self, context_frames, pred_frames, step=None):
+    def set_seq_len(self, context_frames : int, pred_frames : int, seq_step : int):
         """
         Set the sequence length for the upcoming run. Asserts that the given parameters
         lead to a sequence length that does not exceed the possible range.
         """
         total_frames = context_frames + pred_frames
         self.total_frames = total_frames
-        if step is not None:
-            self.seq_step = step
+        if seq_step is not None:
+            self.seq_step = seq_step
         self.seq_len = (self.total_frames - 1) * self.seq_step + 1
         assert self.MAX_SEQ_LEN >= self.seq_len, \
             f"Dataset '{self.NAME}' supports videos with up to {self.MAX_SEQ_LEN} frames, " \
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
         self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
-        self.adjust_dataset_to_seq_len()
         self.ready_for_usage = True
-
-    def adjust_dataset_to_seq_len(self):
-        pass
 
     def __len__(self) -> int:
         raise NotImplementedError
@@ -87,26 +83,26 @@ class BaseVPDataset(Dataset):
         raise NotImplementedError
 
     @classmethod
-    def get_train_val(cls, **dataset_args):
+    def get_train_val(cls, img_processor, **dataset_args):
         if cls.VALID_SPLITS == ["train", "test"]:
-            D_main = cls("train", **dataset_args)
+            D_main = cls("train", img_processor, **dataset_args)
             len_train = int(len(D_main) * cls.TRAIN_KEEP_RATIO)
             len_val = len(D_main) - len_train
             D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
         elif cls.VALID_SPLITS == ["train", "val", "test"]:
-            D_train = cls("train", **dataset_args)
-            D_val = cls("val", **dataset_args)
+            D_train = cls("train", img_processor, **dataset_args)
+            D_val = cls("val", img_processor, **dataset_args)
         else:
             raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
         return D_train, D_val
 
     @classmethod
-    def get_test(cls, **dataset_args):
-        D_test = cls("test", **dataset_args)
+    def get_test(cls, img_processor, **dataset_args):
+        D_test = cls("test", img_processor, **dataset_args)
         return D_test
 
     @classmethod
-    def get_train_val_test(cls, **dataset_args):
-        D_train, D_val = cls.get_train_val(**dataset_args)
-        D_test = cls.get_test(**dataset_args)
+    def get_train_val_test(cls, img_processor, **dataset_args):
+        D_train, D_val = cls.get_train_val(img_processor, **dataset_args)
+        D_test = cls.get_test(img_processor, **dataset_args)
         return D_train, D_val, D_test
