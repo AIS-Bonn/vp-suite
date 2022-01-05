@@ -45,6 +45,9 @@ class KTHActionsDataset(BaseVPDataset):
 
     def __getitem__(self, i) -> VPData:
 
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))
         frames = np.zeros((self.seq_len, *self.DEFAULT_FRAME_SHAPE))
@@ -63,6 +66,8 @@ class KTHActionsDataset(BaseVPDataset):
         return data
 
     def __len__(self):
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
 # === KTH data preparation tools ===============================================

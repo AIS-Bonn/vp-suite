@@ -24,9 +24,14 @@ class MovingMNISTDataset(BaseVPDataset):
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
 
     def __len__(self):
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return len(self.data_fps)
 
     def __getitem__(self, i) -> VPData:
+
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
 
         rgb_raw = np.load(self.data_fps[i])  # [t', h, w]
         rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t', h, w, c]

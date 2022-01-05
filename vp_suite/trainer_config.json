@@ -18,5 +18,6 @@
     },
     "val_rec_criterion": "mse",
     "context_frames": 10,
-    "pred_frames": 10
+    "pred_frames": 10,
+    "seq_step": 1
 }

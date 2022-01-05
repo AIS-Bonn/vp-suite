@@ -31,18 +31,28 @@ class BaseVPDataset(Dataset):
             else:
                 self.download_and_prepare_dataset()
         #self.img_processor = cfg.img_processor  # TODO don't give to dataset
+        self.ready_for_usage = False  # becomes True once sequence length has been set
 
-    def set_seq_len(self, seq_step, context_frames, pred_frames, step=None):
+    def set_seq_len(self, context_frames, pred_frames, step=None):
+        """
+        Set the sequence length for the upcoming run. Asserts that the given parameters
+        lead to a sequence length that does not exceed the possible range.
+        """
         total_frames = context_frames + pred_frames
         self.total_frames = total_frames
         if step is not None:
-            self.seq_step = seq_step
+            self.seq_step = step
         self.seq_len = (self.total_frames - 1) * self.seq_step + 1
         assert self.MAX_SEQ_LEN >= self.seq_len, \
             f"Dataset '{self.NAME}' supports videos with up to {self.MAX_SEQ_LEN} frames, " \
             f"which is exceeded by your configuration: " \
-            f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}"
-        self.frame_offsets = range(0, (context_frames + pred_frames) * seq_step, seq_step)
+            f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
+        self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
+        self.adjust_dataset_to_seq_len()
+        self.ready_for_usage = True
+
+    def adjust_dataset_to_seq_len(self):
+        pass
 
     def __len__(self) -> int:
         raise NotImplementedError
@@ -63,8 +73,8 @@ class BaseVPDataset(Dataset):
             kwargs_ = deepcopy(dataset_kwargs)
             kwargs_.update({"data_dir": self.DEFAULT_DATA_DIR})
             default_ = self.__class__(split, **kwargs_)
-            item = default_[0]
-        except Exception as e:  # TODO better handling (FileNotFound, Value, ...)
+            _ = default_[0]
+        except Exception:  # TODO better handling (FileNotFound, Value, ...)
             return False
         return True
 
@@ -91,12 +101,12 @@ class BaseVPDataset(Dataset):
         return D_train, D_val
 
     @classmethod
-    def get_test(cls, cfg):
-        D_test = cls(cfg, "test")
+    def get_test(cls, **dataset_args):
+        D_test = cls("test", **dataset_args)
         return D_test
 
     @classmethod
-    def get_train_val_test(cls, cfg):
-        D_train, D_val = cls.get_train_val(cfg)
-        D_test = cls.get_test(cfg)
+    def get_train_val_test(cls, **dataset_args):
+        D_train, D_val = cls.get_train_val(**dataset_args)
+        D_test = cls.get_test(**dataset_args)
         return D_train, D_val, D_test

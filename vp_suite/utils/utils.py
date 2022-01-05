@@ -58,7 +58,6 @@ class ScaleToModel(nn.Module):
         return img
 
 
-
 def check_model_compatibility(model_config, run_config, model, strict_mode=False):
     '''
     Checks consistency of model configuration with given run configuration. Creates appropriate adapter modules

@@ -38,9 +38,14 @@ class BAIRPushingDataset(BaseVPDataset):
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
     def __len__(self):
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return len(self.obs_fps)
 
     def __getitem__(self, i) -> VPData:
+
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
 
         rgb = self.preprocess_img(np.load(self.obs_fps[i]))
         actions = torch.from_numpy(np.load(self.actions_fps[i])).float()

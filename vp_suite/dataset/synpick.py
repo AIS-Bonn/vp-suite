@@ -30,6 +30,8 @@ class SynpickVideoDataset(BaseVPDataset):
         self.data_dir = str(Path(self.data_dir) / split)
         images_dir = os.path.join(self.data_dir, 'rgb')
         scene_gt_dir = os.path.join(self.data_dir, 'scene_gt')
+        self.all_idx = []
+        self.valid_idx = []
 
         self.image_ids = sorted(os.listdir(images_dir))
         self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
@@ -43,9 +45,10 @@ class SynpickVideoDataset(BaseVPDataset):
             self.gripper_pos[ep] = gripper_pos
         self.total_len = len(self.image_ids)
 
-        # determine which dataset indices are valid for given sequence length T
-        self.all_idx = []
-        self.valid_idx = []
+    def adjust_dataset_to_seq_len(self):
+        """
+        Determine which dataset indices are valid for given sequence length T
+        """
         last_valid_idx = -1 * self.seq_len
         for idx in range(self.total_len - self.seq_len + 1):
 
@@ -83,6 +86,9 @@ class SynpickVideoDataset(BaseVPDataset):
 
     def __getitem__(self, i) -> VPData:
 
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+
         i = self.valid_idx[i]  # only consider valid indices
         idx = range(i, i + self.seq_len, self.seq_step)  # create range of indices for frame sequence
 
@@ -99,6 +105,8 @@ class SynpickVideoDataset(BaseVPDataset):
         return data
 
     def __len__(self):
+        assert self.ready_for_usage, \
+            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
         return len(self.valid_idx)
 
     def comp_gripper_pos(self, old, new):

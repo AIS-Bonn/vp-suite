@@ -35,9 +35,9 @@ class Trainer():
             self.datasets_loaded = False
             self.model_ready = False
 
-    def load_dataset(self, dataset="MM", **kwargs):
+    def load_dataset(self, dataset="MM", **dataset_kwargs):
         dataset_class = DATASET_CLASSES[dataset]
-        self.train_data, self.val_data = dataset_class.get_train_val(**kwargs)
+        self.train_data, self.val_data = dataset_class.get_train_val(**dataset_kwargs)
         self.config = update_cfg_from_dataset(self.config, self.train_data)
         self.datasets_loaded = True
 
@@ -57,14 +57,24 @@ class Trainer():
         self.model_ready = True
 
     def _prepare_training(self, **training_kwargs):
+        """
+        Updates the current config with the given training parameters,
+        prepares the dataset for usage and checks model compatibility.
+        """
 
         assert self.datasets_loaded, "No datasets loaded. Load a dataset before starting training"
         assert self.model_ready, "No model available. Load a pretrained model or create a new instance before starting training"
-
         updated_config = deepcopy(self.config).update(training_kwargs)
+
+        # prepare datasets for training
+        self.train_data.set_seq_len(self.config["context_frames"], self.config["pred_frames"], self.config["seq_step"])
+        self.val_data.set_seq_len(self.config["context_frames"], self.config["pred_frames"], self.config["seq_step"])
+
+        # check model compatibility
         loaded_model_config = getattr(self, "loaded_model_config", None)
         if loaded_model_config is not None:
             _, _, = check_model_compatibility(loaded_model_config, self.config, self.pred_model, strict_mode=True)
+
         self.config = updated_config
 
     def _set_optuna_cfg(self, optuna_cfg : dict):
@@ -79,23 +89,22 @@ class Trainer():
                 if p_dict["type"] == "float":
                     assert p_dict.get("scale", '') in ["log", "uniform"]
 
-    def hyperopt(self, optuna_cfg=None, n_trials=30, **kwargs):
+    def hyperopt(self, optuna_cfg=None, n_trials=30, **training_kwargs):
         self._set_optuna_cfg(optuna_cfg)
         from functools import partial
         try:
             import optuna
         except ImportError:
             raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
-        optuna_program = partial(self.train, **kwargs)
+        optuna_program = partial(self.train, **training_kwargs)
         study = optuna.create_study(direction=self.config["opt_direction"])
         study.optimize(optuna_program, n_trials=n_trials)
         print(study.best_params)
 
-    def train(self, trial=None, **kwargs):
+    def train(self, trial=None, **training_kwargs):
 
         # PREPARATION pt. 1
-        self._prepare_training(**kwargs)
-        assert self.datasets_loaded
+        self._prepare_training(**training_kwargs)
         train_loader = DataLoader(self.train_data, batch_size=self.config["batch_size"], shuffle=True, num_workers=4,
                                   drop_last=True)
         val_loader = DataLoader(self.val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
