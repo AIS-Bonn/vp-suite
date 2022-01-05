@@ -1,5 +1,6 @@
 import sys, os, random, json
 sys.path.append("")
+from copy import deepcopy
 
 from pathlib import Path
 from tqdm import tqdm
@@ -32,11 +33,11 @@ class Tester:
 
         self.dataset_loaded = False
         self.models_dict = {}
-        self.models_ready = False
+        self.models_loaded = False
 
     def load_dataset(self, dataset="MM", **dataset_kwargs):
         self.models_dict = {}
-        self.models_ready = False
+        self.models_loaded = False
         dataset_class = DATASET_CLASSES[dataset]
         self.test_data = dataset_class.get_test(self.img_processor, **dataset_kwargs)
         self.config = update_cfg_from_dataset(self.config, self.test_data)
@@ -45,26 +46,45 @@ class Tester:
         self.dataset_loaded = True
 
     def _prepare_testing(self, **testing_kwargs):
-        raise NotImplementedError
+        """
+        Updates the current config with the given training parameters,
+        prepares the dataset for usage and checks model compatibility.
+        """
+
+        assert self.dataset_loaded, "No datasets loaded. Load a dataset before starting testing"
+        assert self.models_loaded, "No models available. Load some trained models before starting testing"
+        updated_config = deepcopy(self.config)  # TODO limit which args can be specified
+        updated_config.update(testing_kwargs)
+
+        # prepare dataset for testing
+        self.test_data.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
+                                      updated_config["seq_step"])
+
+        # check model compatibility, receiving adapters if models can be made working with them
+        for model_desc, (model, model_dir, model_config, _, _, _) in self.models_dict.items():
+            if model_config != self.config:
+                preprocessing, postprocessing, = check_model_compatibility(model_config, updated_config, model,
+                                                                           model_dir=model_dir)
+                self.models_dict[model_desc] = (model, model_dir, model_config, preprocessing, postprocessing, [])
+
+        # all models OK -> finalize and add baseline copy model (doesn't need check)
+        self.config = updated_config
+        clf_baseline = CopyLastFrame().to(self.config["device"])
+        self.models_dict[clf_baseline.desc] = (clf_baseline, None, self.config, nn.Identity(), nn.Identity(), [])
+
 
     def load_models(self, model_dirs, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
         """
         overrides existing models
-        desc: (model, model_cfg, preprocessing, postprocessing, test_metrics (initialized empty))
+        desc: (model, model_dir, model_cfg, preprocessing, postprocessing, test_metrics (initialized empty))
         """
         self.models_dict = {}
         for model_dir in model_dirs:
             model = torch.load(os.path.join(model_dir, ckpt_name)).to(self.config["device"])
             with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
                 model_config = json.load(cfg_file)
-            # get adapters to make model work with test cfg
-            preprocessing, postprocessing = check_model_compatibility(self.config, model_config, model)
-            self.models_dict[model.desc] = (model, model_config, preprocessing, postprocessing, [])
-        self.models_ready = True
-
-        # add baseline copy model
-        clf_baseline = CopyLastFrame().to(self.config["device"])
-        self.models_dict[clf_baseline.desc] = (clf_baseline, vars(self.config), nn.Identity(), nn.Identity(), [])
+            self.models_dict[model.desc] = (model, model_dir, model_config, None, None, [])
+        self.models_loaded = True
 
     def test(self, **testing_kwargs):
 
@@ -86,9 +106,9 @@ class Tester:
                     img_data = data["frames"].to(self.config["device"])
                     input = img_data[:, :self.config["context_frames"]]
                     target = img_data[:, self.config["context_frames"]:self.config["context_frames"] + self.config["pred_frames"]]
-                    actions = data["actions"].to(self.config.device)
+                    actions = data["actions"].to(self.config["device"])
 
-                    for (model, _, preprocess, postprocess, model_metrics_per_dp) in self.models_dict.values():
+                    for (model, _, _, preprocess, postprocess, model_metrics_per_dp) in self.models_dict.values():
                         input = preprocess(input)  # test format to model format
                         if getattr(model, "use_actions", False):
                             pred, _ = model.pred_n(input, pred_length=self.config["pred_frames"], actions=actions)
@@ -103,10 +123,10 @@ class Tester:
             print(f"Saving visualizations for trained models...")
             num_vis = 5
             vis_idx = np.random.choice(len(self.test_data), num_vis, replace=False)
-            for i, (model_desc, (model, model_cfg, _, _, _)) in enumerate(self.models_dict.items()):
+            for i, (model_desc, (model, model_dir, model_cfg, _, _, _)) in enumerate(self.models_dict.items()):
                 if model_desc == CopyLastFrame.desc:
                     continue  # don't print for copy baseline
-                vis_out_dir = Path(model_cfg['out_dir']) / f"vis_{timestamp('test')}"
+                vis_out_dir = Path(model_dir) / f"vis_{timestamp('test')}"
                 vis_out_dir.mkdir()
                 visualize_vid(self.test_data, self.config["context_frames"], self.config["pred_frames"], model, self.config["device"],
                               self.img_processor, vis_out_dir, vis_idx=vis_idx)
@@ -115,7 +135,7 @@ class Tester:
         if eval_length > 0:
             wandb_full_suffix = "" if mini_test else "(full test)"
             models_dict_items = self.models_dict.items()
-            for i, (model_desc, (_, model_cfg, _, _, model_metrics_per_dp)) in enumerate(models_dict_items):
+            for i, (model_desc, (_, model_dir, model_cfg, _, _, model_metrics_per_dp)) in enumerate(models_dict_items):
 
                 # model_metrics_per_dp: list of N lists of F metric dicts (called D).
                 # each D_{n, f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
@@ -133,7 +153,7 @@ class Tester:
                 # Log model to WandB
                 if not self.config["no_wandb"]:
                     print("Logging test results to WandB for all models...")
-                    wandb.init(config={"mini_test": mini_test, "model_dir": model_cfg['out_dir']},
+                    wandb.init(config={"mini_test": mini_test, "model_dir": model_dir},
                                project="vp-suite-testing", name=f"{model_desc}{wandb_full_suffix}", reinit=(i > 0))
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         wandb.log({"pred_frames": f+1, **mean_metric_dict})
@@ -143,7 +163,7 @@ class Tester:
                 # Per-model/per-pred.-horizon console log of the metrics
                 else:
                     print("Printing out test results to terminal...")
-                    print(f"\n{model_desc} (path: {model_cfg['out_dir']}): ")
+                    print(f"\n{model_desc} (path: {model_dir}): ")
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         print(f"pred_frames: {f + 1}")
                         for (k, v) in mean_metric_dict.items():

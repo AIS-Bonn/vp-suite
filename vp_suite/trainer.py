@@ -60,7 +60,8 @@ class Trainer:
         loaded_model = torch.load(model_ckpt)
         with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
             model_config = json.load(cfg_file)
-        _, _, = check_model_compatibility(model_config, self.config, loaded_model, strict_mode=True)
+        _, _, = check_model_compatibility(model_config, self.config, loaded_model,
+                                          strict_mode=True, model_dir=model_dir)
         self.pred_model = loaded_model
         self.model_config = model_config
         print(f"INFO: loaded pre-trained model '{self.pred_model.desc}' from {model_ckpt}")
@@ -101,8 +102,8 @@ class Trainer:
                                       updated_config["seq_step"])
 
         # check model compatibility
-        if self.model_config != self.config:
-            _, _, = check_model_compatibility(self.model_config, self.config, self.pred_model, strict_mode=True)
+        if self.model_config != updated_config:
+            _, _, = check_model_compatibility(self.model_config, updated_config, self.pred_model, strict_mode=True)
 
         self.config = updated_config
 

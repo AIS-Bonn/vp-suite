@@ -33,6 +33,8 @@ class PredictionMetricProvider():
 
         if pred.shape != target.shape:
             raise ValueError("Output images and target images are of different shape!")
+        pred = pred.contiguous()
+        target = target.contiguous()
         frames = frames or pred.shape[1]
 
         metrics = []

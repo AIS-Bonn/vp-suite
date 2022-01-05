@@ -20,6 +20,7 @@ class BAIRPushingDataset(BaseVPDataset):
     NAME = "BAIR robot pushing"
     ACTION_SIZE = 4
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    DEFAULT_DATA_DIR = "data/bair_robot_pushing/"
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):

@@ -18,6 +18,7 @@ class KTHActionsDataset(BaseVPDataset):
     NAME = "KTH Actions"
     ACTION_SIZE = 0
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    DEFAULT_DATA_DIR = "data/kth_actions/"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
 
@@ -68,4 +69,7 @@ class KTHActionsDataset(BaseVPDataset):
     def __len__(self):
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
-# === KTH data preparation tools ===============================================
+    def download_and_prepare_dataset(self):
+        from subprocess import check_call
+        check_call(['examples/download_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
+        check_call(['examples/convert_kth.sh', self.DEFAULT_DATA_DIR], shell=True)

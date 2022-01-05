@@ -37,7 +37,7 @@ def test_tester_on_BAIR():
     vp_tester.load_dataset("BAIR", data_dir=bair_data_dir)
     all_model_dirs = ["out/" + fp for fp in os.listdir("out") if fp.startswith("train")]
     vp_tester.load_models(all_model_dirs)
-    vp_tester.test(context_frames=5, pred_frames=5, no_wandb=True, no_vis=True,
+    vp_tester.test(context_frames=10, pred_frames=11, no_wandb=True, no_vis=True, mini=True,
                    metrics=["mse", "ssim", "psnr", "lpips"])
     assert True  # test successful if execution reaches this line
 

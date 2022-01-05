@@ -14,6 +14,7 @@ class MovingMNISTDataset(BaseVPDataset):
     NAME = "Moving MNIST"
     ACTION_SIZE = 0
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    DEFAULT_DATA_DIR = "data/moving_mnist/"
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
