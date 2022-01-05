@@ -2,7 +2,7 @@ import time
 
 _this_year = time.strftime("%Y")
 __name__ = "vp-suite"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __author__ = "Andreas Boltres"
 __author_email__ = "andreas.boltres@posteo.de"
 __license__ = "MIT"

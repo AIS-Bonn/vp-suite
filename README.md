@@ -98,8 +98,8 @@ vp_tester.load_dataset("MM")
 3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/Flunzmas/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded):
 ```python
 # get the filepaths to the models you'd like to test
-model_paths = ["out/foo/best_model.pth", "out/bar/best_model.pth"]
-vp_tester.load_models(model_paths)
+model_dirs = ["out/model_foo/", "out/model_bar/"]
+vp_tester.load_models(model_dirs)
 ```
 
 4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
@@ -115,13 +115,20 @@ _Note: if the specified evaluation protocol or the loaded dataset is incompatibl
 #### Hyperparameter Optimization
 
 This package uses [optuna](https://github.com/optuna/optuna) to provide hyperparameter optimization functionalities.
-Instead of calling `vp_trainer.train()`, do the following:
+The following snippet provides a full example:
 ```python
-optuna_cfg : dict = vp_trainer.get_default_optuna_config()
+import json
+from vp_suite.trainer import Trainer
+
+vp_trainer = Trainer()
+vp_trainer.load_dataset(dataset="KTH", data_dir="path/to/data/dir")  # select dataset of choice
+vp_trainer.create_model(model_type="lstm")  # select model of choice
+with open("resources/optuna_example_config.json", 'r') as cfg_file:
+    optuna_cfg = json.load(cfg_file)
 # optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
-vp_trainer.hyperopt(optuna_cfg, trials=30)
+vp_trainer.hyperopt(optuna_cfg, trials=30, epochs=10)
 ```
-This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to a file.
+This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to the console.
 
 _Note 1: For hyperopt, visualization, logging and model checkpointing is minimized to reduce IO strain._
 
@@ -167,7 +174,8 @@ When submitting a merge request, please make sure all tests run through (execute
 ```
 python -m pytest --runslow
 ```
-_Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest). Omit the `runslow` argument to speed up testing by removing training/testing tests._
+_Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
+Omit the `runslow` argument to speed up testing by removing the tests for the complete training/testing procedure._
 
 ### Citing
 

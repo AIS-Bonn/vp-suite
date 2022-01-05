@@ -70,6 +70,8 @@ class KTHActionsDataset(BaseVPDataset):
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
     def download_and_prepare_dataset(self):
+        raise NotImplementedError
+        # TODO implemented, but untested
         from subprocess import check_call
         check_call(['resources/download_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
         check_call(['resources/convert_kth.sh', self.DEFAULT_DATA_DIR], shell=True)
