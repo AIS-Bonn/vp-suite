@@ -28,13 +28,5 @@ AVAILABLE_MODELS = pred_models.keys()
 
 def create_pred_model(trainer_config, model_type, **model_args):
     model_class = pred_models.get(model_type, pred_models["copy"])
-    ac_str = "(action-conditional)" if trainer_config["use_actions"] and model_class.can_handle_actions else ""
-    print(f"INFO: Creating prediction model '{model_class.model_desc()}' {ac_str}")
     pred_model = model_class(trainer_config, **model_args).to(trainer_config["device"])
-    if not pred_model.trainable:
-        trainer_config["no_train"] = True
-
-    total_params = sum(p.numel() for p in pred_model.parameters())
-    trainable_params = sum(p.numel() for p in pred_model.parameters() if p.requires_grad)
-    print(f"Model parameters (total / trainable): {total_params} / {trainable_params}")
     return pred_model.to(trainer_config["device"])

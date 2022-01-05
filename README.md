@@ -38,9 +38,9 @@ vp_trainer = Trainer()
 
 ```python
 # check available datasets
-from vp_suite.dataset._factory import DATASET_CLASSES
+from vp_suite.dataset._factory import AVAILABLE_DATASETS
 
-print(DATASET_CLASSES.keys())
+print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (TODO see docs for customization options)
@@ -82,9 +82,9 @@ vp_tester = Tester()
 
 ```python
 # check available datasets
-from vp_suite.dataset._factory import DATASET_CLASSES
+from vp_suite.dataset._factory import AVAILABLE_DATASETS
 
-print(DATASET_CLASSES.keys())
+print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (TODO see docs for customization options)

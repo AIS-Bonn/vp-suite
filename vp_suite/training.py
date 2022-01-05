@@ -35,27 +35,49 @@ class Trainer():
         torch.manual_seed(self.config["seed"])
 
         self.datasets_loaded = False
+        self.pred_model = None
+        self.model_config = None
         self.model_ready = False
 
     def load_dataset(self, dataset="MM", **dataset_kwargs):
+        """
+        ATTENTION: this removes any loaded models
+        """
+        self.pred_model = None
+        self.model_config = None
+        self.model_ready = False
         dataset_class = DATASET_CLASSES[dataset]
         self.train_data, self.val_data = dataset_class.get_train_val(self.img_processor, **dataset_kwargs)
+        dataset = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
         self.config = update_cfg_from_dataset(self.config, self.train_data)
+        print(f"INFO: loaded dataset '{dataset.NAME}' from {dataset.data_dir} (action size: {dataset.ACTION_SIZE})")
         self.datasets_loaded = True
 
     def load_model(self, model_dir, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
+        """
+        overrides existing model
+        """
         model_ckpt = os.path.join(model_dir, ckpt_name)
         loaded_model = torch.load(model_ckpt)
         with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
             model_config = json.load(cfg_file)
         _, _, = check_model_compatibility(model_config, self.config, loaded_model, strict_mode=True)
         self.pred_model = loaded_model
-        self.loaded_model_config = model_config
+        self.model_config = model_config
         print(f"INFO: loaded pre-trained model '{self.pred_model.desc}' from {model_ckpt}")
         self.model_ready = True
 
     def create_model(self, model_type, **model_args):
+        """
+        overrides existing model
+        """
         self.pred_model = create_pred_model(self.config, model_type, **model_args)
+        self.model_config = self.config
+        ac_str = "(action-conditional)" if self.config["use_actions"] and self.pred_model.can_handle_actions else ""
+        print(f"INFO: created new model '{self.pred_model.desc}' {ac_str}")
+        total_params = sum(p.numel() for p in self.pred_model.parameters())
+        trainable_params = sum(p.numel() for p in self.pred_model.parameters() if p.requires_grad)
+        print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
         self.model_ready = True
 
     def _prepare_training(self, **training_kwargs):
@@ -80,9 +102,8 @@ class Trainer():
                                       updated_config["seq_step"])
 
         # check model compatibility
-        loaded_model_config = getattr(self, "loaded_model_config", None)
-        if loaded_model_config is not None:
-            _, _, = check_model_compatibility(loaded_model_config, self.config, self.pred_model, strict_mode=True)
+        if self.model_config != self.config:
+            _, _, = check_model_compatibility(self.model_config, self.config, self.pred_model, strict_mode=True)
 
         self.config = updated_config
 
@@ -168,7 +189,7 @@ class Trainer():
 
             # train
             print(f'\nTraining (epoch: {epoch+1} of {self.config["epochs"]})')
-            if not self.config["no_train"]:
+            if self.pred_model.trainable and not self.config["no_train"]:
                 # use prediction model's own training loop if available
                 if callable(getattr(self.pred_model, "train_iter", None)):
                     self.pred_model.train_iter(self.config, train_loader, optimizer, loss_provider, epoch)
