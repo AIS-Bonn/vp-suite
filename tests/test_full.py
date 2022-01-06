@@ -72,7 +72,7 @@ def test_dataset_defaults():
 @pytest.mark.slow
 def test_CUSTOM():
     vp_trainer = Trainer()
-    vp_trainer.load_dataset(dataset="MM")
+    vp_trainer.load_dataset(dataset="BAIR")
     vp_trainer.create_model(model_type="lstm")
     vp_trainer.train(epochs=11)
     assert True  # test successful if execution reaches this line

@@ -55,8 +55,35 @@ class BAIRPushingDataset(BaseVPDataset):
         data = { "frames": rgb, "actions": actions }
         return data
 
+    def download_and_prepare_dataset(self):
+
+        d_path = Path(self.DEFAULT_DATA_DIR)
+        d_path.mkdir(parents=True)
+        ds_path = d_path / "softmotion30_44k"
+        if not os.path.exists(str(ds_path)):
+            download_and_extract_bair(d_path)
+        exit(0)
+        split_bair_traj_files(ds_path / "train", True)
+        split_bair_traj_files(ds_path / "test", True)
+
+
 # === BAIR data preparation tools ==============================================
 
+def download_and_extract_bair(d_path):
+    if sys.version_info[0] == 2:
+        from urllib import urlretrieve
+    else:
+        from urllib.request import urlretrieve
+    tar_fname = "bair_robot_pushing_dataset_v0.tar"
+    dst_path = str(d_path / tar_fname)
+    print(f"Downloading {tar_fname}")
+    URL = f"http://rail.eecs.berkeley.edu/datasets/{tar_fname}"
+    urlretrieve(URL, dst_path)
+    import tarfile
+    tar = tarfile.open(dst_path)
+    tar.extractall(d_path)
+    tar.close()
+    os.remove(dst_path)
 
 def split_bair_traj_files(data_dir, delete_tfrecords):
     bair_ep_length = 30
@@ -92,10 +119,3 @@ def split_bair_traj_files(data_dir, delete_tfrecords):
         if delete_tfrecords:
             os.remove(tfr_fp)
             os.remove(index_fp)
-
-
-def prepare_bair(data_dir, delete_tfrecords):
-    train_dir = os.path.join(data_dir, "softmotion30_44k", "train")
-    test_dir = os.path.join(data_dir, "softmotion30_44k", "test")
-    split_bair_traj_files(train_dir, delete_tfrecords)
-    split_bair_traj_files(test_dir, delete_tfrecords)
