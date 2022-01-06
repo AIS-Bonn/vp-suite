@@ -62,11 +62,20 @@ def test_hyperopt():
     vp_trainer.hyperopt(optuna_cfg, n_trials=3, epochs=2, no_wandb=True)
     assert True  # test successful if execution reaches this line
 
+@pytest.mark.slow
 def test_dataset_defaults():
     vp_trainer = Trainer()
     for dataset in AVAILABLE_DATASETS:
         vp_trainer.load_dataset(dataset=dataset)
     assert True  # test successful if execution reaches this line
 
+@pytest.mark.slow
+def test_CUSTOM():
+    vp_trainer = Trainer()
+    vp_trainer.load_dataset(dataset="MM")
+    vp_trainer.create_model(model_type="lstm")
+    vp_trainer.train(epochs=11)
+    assert True  # test successful if execution reaches this line
+
 if __name__ == '__main__':
-    test_non_conv_on_kth()
+    test_CUSTOM()
