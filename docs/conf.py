@@ -13,17 +13,15 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-from setup import _load_py_module
-about = _load_py_module("__about__.py")
+import time
 
 # -- Project information -----------------------------------------------------
 
-project = about.__name__
-copyright = about.__copyright__
-author = about.__author__
-
-# The full version, including alpha/beta/rc tags
-release = about.__version__
+# General information about the project.  # TODO read from __about__.py file
+project = "vp-suite"
+copyright = f"2022-{time.strftime('%Y')}, Andreas Boltres"
+author = "Andreas Boltres"
+release = "0.0.3"
 
 # -- General configuration ---------------------------------------------------
 
