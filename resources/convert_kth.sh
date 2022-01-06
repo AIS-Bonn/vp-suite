@@ -1,3 +1,4 @@
+#!/bin/bash
 TARGET_DIR=$1
 classes="boxing handclapping handwaving jogging running walking"
 img_size=64

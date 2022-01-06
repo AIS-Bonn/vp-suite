@@ -26,9 +26,11 @@ class BaseVPDataset(Dataset):
         self.seq_step = dataset_kwargs.get("seq_step", 1)
         self.data_dir = dataset_kwargs.get("data_dir", None)
         if self.data_dir is None:
-            if self.default_available(self.split, **dataset_kwargs):
+            if self.default_available(self.split, img_processor, **dataset_kwargs):
                 self.data_dir = self.DEFAULT_DATA_DIR
             else:
+                print(f"INFO: downloading/preparing dataset '{self.NAME}' "
+                      f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
         self.img_processor = img_processor
         self.ready_for_usage = False  # becomes True once sequence length has been set
@@ -59,7 +61,7 @@ class BaseVPDataset(Dataset):
     def preprocess_img(self, img):
         return self.img_processor.preprocess_img(img)
 
-    def default_available(self, split, **dataset_kwargs):
+    def default_available(self, split, img_processor, **dataset_kwargs):
         """
         Tries to load a dataset and a datapoint using the default data_dir value.
         If this succeeds, then we can safely use the default data dir,
@@ -68,9 +70,10 @@ class BaseVPDataset(Dataset):
         try:
             kwargs_ = deepcopy(dataset_kwargs)
             kwargs_.update({"data_dir": self.DEFAULT_DATA_DIR})
-            default_ = self.__class__(split, **kwargs_)
+            default_ = self.__class__(split, img_processor, **kwargs_)
+            default_.set_seq_len(1, 1, 1)
             _ = default_[0]
-        except Exception:  # TODO better handling (FileNotFound, Value, ...)
+        except FileNotFoundError:  # TODO other exceptions?
             return False
         return True
 

@@ -6,13 +6,13 @@ import pytest
 from vp_suite.trainer import Trainer
 from vp_suite.tester import Tester
 from vp_suite.models._factory import AVAILABLE_MODELS
+from vp_suite.dataset._factory import AVAILABLE_DATASETS
 
 @pytest.mark.slow
 def test_non_conv_on_kth():
     vp_trainer = Trainer()
-    data_dir = "/home/data/datasets/video_prediction/kth_actions"
-    vp_trainer.load_dataset(dataset="KTH", data_dir=data_dir)
-    vp_trainer.create_model(model_type="non_conv")
+    vp_trainer.load_dataset(dataset="KTH")
+    vp_trainer.create_model(model_type="lstm")
     vp_trainer.train(epochs=1, vis_every=1)
     assert True  # test successful if execution reaches this line
 
@@ -62,5 +62,11 @@ def test_hyperopt():
     vp_trainer.hyperopt(optuna_cfg, n_trials=3, epochs=2, no_wandb=True)
     assert True  # test successful if execution reaches this line
 
+def test_dataset_defaults():
+    vp_trainer = Trainer()
+    for dataset in AVAILABLE_DATASETS:
+        vp_trainer.load_dataset(dataset=dataset)
+    assert True  # test successful if execution reaches this line
+
 if __name__ == '__main__':
-    test_hyperopt()
+    test_non_conv_on_kth()

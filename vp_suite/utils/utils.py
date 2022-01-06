@@ -1,6 +1,7 @@
 from typing import List
 from datetime import datetime
-import argparse
+import subprocess
+import shlex
 
 import torch
 import torchvision.transforms as TF
@@ -19,18 +20,16 @@ def timestamp(program):
     timestamp = str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
     return f"{program}_{timestamp}"
 
-class StoreDictKeyPair(argparse.Action):
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        self._nargs = nargs
-        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        my_dict = {}
-        for kv in values:
-            k, v = kv.split("=")
-            my_dict[k] = float(v)
-        setattr(namespace, self.dest, my_dict)
-
+def run_command(command):
+    process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, encoding='utf8')
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print(output.strip())
+    rc = process.poll()
+    return rc
 
 class ScaleToTest(nn.Module):
     def __init__(self, model_value_range, test_value_range):

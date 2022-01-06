@@ -41,6 +41,12 @@ class MovingMNISTDataset(BaseVPDataset):
         data = { "frames": rgb, "actions": actions }
         return data
 
+    def download_and_prepare_dataset(self):
+        from vp_suite.utils.utils import run_command
+        run_command(f"resources/download_kth.sh {self.DEFAULT_DATA_DIR}")
+        run_command(f"resources/convert_kth.sh {self.DEFAULT_DATA_DIR}")
+
+
 # === MMNIST data preparation tools ============================================
 
 
