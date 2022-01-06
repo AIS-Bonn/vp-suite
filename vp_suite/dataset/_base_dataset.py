@@ -26,12 +26,11 @@ class BaseVPDataset(Dataset):
         self.seq_step = dataset_kwargs.get("seq_step", 1)
         self.data_dir = dataset_kwargs.get("data_dir", None)
         if self.data_dir is None:
-            if self.default_available(self.split, img_processor, **dataset_kwargs):
-                self.data_dir = self.DEFAULT_DATA_DIR
-            else:
+            if not self.default_available(self.split, img_processor, **dataset_kwargs):
                 print(f"INFO: downloading/preparing dataset '{self.NAME}' "
                       f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
+            self.data_dir = self.DEFAULT_DATA_DIR
         self.img_processor = img_processor
         self.ready_for_usage = False  # becomes True once sequence length has been set
 
