@@ -53,7 +53,7 @@ class MovingMNISTDataset(BaseVPDataset):
         d_path.mkdir(parents=True)
 
         # training sequences
-        train_seqs = 600
+        train_seqs = 60000
         print("generating training set...")
         train_data = generate_moving_mnist(d_path, training=True, shape=frame_size, num_frames=num_frames,
                                            num_images=train_seqs, original_size=digit_size,
@@ -62,7 +62,7 @@ class MovingMNISTDataset(BaseVPDataset):
         save_generated_mmnist(train_data, train_seqs, frame_size, d_path / "train")
 
         # testing sequences
-        test_seqs = 100
+        test_seqs = 10000
         print("generating test set...")
         test_data = generate_moving_mnist(d_path, training=False, shape=frame_size, num_frames=num_frames,
                                           num_images=test_seqs, original_size=digit_size,
