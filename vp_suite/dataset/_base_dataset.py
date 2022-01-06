@@ -72,7 +72,7 @@ class BaseVPDataset(Dataset):
             default_ = self.__class__(split, img_processor, **kwargs_)
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
-        except FileNotFoundError:  # TODO other exceptions?
+        except (FileNotFoundError, ValueError):  # TODO other exceptions?
             return False
         return True
 
