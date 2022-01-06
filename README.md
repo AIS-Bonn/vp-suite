@@ -2,6 +2,8 @@
 
 _Video prediction ('VP') is the task of predicting future frames given some context frames._
 
+### [📚 ReadTheDocs](https://flunzmas-vp-suite.readthedocs.io/en/latest/)
+
 Like with most Computer Vision sub-domains, scientific contributions in this field exhibit a high variance in the following aspects:
 - **Training protocol** (dataset usage, when to backprop, value ranges etc.)
 - **Technical details of model implementation** (deep learning framework, package dependencies etc.) 
@@ -36,7 +38,7 @@ from vp_suite.trainer import Trainer
 vp_trainer = Trainer()
 ```
 
-2. Load one of the provided datasets (or create your own TODO link):
+2. Load one of the provided datasets (will be downloaded automatically) [create your own](#training-on-custom-datasets):
 
 ```python
 # check available datasets
@@ -45,7 +47,7 @@ from vp_suite.dataset._factory import AVAILABLE_DATASETS
 print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
-# load moving MNIST dataset from default location (TODO see docs for customization options)
+# load moving MNIST dataset from default location (see docs for customization options)
 vp_trainer.load_dataset("MM")
 ```
 
@@ -82,7 +84,7 @@ from vp_suite.tester import Tester
 vp_tester = Tester()
 ```
 
-2. Load one of the provided datasets (or create your own TODO link):
+2. Load one of the provided datasets or (will be downloaded automatically) [create your own](#training-on-custom-datasets):
 
 ```python
 # check available datasets
@@ -91,7 +93,7 @@ from vp_suite.dataset._factory import AVAILABLE_DATASETS
 print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
-# load moving MNIST dataset from default location (TODO see docs for customization options)
+# load moving MNIST dataset from default location (see docs for customization options)
 vp_tester.load_dataset("MM")
 ```
 
@@ -121,7 +123,7 @@ import json
 from vp_suite.trainer import Trainer
 
 vp_trainer = Trainer()
-vp_trainer.load_dataset(dataset="KTH", data_dir="path/to/data/dir")  # select dataset of choice
+vp_trainer.load_dataset(dataset="KTH")  # select dataset of choice
 vp_trainer.create_model(model_type="lstm")  # select model of choice
 with open("resources/optuna_example_config.json", 'r') as cfg_file:
     optuna_cfg = json.load(cfg_file)
@@ -147,7 +149,7 @@ While this package comes with a few pre-defined models/datasets/metrics etc. for
 4. Write tests for your model (`test/test_models.py`) and register it in the `pred_models` dict of `vp_suite/models/factory.py`.
 5. Check training performance on different datasets, fix things and contribute to the project 😊
 
-#### Training on new/custom datasets
+#### Training on custom datasets
 
 1. Create a file `dataset_<your name>.py` in the folder `vp_suite/dataset`.
 2. Create a class that derives from `vp_suite.dataset.base_dataset.BaseVPDataset` and override the things you need.
