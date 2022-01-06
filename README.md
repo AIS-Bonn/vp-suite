@@ -2,6 +2,8 @@
 
 _Video prediction ('VP') is the task of predicting future frames given some context frames._
 
+[![Documentation Status](https://readthedocs.org/projects/flunzmas-vp-suite/badge/?version=latest)](https://flunzmas-vp-suite.readthedocs.io/en/latest/?badge=latest)
+
 ### [📚 ReadTheDocs](https://flunzmas-vp-suite.readthedocs.io/en/latest/)
 
 Like with most Computer Vision sub-domains, scientific contributions in this field exhibit a high variance in the following aspects:
