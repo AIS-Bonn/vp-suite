@@ -1,9 +1,7 @@
-vp-suite
+vp_suite
 ========
 
 .. toctree::
    :maxdepth: 4
 
-   conftest
-   setup
    vp_suite
