@@ -2,6 +2,8 @@
 
 <span style="font-size:1.3em;font-weight:bold"><a href="https://flunzmas-vp-suite.readthedocs.io/en/latest/"> 📚 ➔ Documentation </a></span>
 
+[![Documentation Status](https://readthedocs.org/projects/flunzmas-vp-suite/badge/?version=latest)](https://flunzmas-vp-suite.readthedocs.io/en/latest/?badge=latest)
+
 ### Introduction
 
 _Video prediction ('VP') is the task of predicting future frames given some context frames._
