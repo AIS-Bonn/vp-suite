@@ -11,8 +11,17 @@ from vp_suite.measure.fvd.pytorch_i3d import InceptionI3d
 from vp_suite.measure._base_measure import BaseMeasure
 
 class FrechetVideoDistance(BaseMeasure):
+    """INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
+
+    :param a: b, defaults to c
+    :type [ParamName]: [ParamType](, optional)
+    ...
+    :raises [ErrorType]: [ErrorDescription]
+    ...
+    :return: [ReturnDescription]
+    :rtype: [ReturnType]
+    """
     '''
-    INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
     '''
 
     min_T = 9

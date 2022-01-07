@@ -1,8 +1,10 @@
-# vp-suite: All things Video Prediction.
+<span style="font-size:1.8em;font-weight:bold"> vp-suite: All things Video Prediction.</span>
+
+<span style="font-size:1.3em;font-weight:bold"><a href="https://flunzmas-vp-suite.readthedocs.io/en/latest/"> 📚 ➔ Documentation </a></span>
+
+### Introduction
 
 _Video prediction ('VP') is the task of predicting future frames given some context frames._
-
-### [📚 ReadTheDocs](https://flunzmas-vp-suite.readthedocs.io/en/latest/)
 
 Like with most Computer Vision sub-domains, scientific contributions in this field exhibit a high variance in the following aspects:
 - **Training protocol** (dataset usage, when to backprop, value ranges etc.)
