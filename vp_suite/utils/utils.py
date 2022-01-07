@@ -21,13 +21,13 @@ def timestamp(program):
     timestamp = str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
     return f"{program}_{timestamp}"
 
-def run_command(command):
+def run_command(command, print_to_console=True):
     process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, encoding='utf8')
     while True:
         output = process.stdout.readline()
         if output == '' and process.poll() is not None:
             break
-        if output:
+        if output and print_to_console:
             print(output.strip())
     rc = process.poll()
     return rc

@@ -1,6 +1,3 @@
-import sys
-sys.path.append("")
-
 from torch.utils.data import Subset
 
 from vp_suite.dataset.mmnist import MovingMNISTDataset

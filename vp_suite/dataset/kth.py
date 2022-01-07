@@ -5,7 +5,9 @@ import torch
 import imageio
 import torchfile
 from pathlib import Path
+
 from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+import vp_suite.constants as constants
 
 class KTHActionsDataset(BaseVPDataset):
 
@@ -18,14 +20,14 @@ class KTHActionsDataset(BaseVPDataset):
     NAME = "KTH Actions"
     ACTION_SIZE = 0
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
-    DEFAULT_DATA_DIR = "data/kth_actions"
+    DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(KTHActionsDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
-        self.data_dir = str(Path(self.data_dir) / "processed")
+        self.data_dir = str((Path(self.data_dir) / "processed").resolve())
         torchfile_name = f'{self.split}_meta{self.DEFAULT_FRAME_SHAPE[0]}x{self.DEFAULT_FRAME_SHAPE[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
 
@@ -71,5 +73,6 @@ class KTHActionsDataset(BaseVPDataset):
 
     def download_and_prepare_dataset(self):
         from vp_suite.utils.utils import run_command
-        run_command(f"resources/download_kth.sh {self.DEFAULT_DATA_DIR}")
-        run_command(f"resources/convert_kth.sh {self.DEFAULT_DATA_DIR}")
+        import vp_suite.constants as constants
+        run_command(f"{(constants.PKG_RESOURCES / 'download_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}", print_to_console=False)
+        run_command(f"{(constants.PKG_RESOURCES / 'convert_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}", print_to_console=False)

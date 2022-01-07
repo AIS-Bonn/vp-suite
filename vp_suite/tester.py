@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+import vp_suite.constants as constants
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
 from vp_suite.utils.utils import timestamp, check_model_compatibility
@@ -20,7 +21,7 @@ from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 
 class Tester:
 
-    DEFAULT_TESTER_CONFIG = 'resources/run_config.json'
+    DEFAULT_TESTER_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
     def __init__(self):
         with open(self.DEFAULT_TESTER_CONFIG, 'r') as tc_file:

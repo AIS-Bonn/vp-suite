@@ -119,6 +119,7 @@ _Note: if the specified evaluation protocol or the loaded dataset is incompatibl
 
 This package uses [optuna](https://github.com/optuna/optuna) to provide hyperparameter optimization functionalities.
 The following snippet provides a full example:
+
 ```python
 import json
 from vp_suite.trainer import Trainer
@@ -126,7 +127,7 @@ from vp_suite.trainer import Trainer
 vp_trainer = Trainer()
 vp_trainer.load_dataset(dataset="KTH")  # select dataset of choice
 vp_trainer.create_model(model_type="lstm")  # select model of choice
-with open("resources/optuna_example_config.json", 'r') as cfg_file:
+with open("vp_suite/resources/optuna_example_config.json", 'r') as cfg_file:
     optuna_cfg = json.load(cfg_file)
 # optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
 vp_trainer.hyperopt(optuna_cfg, trials=30, epochs=10)

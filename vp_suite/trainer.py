@@ -11,6 +11,7 @@ import torch.nn
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
+import vp_suite.constants as constants
 from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 from vp_suite.models._factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
@@ -20,7 +21,7 @@ from vp_suite.utils.utils import timestamp, check_model_compatibility
 
 class Trainer:
 
-    DEFAULT_TRAINER_CONFIG = 'resources/run_config.json'
+    DEFAULT_TRAINER_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
     def __init__(self):
         with open(self.DEFAULT_TRAINER_CONFIG, 'r') as tc_file:
@@ -141,7 +142,7 @@ class Trainer:
                                   drop_last=True)
         val_loader = DataLoader(self.val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
         best_val_loss = float("inf")
-        out_path = Path(f"out/{timestamp('train')}")
+        out_path = constants.OUT_PATH / timestamp('train')
         out_path.mkdir(parents=True)
         best_model_path = str((out_path / 'best_model.pth').resolve())
         with_training = self.pred_model.trainable and not self.config["no_train"]

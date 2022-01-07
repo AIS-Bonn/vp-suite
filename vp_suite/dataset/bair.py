@@ -1,18 +1,14 @@
 import sys, os
-sys.path.append("")
-
 from pathlib import Path
 
 import numpy as np
-
 import torch
-
+from tqdm import tqdm
 from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
-from tqdm import tqdm
 from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
-
+import vp_suite.constants as constants
 
 class BAIRPushingDataset(BaseVPDataset):
 
@@ -20,13 +16,13 @@ class BAIRPushingDataset(BaseVPDataset):
     NAME = "BAIR robot pushing"
     ACTION_SIZE = 4
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
-    DEFAULT_DATA_DIR = "data/bair_robot_pushing/"
+    DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(BAIRPushingDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
-        self.data_dir = str(Path(self.data_dir) / "softmotion30_44k" / split)
+        self.data_dir = str((Path(self.data_dir) / "softmotion30_44k" / split).resolve())
         self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
         self.actions_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("actions.npy")]
 
@@ -57,7 +53,7 @@ class BAIRPushingDataset(BaseVPDataset):
 
     def download_and_prepare_dataset(self):
 
-        d_path = Path(self.DEFAULT_DATA_DIR)
+        d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         ds_path = d_path / "softmotion30_44k"
         if not os.path.exists(str(ds_path)):
@@ -92,8 +88,7 @@ def download_and_extract_bair(d_path):
 def split_bair_traj_files(data_dir, delete_tfrecords):
     bair_ep_length = 30
 
-    data_dir = Path(data_dir)
-    data_files = [fn for fn in sorted(os.listdir(data_dir)) if str(fn).endswith(".tfrecords")]
+    data_files = [fn for fn in sorted(os.listdir(str(data_dir.resolve()))) if str(fn).endswith(".tfrecords")]
     ep_number = 0
     for df in tqdm(data_files):
         tfr_fp = str((data_dir / df).resolve())
@@ -112,14 +107,15 @@ def split_bair_traj_files(data_dir, delete_tfrecords):
                 actions.append(action)
 
             observations = np.concatenate(observations, axis=0)
-            out_obs_fp = Path(data_dir) / f"seq_{ep_number:05d}_obs.npy"
+            out_obs_fp = data_dir / f"seq_{ep_number:05d}_obs.npy"
             np.save(out_obs_fp, observations)
 
             actions = np.concatenate(actions, axis=0)
-            out_actions_fp = Path(data_dir) / f"seq_{ep_number:05d}_actions.npy"
+            out_actions_fp = data_dir / f"seq_{ep_number:05d}_actions.npy"
             np.save(out_actions_fp, actions)
 
             ep_number += 1
+
         if delete_tfrecords:
             os.remove(tfr_fp)
             os.remove(index_fp)

@@ -49,6 +49,7 @@ setup(
     download_url="https://github.com/Flunzmas/vp-suite",
     license=about.__license__,
     packages=find_packages(exclude=["tests*"]),
+    package_data={'vp_suite': ['resources/*']},
     include_package_data=True,
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -58,7 +59,7 @@ setup(
     setup_requires=[],
     install_requires=_load_requirements(str(here)),
     project_urls={
-        #"Documentation": about.__docs_url__,
+        "Documentation": about.__docs_url__,
         "Source": about.__source_url__,
         "Tracker": about.__tracker_url__,
     },

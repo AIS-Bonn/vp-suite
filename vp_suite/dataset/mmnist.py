@@ -9,6 +9,7 @@ from tqdm import tqdm
 from PIL import Image
 
 from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+import vp_suite.constants as constants
 
 class MovingMNISTDataset(BaseVPDataset):
 
@@ -16,13 +17,13 @@ class MovingMNISTDataset(BaseVPDataset):
     NAME = "Moving MNIST"
     ACTION_SIZE = 0
     DEFAULT_FRAME_SHAPE = (64, 64, 3)
-    DEFAULT_DATA_DIR = "data/moving_mnist"
+    DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
     TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(MovingMNISTDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
-        self.data_dir = str(Path(self.data_dir) / split)
+        self.data_dir = str((Path(self.data_dir) / split).resolve())
         self.data_ids = sorted(os.listdir(self.data_dir))
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
 
@@ -49,7 +50,7 @@ class MovingMNISTDataset(BaseVPDataset):
         num_frames = 20  # length of each sequence
         digit_size = 28  # size of mnist digit within frame
         digits_per_image = 2  # number of digits in each frame
-        d_path = Path(self.DEFAULT_DATA_DIR)
+        d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True)
 
         # training sequences

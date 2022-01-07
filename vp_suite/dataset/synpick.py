@@ -27,7 +27,7 @@ class SynpickVideoDataset(BaseVPDataset):
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(SynpickVideoDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
-        self.data_dir = str(Path(self.data_dir) / split)
+        self.data_dir = str((Path(self.data_dir) / split).resolve())
         images_dir = os.path.join(self.data_dir, 'rgb')
         scene_gt_dir = os.path.join(self.data_dir, 'scene_gt')
         self.all_idx = []
@@ -120,6 +120,9 @@ class SynpickVideoDataset(BaseVPDataset):
 
     def frame_num_from_id(self, file_id: str):
         return int(file_id[-10:-4])
+
+    def download_and_prepare_dataset(self):
+        raise NotImplementedError("TODO")
 
 # === SynPick data preparation tools ===========================================
 
