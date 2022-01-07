@@ -29,6 +29,9 @@ pip install git+https://github.com/Flunzmas/vp-suite.git
 
 ### Usage
 
+When using this package, a folder `vp-suite` is created in your current working directory/current path 
+that will contain all downloaded data as well as run logs, outputs and trained models.
+
 #### Training models
 
 1. Set up the trainer:
