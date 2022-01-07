@@ -2,11 +2,13 @@ imageio==2.13.4
 matplotlib==3.5.1
 moviepy==1.0.3
 numpy==1.21.5
+opencv_python==4.5.4.60
 optuna==2.10.0
-Pillow==8.4.0
+Pillow==9.0.0
 piqa==1.1.7
+pytest==6.2.5
 scipy==1.7.3
-setuptools==52.0.0.post20210125
+setuptools==60.3.1
 tfrecord==1.14.1
 torch==1.10.1
 torchfile==0.1.0
