@@ -17,13 +17,16 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'vp-suite'
-copyright = '2022, Andreas Boltres'
-author = 'Andreas Boltres'
+def get_project_info():
+    # sys.path.append(os.path.abspath('../../'))
+    from vp_suite.__about__ import __version__ as release,\
+        __name__ as project, \
+        __author__ as author, \
+        __copyright_short__ as copyright
+    # sys.path.pop(-1)
+    return project, copyright, author, release
 
-# The full version, including alpha/beta/rc tags
-release = '0.0.4'
-
+project, copyright, author, release = get_project_info()
 
 # -- General configuration ---------------------------------------------------
 
