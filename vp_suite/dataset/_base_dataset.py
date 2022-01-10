@@ -49,7 +49,14 @@ class BaseVPDataset(Dataset):
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
         self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
+        self.set_seq_len_()
         self.ready_for_usage = True
+
+    def set_seq_len_(self):
+        """
+        Optional logic for datasets with specific logic
+        """
+        pass
 
     def __len__(self) -> int:
         raise NotImplementedError

@@ -14,6 +14,8 @@ from tqdm import tqdm
 
 from vp_suite.utils.utils import most
 from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+import vp_suite.constants as constants
+
 
 class SynpickVideoDataset(BaseVPDataset):
 
@@ -22,16 +24,18 @@ class SynpickVideoDataset(BaseVPDataset):
     ACTION_SIZE = 3
     DEFAULT_FRAME_SHAPE = (135, 240, 3)
     SKIP_FIRST_N = 72
+    DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
+    TRAIN_KEEP_RATIO = 0.9
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(SynpickVideoDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
-        self.data_dir = str((Path(self.data_dir) / split).resolve())
+        self.data_dir = str((Path(self.data_dir) / "processed" / split).resolve())
         images_dir = os.path.join(self.data_dir, 'rgb')
         scene_gt_dir = os.path.join(self.data_dir, 'scene_gt')
         self.all_idx = []
-        self.valid_idx = []
+        self.valid_idx = []  # mock value, must not be used for iteration till sequence length is set
 
         self.image_ids = sorted(os.listdir(images_dir))
         self.image_fps = [os.path.join(images_dir, image_id) for image_id in self.image_ids]
@@ -45,7 +49,8 @@ class SynpickVideoDataset(BaseVPDataset):
             self.gripper_pos[ep] = gripper_pos
         self.total_len = len(self.image_ids)
 
-        # Determine which dataset indices are valid for given sequence length T  # TODO this needs frame/step information in advance
+    def set_seq_len_(self):
+        # Determine which dataset indices are valid for given sequence length T
         last_valid_idx = -1 * self.seq_len
         for idx in range(self.total_len - self.seq_len + 1):
 
@@ -122,22 +127,34 @@ class SynpickVideoDataset(BaseVPDataset):
         return int(file_id[-10:-4])
 
     def download_and_prepare_dataset(self):
-        raise NotImplementedError("TODO")
+
+        self.DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        d_path_processed = self.DEFAULT_DATA_DIR / "processed"
+        d_path_raw = self.DEFAULT_DATA_DIR / "raw"
+        seed = 42
+        resize_ratio = 0.125  # yields imgs of size [135, 240]
+
+        if not os.path.exists(str(d_path_raw)):
+            print("downloading SynPick (might take a while)...")
+            d_path_raw.mkdir(parents=True)
+            download_synpick(d_path_raw)
+
+        if not os.path.exists(str(d_path_processed)):
+            print("preparing trajectory files...")
+            d_path_processed.mkdir(parents=True)
+            prepare_synpick(d_path_raw, d_path_processed, seed, resize_ratio, self.TRAIN_KEEP_RATIO)
 
 # === SynPick data preparation tools ===========================================
 
+def download_synpick(d_path_raw):
+    raise NotImplementedError("ERROR: SynPick dataset is not yet downloadable! "
+                              "Please context the paper authors to resolve this issue.")
 
-TRAIN_VAL_SPLIT = (7/8)  # train:val  7:1
-
-def prepare_synpick(cfg):
-
-    path = Path(cfg.in_path)
-    seed = cfg.seed
+def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
 
     random.seed(seed)
-
-    train_path = path / "train"
-    test_path = path / "test"
+    train_path = in_path / "train"
+    test_path = in_path / "test"
 
     # get all training image FPs for rgb
     rgbs = sorted(train_path.glob("*/rgb/*.jpg"))
@@ -147,7 +164,7 @@ def prepare_synpick(cfg):
     num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
     train_eps = [i for i in range(num_ep)]
     random.shuffle(train_eps)
-    cut = int(num_ep * TRAIN_VAL_SPLIT)
+    cut = int(num_ep * train_keep_ratio)
     train_eps = train_eps[:cut]
 
     # split rgb files into train and val by episode number only , as we need contiguous motions for video
@@ -174,12 +191,9 @@ def prepare_synpick(cfg):
 
     all_img_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
     all_scene_gts = [train_scene_gts, val_scene_gts, test_scene_gts]
-    out_path = Path("data").absolute() / f"vid_{path.stem}_{cfg.timestamp}"
-    out_path.mkdir(parents=True)
 
-    copy_synpick_imgs(all_img_fps, out_path, cfg.resize_ratio)
+    copy_synpick_imgs(all_img_fps, out_path, resize_ratio)
     copy_synpick_scene_gts(all_scene_gts, out_path)
-
 
 def copy_synpick_imgs(all_fps, out_path, resize_ratio):
 
@@ -201,7 +215,6 @@ def copy_synpick_imgs(all_fps, out_path, resize_ratio):
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
 
-
 def copy_synpick_scene_gts(all_fps, out_path):
 
     # prepare and execute file copying
@@ -218,13 +231,3 @@ def copy_synpick_scene_gts(all_fps, out_path):
             out_fp = op / "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
             print(fp, out_fp)
             shutil.copyfile(fp, out_fp)
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description="prepare_synpick")
-    parser.add_argument("--in-path", type=str, help="directory for synpick data")
-    parser.add_argument("--seed", type=int, default=42, help="rng seed for train/val split")
-    parser.add_argument("--resize-ratio", type=float, default=0.125, help="Scale frame sizes by this amount")
-    cfg = parser.parse_args()
-    cfg.timestamp = int(time.time())
-    prepare_synpick(cfg)

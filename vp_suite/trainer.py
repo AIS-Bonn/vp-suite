@@ -174,7 +174,8 @@ class Trainer:
         # WandB
         if not self.config["no_wandb"]:
             wandb_reinit = using_optuna and trial.number > 0
-            wandb.init(config=self.config, project="vp-suite-training", reinit=wandb_reinit)
+            wandb.init(config=self.config, project="vp-suite-training",
+                       dir=str(constants.WANDB_PATH.resolve()), reinit=wandb_reinit)
 
         # OPTIMIZER
         optimizer, optimizer_scheduler = None, None

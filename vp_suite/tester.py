@@ -155,7 +155,8 @@ class Tester:
                 if not self.config["no_wandb"]:
                     print("Logging test results to WandB for all models...")
                     wandb.init(config={"mini_test": mini_test, "model_dir": model_dir},
-                               project="vp-suite-testing", name=f"{model_desc}{wandb_full_suffix}", reinit=(i > 0))
+                               project="vp-suite-testing", name=f"{model_desc}{wandb_full_suffix}",
+                               dir=str(constants.WANDB_PATH.resolve()), reinit=(i > 0))
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         wandb.log({"pred_frames": f+1, **mean_metric_dict})
                     if i == len(models_dict_items) - 1:
