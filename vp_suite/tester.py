@@ -17,7 +17,6 @@ from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
 from vp_suite.utils.utils import timestamp, check_model_compatibility
 from vp_suite.utils.visualization import visualize_vid
-from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 
 class Tester(Runner):
@@ -29,23 +28,13 @@ class Tester(Runner):
 
     def _reset_datasets(self):
         self.test_data = None
-        self.datasets_ready = False
 
     def _reset_models(self):
         self.models_dict = {}
-        self.models_ready = False
 
-    def load_dataset(self, dataset="MM", value_min=0.0, value_max=1.0, **dataset_kwargs):
-
-        self._reset_models()
-        dataset_class = DATASET_CLASSES[dataset]
-        self.img_processor.value_min = value_min
-        self.img_processor.value_max = value_max
+    def _load_dataset(self, dataset_class, **dataset_kwargs):
         self.test_data = dataset_class.get_test(self.img_processor, **dataset_kwargs)
-        self.config = update_cfg_from_dataset(self.config, self.test_data)
-        print(f"INFO: loaded dataset '{self.test_data.NAME}' from {self.test_data.data_dir} "
-              f"(action size: {self.test_data.ACTION_SIZE})")
-        self.datasets_ready = True
+        self.dataset = self.test_data
 
     def _prepare_testing(self, **testing_kwargs):
         """

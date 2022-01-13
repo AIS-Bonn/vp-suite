@@ -26,7 +26,7 @@ pred_models = {
 
 AVAILABLE_MODELS = pred_models.keys()
 
-def create_pred_model(trainer_config, model_type, **model_args):
+def create_pred_model(model_type, device, dataset_config, **model_args):
     model_class = pred_models.get(model_type, pred_models["copy"])
-    pred_model = model_class(trainer_config, **model_args).to(trainer_config["device"])
-    return pred_model.to(trainer_config["device"])
+    pred_model = model_class(trainer_config, **model_args).to(device)
+    return pred_model.to(device)

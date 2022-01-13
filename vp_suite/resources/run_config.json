@@ -14,10 +14,6 @@
     "val_rec_criterion": "mse",
     "context_frames": 10,
     "pred_frames": 10,
-
-    "tensor_value_range": [
-        0.0,
-        1.0
-    ],
+    "use_actions": false,
     "seq_step": 1
 }

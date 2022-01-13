@@ -6,19 +6,16 @@ from copy import deepcopy
 
 import wandb
 
-import numpy as np
 import torch.nn
 from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 import vp_suite.constants as constants
 from vp_suite.runner import Runner
-from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 from vp_suite.models._factory import create_pred_model
-from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.measure.loss_provider import PredictionLossProvider, LOSSES
 from vp_suite.utils.visualization import visualize_vid
-from vp_suite.utils.utils import timestamp, check_model_compatibility
+from vp_suite.utils.utils import timestamp, check_model_compatibility, check_dataset_compatibility
 
 class Trainer(Runner):
 
@@ -27,71 +24,64 @@ class Trainer(Runner):
     def __init__(self, device="cpu"):
         super(Trainer, self).__init__(device)
 
+    @property
+    def model_config(self):
+        if self.model is None:
+            return None
+        elif self.is_loaded_model:
+            return self.loaded_model_config
+        else:
+            return self.model.get_config()
+
     def _reset_datasets(self):
         self.train_data = None
         self.val_data = None
-        self.datasets_ready = False
 
     def _reset_models(self):
         """ removes any loaded models """
-        self.pred_model = None
-        self.model_config = None
+        self.model = None
         self.is_loaded_model = False
-        self.models_ready = False
+        self.loaded_model_config = None
 
-    def load_dataset(self, dataset="MM", value_min=0.0, value_max=1.0, **dataset_kwargs):
-        """
-        ATTENTION: this removes any loaded models
-        """
-        self._reset_models()
-        dataset_class = DATASET_CLASSES[dataset]
-        self.img_processor.value_min = value_min
-        self.img_processor.value_max = value_max
+    def _load_dataset(self, dataset_class, **dataset_kwargs):
         self.train_data, self.val_data = dataset_class.get_train_val(self.img_processor, **dataset_kwargs)
-        self.config = update_cfg_from_dataset(self.config, self.train_data)
-        ds_ = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
-        print(f"INFO: loaded dataset '{ds_.NAME}' from {ds_.data_dir} (action size: {ds_.ACTION_SIZE})")
-        self.datasets_ready = True
+        self.dataset = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
 
     def load_model(self, model_dir, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
         """
         overrides existing model
         """
+        self._reset_models()
         model_ckpt = os.path.join(model_dir, ckpt_name)
-        loaded_model = torch.load(model_ckpt)
+        self.loaded_model = torch.load(model_ckpt)
         with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
-            model_config = json.load(cfg_file)
-        _, _, = check_model_compatibility(model_config, self.config, loaded_model,
-                                          strict_mode=True, model_dir=model_dir)
-        self.pred_model = loaded_model
-        self.model_config = model_config
-        print(f"INFO: loaded pre-trained model '{self.pred_model.desc}' from {model_ckpt}")
-        self.models_ready = True
+            self.loaded_model_config = json.load(cfg_file)
+        print(f"INFO: loaded pre-trained model '{self.model.desc}' from {model_ckpt}")
         self.is_loaded_model = True
+        self.models_ready = True
 
-    def create_model(self, model_type, use_actions=False, **model_args):
+    def create_model(self, model_type, action_conditional=False, **model_args):
         """
         overrides existing model
         """
-
+        self._reset_models()
         # parameter processing
         ac_str = ""
-        self.config["use_actions"] = False
-        if use_actions:
-            if self.pred_model.can_handle_actions:
-                self.config["use_actions"] = True
+        if action_conditional:
+            if self.model.can_handle_actions:
                 ac_str = "(action-conditional)"
             else:
-                print("WARNING: ignoring parameter 'use_actions' because specified model can't handle actions")
-        print(f"INFO: created new model '{self.pred_model.desc}' {ac_str}")
+                print("WARNING: specified model can't handle actions -> argument 'action_conditional' ignored")
+                action_conditional = False
+        model_args.update(action_conditional=action_conditional)
 
         # model creation
-        self.pred_model = create_pred_model(self.config, model_type, **model_args)
-        self.model_config = self.config
+        self.model = create_pred_model(model_type, self.device, **model_args)
 
         # bookkeeping
-        total_params = sum(p.numel() for p in self.pred_model.parameters())
-        trainable_params = sum(p.numel() for p in self.pred_model.parameters() if p.requires_grad)
+        print(f"INFO: created new model '{self.model.desc}' {ac_str}")
+        total_params = sum(p.numel() for p in self.model.parameters())
+        trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
         self.models_ready = True
         self.is_loaded_model = False
@@ -105,25 +95,21 @@ class Trainer(Runner):
         assert self.datasets_ready, "No datasets loaded. Load a dataset before starting training"
         assert self.models_ready, "No model available. Load a pretrained model or create a new instance before starting training"
 
-        # update config
-        updated_config = deepcopy(self.config)  # TODO limit which args can be specified
-        updated_config.update(training_kwargs)
+        run_config = self._prepare_run()
 
-        # prepare datasets for training
-        if isinstance(self.train_data, Subset):
-            self.train_data.dataset.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
-                                    updated_config["seq_step"])
-        else:
-            self.train_data.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
-                                        updated_config["seq_step"])
-            self.val_data.set_seq_len(updated_config["context_frames"], updated_config["pred_frames"],
-                                      updated_config["seq_step"])
+        # prepare datasets and check compatibility
+        train_data = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
+        train_data.set_seq_len(run_config["context_frames"], run_config["pred_frames"],
+                               run_config["seq_step"])
+        self.val_data.set_seq_len(run_config["context_frames"], run_config["pred_frames"],
+                                  run_config["seq_step"])
 
-        # check model compatibility
-        if self.is_loaded_model and self.model_config != updated_config:
-            _, _, = check_model_compatibility(self.model_config, updated_config, self.pred_model, strict_mode=True)
+        # If the model is loaded, compatibility needs to be checked with the loaded dataset and the run parameters
+        if self.is_loaded_model:
+            _, _, = check_model_compatibility(self.model_config, run_config, self.model, strict_mode=True)
+            check_dataset_compatibility(self.model_config, self.dataset_config, self.model)
 
-        self.config = updated_config
+        self.run_config = run_config
 
     def _set_optuna_cfg(self, optuna_cfg : dict):
         self.optuna_cfg = optuna_cfg if optuna_cfg else {}
@@ -164,7 +150,7 @@ class Trainer(Runner):
         out_path = constants.OUT_PATH / timestamp('train')
         out_path.mkdir(parents=True)
         best_model_path = str((out_path / 'best_model.pth').resolve())
-        with_training = self.pred_model.trainable and not self.config["no_train"]
+        with_training = self.model.trainable and not self.config["no_train"]
 
         if self.config["opt_direction"] == "maximize":
             def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
@@ -179,7 +165,7 @@ class Trainer(Runner):
                 if "choices" in p_dict.keys():
                     if param == "model_type":
                         print(f"WARNING: hyperopt across different model types is not yet supported "
-                              f"-> using {self.pred_model.desc}")
+                              f"-> using {self.model.desc}")
                     self.config[param] = trial.suggest_categorical(param, p_dict["choices"])
                 else:
                     suggest = trial.suggest_int if p_dict["type"] == "int" else trial.suggest_float
@@ -199,7 +185,7 @@ class Trainer(Runner):
         # OPTIMIZER
         optimizer, optimizer_scheduler = None, None
         if with_training:
-            optimizer = torch.optim.Adam(params=self.pred_model.parameters(), lr=self.config["lr"])
+            optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.config["lr"])
             optimizer_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.2,
                                                                              min_lr=1e-6, verbose=True)
 
@@ -221,8 +207,8 @@ class Trainer(Runner):
             print(f'\nTraining (epoch: {epoch+1} of {self.config["epochs"]})')
             if with_training:
                 # use prediction model's own training loop if available
-                if callable(getattr(self.pred_model, "train_iter", None)):
-                    self.pred_model.train_iter(self.config, train_loader, optimizer, loss_provider, epoch)
+                if callable(getattr(self.model, "train_iter", None)):
+                    self.model.train_iter(self.config, train_loader, optimizer, loss_provider, epoch)
                 else:
                     self.train_iter(train_loader, optimizer, loss_provider)
             else:
@@ -241,7 +227,7 @@ class Trainer(Runner):
             cur_val_loss = indicator_loss.item()
             if loss_improved(cur_val_loss, best_val_loss):
                 best_val_loss = cur_val_loss
-                torch.save(self.pred_model, best_model_path)
+                torch.save(self.model, best_model_path)
                 print(f"Minimum indicator loss ({self.config['val_rec_criterion']}) reduced -> model saved!")
 
             # visualize current model performance every nth epoch, using eval mode and validation data.
@@ -249,7 +235,7 @@ class Trainer(Runner):
                 print("Saving visualizations...")
                 vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
                 vis_out_path.mkdir()
-                visualize_vid(self.val_data, self.config["context_frames"], self.config["pred_frames"], self.pred_model,
+                visualize_vid(self.val_data, self.config["context_frames"], self.config["pred_frames"], self.model,
                               self.config["device"], self.img_processor, vis_out_path, num_vis=10)
 
                 if not self.config["no_wandb"]:
@@ -264,7 +250,7 @@ class Trainer(Runner):
 
         # finishing
         print("\nTraining done, cleaning up...")
-        torch.save(self.pred_model, str((out_path / 'final_model.pth').resolve()))
+        torch.save(self.model, str((out_path / 'final_model.pth').resolve()))
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
 
@@ -280,8 +266,8 @@ class Trainer(Runner):
             actions = data["actions"].to(self.config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
 
             # fwd
-            predictions, model_losses = self.pred_model.pred_n(input, pred_length=self.config["pred_frames"],
-                                                               actions=actions)
+            predictions, model_losses = self.model.pred_n(input, pred_length=self.config["pred_frames"],
+                                                          actions=actions)
 
             # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -292,7 +278,7 @@ class Trainer(Runner):
             # bwd
             optimizer.zero_grad()
             total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.pred_model.parameters(), 100)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
             optimizer.step()
 
             # bookkeeping
@@ -300,7 +286,7 @@ class Trainer(Runner):
             # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
     def eval_iter(self, loader, loss_provider):
-        self.pred_model.eval()
+        self.model.eval()
         loop = tqdm(loader)
         all_losses = []
         indicator_losses = []
@@ -315,8 +301,8 @@ class Trainer(Runner):
                                       : self.config["context_frames"] + self.config["pred_frames"]]
                 actions = data["actions"].to(self.config["device"])
 
-                predictions, model_losses = self.pred_model.pred_n(input, pred_length=self.config["pred_frames"],
-                                                                   actions=actions)
+                predictions, model_losses = self.model.pred_n(input, pred_length=self.config["pred_frames"],
+                                                              actions=actions)
 
                 # metrics
                 loss_values, _ = loss_provider.get_losses(predictions, targets)
@@ -327,6 +313,6 @@ class Trainer(Runner):
         all_losses = {
             k: torch.stack([loss_values[k] for loss_values in all_losses]).mean().item() for k in all_losses[0].keys()
         }
-        self.pred_model.train()
+        self.model.train()
 
         return all_losses, indicator_loss

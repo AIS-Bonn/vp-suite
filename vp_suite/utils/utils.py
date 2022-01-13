@@ -88,6 +88,12 @@ class ScaleToModel(nn.Module):
         img = img * (self.m_max - self.m_min) + self.m_min  # [model_val_min, model_val_max]
         return img
 
+def check_dataset_compatibility(model_config, dataset_config, model):
+    assert model_config["img_shape"] == dataset_config["img_shape"], \
+        "expected img shape of loaded model and dataset img_shape to be the same"
+    if model.can_handle_actions and model_config["action_conditional"]:
+        assert model_config["action_size"] == dataset_config["action_size"], \
+            "expected action size of loaded model and dataset to be the same"
 
 def check_model_compatibility(model_config, run_config, model, strict_mode=False, model_dir:str=None):
     '''
