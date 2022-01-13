@@ -72,9 +72,9 @@ def test_dataset_defaults():
 @pytest.mark.slow
 def test_CUSTOM():
     vp_trainer = Trainer()
-    vp_trainer.load_dataset(dataset="KTH")
-    vp_trainer.create_model(model_type="non_conv")
-    vp_trainer.train(epochs=1, no_vis=True)
+    vp_trainer.load_dataset(dataset="SPV")
+    vp_trainer.create_model(model_type="lstm")
+    vp_trainer.train(epochs=1, no_vis=True, no_wandb=True, use_actions=True)
     assert True  # test successful if execution reaches this line
 
 if __name__ == '__main__':

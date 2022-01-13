@@ -12,6 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 import vp_suite.constants as constants
+from vp_suite.runner import Runner
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
 from vp_suite.utils.utils import timestamp, check_model_compatibility
@@ -19,32 +20,32 @@ from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 
-class Tester:
+class Tester(Runner):
 
     DEFAULT_TESTER_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
-    def __init__(self):
-        with open(self.DEFAULT_TESTER_CONFIG, 'r') as tc_file:
-            self.config = json.load(tc_file)
-        self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.img_processor = ImgProcessor(self.config["tensor_value_range"])
-        random.seed(self.config["seed"])
-        np.random.seed(self.config["seed"])
-        torch.manual_seed(self.config["seed"])
+    def __init__(self, device="cpu"):
+        super(Tester, self).__init__(device)
 
-        self.dataset_loaded = False
-        self.models_dict = {}
-        self.models_loaded = False
+    def _reset_datasets(self):
+        self.test_data = None
+        self.datasets_ready = False
 
-    def load_dataset(self, dataset="MM", **dataset_kwargs):
+    def _reset_models(self):
         self.models_dict = {}
-        self.models_loaded = False
+        self.models_ready = False
+
+    def load_dataset(self, dataset="MM", value_min=0.0, value_max=1.0, **dataset_kwargs):
+
+        self._reset_models()
         dataset_class = DATASET_CLASSES[dataset]
+        self.img_processor.value_min = value_min
+        self.img_processor.value_max = value_max
         self.test_data = dataset_class.get_test(self.img_processor, **dataset_kwargs)
         self.config = update_cfg_from_dataset(self.config, self.test_data)
         print(f"INFO: loaded dataset '{self.test_data.NAME}' from {self.test_data.data_dir} "
               f"(action size: {self.test_data.ACTION_SIZE})")
-        self.dataset_loaded = True
+        self.datasets_ready = True
 
     def _prepare_testing(self, **testing_kwargs):
         """
@@ -52,8 +53,8 @@ class Tester:
         prepares the dataset for usage and checks model compatibility.
         """
 
-        assert self.dataset_loaded, "No datasets loaded. Load a dataset before starting testing"
-        assert self.models_loaded, "No models available. Load some trained models before starting testing"
+        assert self.datasets_ready, "No datasets loaded. Load a dataset before starting testing"
+        assert self.models_ready, "No models available. Load some trained models before starting testing"
         updated_config = deepcopy(self.config)  # TODO limit which args can be specified
         updated_config.update(testing_kwargs)
 
@@ -73,7 +74,6 @@ class Tester:
         clf_baseline = CopyLastFrame().to(self.config["device"])
         self.models_dict[clf_baseline.desc] = (clf_baseline, None, self.config, nn.Identity(), nn.Identity(), [])
 
-
     def load_models(self, model_dirs, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
         """
         overrides existing models
@@ -85,7 +85,7 @@ class Tester:
             with open(os.path.join(model_dir, cfg_name), "r") as cfg_file:
                 model_config = json.load(cfg_file)
             self.models_dict[model.desc] = (model, model_dir, model_config, None, None, [])
-        self.models_loaded = True
+        self.models_ready = True
 
     def test(self, **testing_kwargs):
 

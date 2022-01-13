@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 import vp_suite.constants as constants
+from vp_suite.runner import Runner
 from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 from vp_suite.models._factory import create_pred_model
 from vp_suite.utils.img_processor import ImgProcessor
@@ -19,39 +20,38 @@ from vp_suite.measure.loss_provider import PredictionLossProvider, LOSSES
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.utils import timestamp, check_model_compatibility
 
-class Trainer:
+class Trainer(Runner):
 
     DEFAULT_TRAINER_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
-    def __init__(self):
-        with open(self.DEFAULT_TRAINER_CONFIG, 'r') as tc_file:
-            self.config = json.load(tc_file)
-        self.config["opt_direction"] = "maximize" if LOSSES[self.config["val_rec_criterion"]].bigger_is_better \
-            else "minimize"
-        self.config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.img_processor = ImgProcessor(self.config["tensor_value_range"])
-        random.seed(self.config["seed"])
-        np.random.seed(self.config["seed"])
-        torch.manual_seed(self.config["seed"])
+    def __init__(self, device="cpu"):
+        super(Trainer, self).__init__(device)
 
-        self.datasets_loaded = False
+    def _reset_datasets(self):
+        self.train_data = None
+        self.val_data = None
+        self.datasets_ready = False
+
+    def _reset_models(self):
+        """ removes any loaded models """
         self.pred_model = None
         self.model_config = None
-        self.model_ready = False
+        self.is_loaded_model = False
+        self.models_ready = False
 
-    def load_dataset(self, dataset="MM", **dataset_kwargs):
+    def load_dataset(self, dataset="MM", value_min=0.0, value_max=1.0, **dataset_kwargs):
         """
         ATTENTION: this removes any loaded models
         """
-        self.pred_model = None
-        self.model_config = None
-        self.model_ready = False
+        self._reset_models()
         dataset_class = DATASET_CLASSES[dataset]
+        self.img_processor.value_min = value_min
+        self.img_processor.value_max = value_max
         self.train_data, self.val_data = dataset_class.get_train_val(self.img_processor, **dataset_kwargs)
-        dataset = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
         self.config = update_cfg_from_dataset(self.config, self.train_data)
-        print(f"INFO: loaded dataset '{dataset.NAME}' from {dataset.data_dir} (action size: {dataset.ACTION_SIZE})")
-        self.datasets_loaded = True
+        ds_ = self.train_data.dataset if isinstance(self.train_data, Subset) else self.train_data
+        print(f"INFO: loaded dataset '{ds_.NAME}' from {ds_.data_dir} (action size: {ds_.ACTION_SIZE})")
+        self.datasets_ready = True
 
     def load_model(self, model_dir, ckpt_name="best_model.pth", cfg_name="run_cfg.json"):
         """
@@ -66,20 +66,35 @@ class Trainer:
         self.pred_model = loaded_model
         self.model_config = model_config
         print(f"INFO: loaded pre-trained model '{self.pred_model.desc}' from {model_ckpt}")
-        self.model_ready = True
+        self.models_ready = True
+        self.is_loaded_model = True
 
-    def create_model(self, model_type, **model_args):
+    def create_model(self, model_type, use_actions=False, **model_args):
         """
         overrides existing model
         """
+
+        # parameter processing
+        ac_str = ""
+        self.config["use_actions"] = False
+        if use_actions:
+            if self.pred_model.can_handle_actions:
+                self.config["use_actions"] = True
+                ac_str = "(action-conditional)"
+            else:
+                print("WARNING: ignoring parameter 'use_actions' because specified model can't handle actions")
+        print(f"INFO: created new model '{self.pred_model.desc}' {ac_str}")
+
+        # model creation
         self.pred_model = create_pred_model(self.config, model_type, **model_args)
         self.model_config = self.config
-        ac_str = "(action-conditional)" if self.config["use_actions"] and self.pred_model.can_handle_actions else ""
-        print(f"INFO: created new model '{self.pred_model.desc}' {ac_str}")
+
+        # bookkeeping
         total_params = sum(p.numel() for p in self.pred_model.parameters())
         trainable_params = sum(p.numel() for p in self.pred_model.parameters() if p.requires_grad)
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
-        self.model_ready = True
+        self.models_ready = True
+        self.is_loaded_model = False
 
     def _prepare_training(self, **training_kwargs):
         """
@@ -87,8 +102,10 @@ class Trainer:
         prepares the dataset for usage and checks model compatibility.
         """
 
-        assert self.datasets_loaded, "No datasets loaded. Load a dataset before starting training"
-        assert self.model_ready, "No model available. Load a pretrained model or create a new instance before starting training"
+        assert self.datasets_ready, "No datasets loaded. Load a dataset before starting training"
+        assert self.models_ready, "No model available. Load a pretrained model or create a new instance before starting training"
+
+        # update config
         updated_config = deepcopy(self.config)  # TODO limit which args can be specified
         updated_config.update(training_kwargs)
 
@@ -103,7 +120,7 @@ class Trainer:
                                       updated_config["seq_step"])
 
         # check model compatibility
-        if self.model_config != updated_config:
+        if self.is_loaded_model and self.model_config != updated_config:
             _, _, = check_model_compatibility(self.model_config, updated_config, self.pred_model, strict_mode=True)
 
         self.config = updated_config
@@ -128,7 +145,9 @@ class Trainer:
         except ImportError:
             raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
         optuna_program = partial(self.train, **training_kwargs)
-        study = optuna.create_study(direction=self.config["opt_direction"])
+        val_rec_crit = training_kwargs.get("val_rec_criterion", self.config["val_rec_criterion"])
+        opt_direction = "maximize" if LOSSES[val_rec_crit].bigger_is_better else "minimize"
+        study = optuna.create_study(direction=opt_direction)
         study.optimize(optuna_program, n_trials=n_trials)
         print("\nHyperparameter optimization complete. Best performing parameters:")
         for k, v in study.best_params.items():

@@ -4,12 +4,7 @@
     "no_vis": false,
     "no_wandb": false,
     "vis_every": 10,
-    "use_actions": false,
     "seed": 42,
-    "tensor_value_range": [
-        0.0,
-        1.0
-    ],
     "lr": 0.0001,
     "epochs": 100,
     "batch_size": 32,
@@ -19,5 +14,10 @@
     "val_rec_criterion": "mse",
     "context_frames": 10,
     "pred_frames": 10,
+
+    "tensor_value_range": [
+        0.0,
+        1.0
+    ],
     "seq_step": 1
 }

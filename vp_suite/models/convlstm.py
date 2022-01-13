@@ -41,10 +41,11 @@ class ConvLSTM(VideoPredictionModel):
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
 
         cell_list = []
+        cell_ac_size = self.action_size if self.use_actions else 0
         for i in range(0, self.lstm_num_layers):
             cur_input_dim = self.lstm_channels if i == 0 else self.lstm_hidden_dim[i - 1]
 
-            cell_list.append(ConvLSTMCell(in_c=cur_input_dim + self.action_size, in_h=self.lstm_hidden_dim[i],
+            cell_list.append(ConvLSTMCell(in_c=cur_input_dim + cell_ac_size, in_h=self.lstm_hidden_dim[i],
                                           kernel_size=self.lstm_kernel_size[i], bias=True))
 
         self.cell_list = nn.ModuleList(cell_list)
@@ -75,10 +76,12 @@ class ConvLSTM(VideoPredictionModel):
         # build up belief over given frames
         hidden_state = self._init_hidden((b, self.lstm_channels, self.enc_h, self.enc_w))
         for t, encoded in enumerate(encoded_frames):
+            print(self.use_actions)
             if self.use_actions:
                 inflated_action = self.action_inflate(actions[t])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
                 encoded = torch.cat([encoded, inflated_action], dim=-3)
+            print(encoded.shape)
             hidden_state = self.lstm(encoded, hidden_state)
 
         # pred 1
