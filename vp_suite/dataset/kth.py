@@ -15,6 +15,7 @@ class KTHActionsDataset(BaseVPDataset):
     Some sequences might even be shorter than 30 frames;
     There, the last frame is repeated to reach MAX_SEQ_LEN.
     Going beyond 30 frames is therefore not recommended.
+    Code by Angel Villar-Corrales, modified.
     '''
     MAX_SEQ_LEN = 30
     NAME = "KTH Actions"
@@ -72,6 +73,10 @@ class KTHActionsDataset(BaseVPDataset):
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
     def download_and_prepare_dataset(self):
+        """
+        Downloads and parepares the KTH datasets, using bash scripts from https://github.com/edenton/svg
+        that have been modified by Ani Karapetyan.
+        """
         from vp_suite.utils.utils import run_command
         import vp_suite.constants as constants
         run_command(f"{(constants.PKG_RESOURCES / 'download_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}", print_to_console=False)

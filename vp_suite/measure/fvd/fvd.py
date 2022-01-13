@@ -1,4 +1,5 @@
 import math
+import os
 from pathlib import Path
 
 from torch import linalg as linalg
@@ -7,7 +8,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
-from vp_suite.measure.fvd.pytorch_i3d import InceptionI3d
+from vp_suite.measure.fvd.pytorch_i3d.pytorch_i3d import InceptionI3d
 from vp_suite.measure._base_measure import BaseMeasure
 
 class FrechetVideoDistance(BaseMeasure):
@@ -28,7 +29,7 @@ class FrechetVideoDistance(BaseMeasure):
     max_T = 16
     i3d_in_shape = (224, 224)
     i3d_num_classes = 400
-    i3d_ckpt_file = "rgb_imagenet.pt"
+    i3d_ckpt_file = str((Path(__file__) / "pytorch_i3d" / "models" / "rgb_imagenet.pt").resolve())
     input_chunks = 1
     drop_last_chunk = False
 

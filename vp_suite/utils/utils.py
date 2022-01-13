@@ -1,3 +1,4 @@
+import sys
 from typing import List
 from datetime import datetime
 import subprocess
@@ -51,6 +52,16 @@ class TqdmUpTo(tqdm):
         if tsize is not None:
             self.total = tsize
         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
+
+def download_from_url(url: str, dst_path : str):
+    if sys.version_info[0] == 2:
+        from urllib import urlretrieve
+    else:
+        from urllib.request import urlretrieve
+    filename = url.split("/")[-1]
+    print(f"Downloading from {url}...")
+    with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=filename) as t:
+        urlretrieve(url, dst_path, reporthook=t.update_to)
 
 class ScaleToTest(nn.Module):
     def __init__(self, model_value_range, test_value_range):

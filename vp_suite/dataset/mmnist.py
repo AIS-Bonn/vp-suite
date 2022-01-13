@@ -131,20 +131,14 @@ def get_image_from_array(X, index, mean=0, std=1):
 
 # loads mnist from web on demand
 def load_dataset(d_path, training):
-    if sys.version_info[0] == 2:
-        from urllib import urlretrieve
-    else:
-        from urllib.request import urlretrieve
-
-    def download(filename, source='http://yann.lecun.com/exdb/mnist/'):
-        fname_ = filename.split("/")[-1]
-        print("Downloading %s" % fname_)
-        urlretrieve(source + fname_, filename)
-
+    from vp_suite.utils.utils import download_from_url
     import gzip
+
     def load_mnist_images(filename):
         if not os.path.exists(filename):
-            download(filename)
+            mnist_source = 'http://yann.lecun.com/exdb/mnist/'
+            fname_ = filename.split("/")[-1]
+            download_from_url(mnist_source + fname_, filename)
         with gzip.open(filename, 'rb') as f:
             data = np.frombuffer(f.read(), np.uint8, offset=16)
         data = data.reshape(-1, 1, 28, 28).transpose(0, 1, 3, 2)

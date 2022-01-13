@@ -66,20 +66,15 @@ class BAIRPushingDataset(BaseVPDataset):
 # === BAIR data preparation tools ==============================================
 
 def download_and_extract_bair(d_path):
-    if sys.version_info[0] == 2:
-        from urllib import urlretrieve
-    else:
-        from urllib.request import urlretrieve
-    import tarfile
-    from vp_suite.utils.utils import TqdmUpTo
     tar_fname = "bair_robot_pushing_dataset_v0.tar"
     tar_path = str(d_path / tar_fname)
     if not os.path.exists(tar_path):
-        print(f"Downloading {tar_fname} (~30GB, might take a while)...")
         URL = f"http://rail.eecs.berkeley.edu/datasets/{tar_fname}"
-        with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=tar_fname) as t:
-            urlretrieve(URL, tar_path, reporthook=t.update_to)
+        from vp_suite.utils.utils import download_from_url
+        download_from_url(URL, tar_path)
+
     print("Extracting data...")
+    import tarfile
     tar = tarfile.open(tar_path)
     tar.extractall(d_path)
     tar.close()
