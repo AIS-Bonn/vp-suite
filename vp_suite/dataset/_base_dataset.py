@@ -3,6 +3,8 @@ from torch.utils.data.dataset import Dataset
 from typing import TypedDict
 from copy import deepcopy
 
+from vp_suite.utils.img_processor import ImgProcessor
+
 class VPData(TypedDict):
     frames: torch.Tensor  # shape: [t, c, h, w]
     actions: torch.Tensor  # shape: [t, a]
@@ -31,8 +33,29 @@ class BaseVPDataset(Dataset):
                       f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
             self.data_dir = self.DEFAULT_DATA_DIR
-        self.img_processor = img_processor
+        self.img_processor : ImgProcessor = img_processor
         self.ready_for_usage = False  # becomes True once sequence length has been set
+
+    @property
+    def config(self):
+        """ Dataset config that is used across all datasets """
+        img_h, img_w, img_c = self.DEFAULT_FRAME_SHAPE
+        base_config = {
+            "action_size": self.ACTION_SIZE,
+            "img_h": img_h,
+            "img_w": img_w,
+            "img_c": img_c,
+            "img_shape": self.DEFAULT_FRAME_SHAPE,
+            "value_min": self.img_processor.value_min,
+            "value_max": self.img_processor.value_max,
+            "supports_actions": self.ACTION_SIZE > 0
+        }
+        return {**base_config, **self._config}
+
+    @property
+    def _config(self):
+        """ Dataset-specific config, TODO should be overwritten be the datasets """
+        return {}
 
     def set_seq_len(self, context_frames : int, pred_frames : int, seq_step : int):
         """
@@ -66,6 +89,9 @@ class BaseVPDataset(Dataset):
 
     def preprocess_img(self, img):
         return self.img_processor.preprocess_img(img)
+
+    def postprocess_img(self, img):
+        return self.img_processor.postprocess_img(img)
 
     def default_available(self, split, img_processor, **dataset_kwargs):
         """
@@ -102,7 +128,7 @@ class BaseVPDataset(Dataset):
             D_train = cls("train", img_processor, **dataset_args)
             D_val = cls("val", img_processor, **dataset_args)
         else:
-            raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
+            raise ValueError(f"ERROR: parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
         return D_train, D_val
 
     @classmethod

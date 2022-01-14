@@ -23,8 +23,8 @@ class ConvLSTM(VideoPredictionModel):
     def model_desc(cls):
         return "ConvLSTM"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(ConvLSTM, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(ConvLSTM, self).__init__(dataset_config, device, **model_args)
 
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 
@@ -41,7 +41,7 @@ class ConvLSTM(VideoPredictionModel):
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
 
         cell_list = []
-        cell_ac_size = self.action_size if self.use_actions else 0
+        cell_ac_size = self.action_size if self.action_conditional else 0
         for i in range(0, self.lstm_num_layers):
             cur_input_dim = self.lstm_channels if i == 0 else self.lstm_hidden_dim[i - 1]
 
@@ -50,7 +50,7 @@ class ConvLSTM(VideoPredictionModel):
 
         self.cell_list = nn.ModuleList(cell_list)
 
-        if self.use_actions:
+        if self.action_conditional:
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.action_size * self.enc_h * self.enc_w)
 
@@ -67,7 +67,7 @@ class ConvLSTM(VideoPredictionModel):
 
         # actions
         actions = kwargs.get("actions", None)
-        if self.use_actions:
+        if self.action_conditional:
             if actions is None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
         if type(actions) == torch.Tensor:
@@ -76,8 +76,8 @@ class ConvLSTM(VideoPredictionModel):
         # build up belief over given frames
         hidden_state = self._init_hidden((b, self.lstm_channels, self.enc_h, self.enc_w))
         for t, encoded in enumerate(encoded_frames):
-            print(self.use_actions)
-            if self.use_actions:
+            print(self.action_conditional)
+            if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
                 encoded = torch.cat([encoded, inflated_action], dim=-3)
@@ -91,7 +91,7 @@ class ConvLSTM(VideoPredictionModel):
         # preds 2, 3, ...
         for t in range(pred_length - 1):
             encoded = self.autoencoder.encode(preds[-1])
-            if self.use_actions:
+            if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t - T_in])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
                 encoded = torch.cat([encoded, inflated_action], dim=-3)

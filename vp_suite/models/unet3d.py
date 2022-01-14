@@ -9,30 +9,33 @@ from vp_suite.models._base_model import VideoPredictionModel
 class UNet3D(VideoPredictionModel):
 
     features = [8, 16, 32, 64]
-    temporal_dim = None  # if None, use all context frames
+    temporal_dim = None
     can_handle_actions = True
 
     @classmethod
     def model_desc(cls):
         return "UNet-3D"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(UNet3D, self).__init__(trainer_cfg)
+    def _config(self):
+        return {"temporal_dim": self.temporal_dim}
 
-        self.temporal_dim = self.temporal_dim or trainer_cfg["context_frames"]
+    def __init__(self, dataset_config, device, temporal_dim, **model_args):
+        super(UNet3D, self).__init__(dataset_config, device, **model_args)
+
+        self.temporal_dim = temporal_dim
         self.min_context_frames = self.temporal_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()
         self.pool = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        if self.use_actions:
+        if self.action_conditional:
             self.action_inflates = nn.ModuleList()
 
         # down
         cur_in_channels = self.img_c
         cur_img_h, cur_img_w = self.img_h, self.img_w
         for feature in self.features:
-            if self.use_actions:
+            if self.action_conditional:
                 self.action_inflates.append(nn.Linear(in_features=self.action_size,
                                                       out_features=self.action_size * cur_img_h * cur_img_w))
                 zeros = torch.zeros(1, 1, cur_img_h, cur_img_w)
@@ -47,7 +50,7 @@ class UNet3D(VideoPredictionModel):
         bn_h, bn_w = cur_img_h, cur_img_w
         bn_feat = self.features[-1]
         self.time3ds.append(nn.Conv3d(in_channels=bn_feat, out_channels=bn_feat, kernel_size=(self.temporal_dim, 1, 1)))
-        if self.use_actions:
+        if self.action_conditional:
             self.bottleneck_action_inflate = nn.Linear(in_features=self.action_size,
                                                        out_features=self.action_size * bn_h * bn_w)
             self.bottleneck = DoubleConv2d(in_c=bn_feat + self.action_size, out_c=bn_feat * 2)
@@ -72,7 +75,7 @@ class UNet3D(VideoPredictionModel):
 
         # actions
         actions = kwargs.get("actions", [None] * (input_length + pred_length))
-        if self.use_actions:
+        if self.action_conditional:
             if actions is None or actions[0] == None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
         if type(actions) == torch.Tensor:
@@ -100,12 +103,12 @@ class UNet3D(VideoPredictionModel):
         b, _, T, _, _ = x.shape
         skip_connections = []
         actions = kwargs.get("actions", None)  # [T, b, a]
-        if self.use_actions:
+        if self.action_conditional:
             assert actions.shape[-1] == self.action_size, "action size mismatch"
 
         # DOWN
         for i in range(len(self.downs)):
-            if self.use_actions:
+            if self.action_conditional:
                 actions_ = actions.clone()
                 actions_ = actions_.reshape(-1, self.action_size)  # [T*b, a]
                 inflated_action = self.action_inflates[i](actions_).view(-1, self.action_size, *x.shape[-2:])  # [T*b, a, h, w]
@@ -119,7 +122,7 @@ class UNet3D(VideoPredictionModel):
             x = self.pool(x)
 
         x = self.time3ds[-1](x).squeeze(dim=2)  # from [b, feat[-1], T, h, w] to [b, feat[-1], h, w]
-        if self.use_actions:
+        if self.action_conditional:
             last_action = actions[-1]  # [b, a]
             inflated_action = self.bottleneck_action_inflate(last_action)  # [b, a*h*w]
             inflated_action = inflated_action.view(-1, self.action_size, *x.shape[-2:])  # [b, a, h, w]

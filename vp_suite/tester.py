@@ -15,13 +15,11 @@ import vp_suite.constants as constants
 from vp_suite.runner import Runner
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure.metric_provider import PredictionMetricProvider
-from vp_suite.utils.utils import timestamp, check_model_compatibility
+from vp_suite.utils.utils import timestamp
+from vp_suite.utils.compatibility import check_run_and_model_compat
 from vp_suite.utils.visualization import visualize_vid
-from vp_suite.dataset._factory import update_cfg_from_dataset, DATASET_CLASSES
 
 class Tester(Runner):
-
-    DEFAULT_TESTER_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
     def __init__(self, device="cpu"):
         super(Tester, self).__init__(device)
@@ -32,8 +30,8 @@ class Tester(Runner):
     def _reset_models(self):
         self.models_dict = {}
 
-    def _load_dataset(self, dataset_class, **dataset_kwargs):
-        self.test_data = dataset_class.get_test(self.img_processor, **dataset_kwargs)
+    def _load_dataset(self, dataset_class, img_processor, **dataset_kwargs):
+        self.test_data = dataset_class.get_test(img_processor, **dataset_kwargs)
         self.dataset = self.test_data
 
     def _prepare_testing(self, **testing_kwargs):
@@ -54,8 +52,8 @@ class Tester(Runner):
         # check model compatibility, receiving adapters if models can be made working with them
         for model_desc, (model, model_dir, model_config, _, _, _) in self.models_dict.items():
             if model_config != self.config:
-                preprocessing, postprocessing, = check_model_compatibility(model_config, updated_config, model,
-                                                                           model_dir=model_dir)
+                preprocessing, postprocessing, = check_run_and_model_compat(model_config, updated_config, model,
+                                                                            model_dir=model_dir)
                 self.models_dict[model_desc] = (model, model_dir, model_config, preprocessing, postprocessing, [])
 
         # all models OK -> finalize and add baseline copy model (doesn't need check)
@@ -119,7 +117,7 @@ class Tester(Runner):
                 vis_out_dir = Path(model_dir) / f"vis_{timestamp('test')}"
                 vis_out_dir.mkdir()
                 visualize_vid(self.test_data, self.config["context_frames"], self.config["pred_frames"], model, self.config["device"],
-                              self.img_processor, vis_out_dir, vis_idx=vis_idx)
+                              vis_out_dir, vis_idx=vis_idx)
 
         # log or display metrics
         if eval_length > 0:

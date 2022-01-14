@@ -5,8 +5,8 @@ sys.path.append(".")
 import pytest
 from vp_suite.trainer import Trainer
 from vp_suite.tester import Tester
-from vp_suite.models._factory import AVAILABLE_MODELS
-from vp_suite.dataset._factory import AVAILABLE_DATASETS
+from vp_suite.models import AVAILABLE_MODELS
+from vp_suite.dataset import AVAILABLE_DATASETS
 
 @pytest.mark.slow
 def test_non_conv_on_kth():

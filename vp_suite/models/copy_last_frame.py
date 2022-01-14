@@ -9,8 +9,8 @@ class CopyLastFrame(VideoPredictionModel):
     def model_desc(cls):
         return "CopyLastFrame"
 
-    def __init__(self, trainer_cfg=None, **model_args):
-        super(CopyLastFrame, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config=None, device=None, **model_args):
+        super(CopyLastFrame, self).__init__(dataset_config, device, **model_args)
 
     def forward(self, x, **kwargs):
         return x[:, -1, :, :, :], None

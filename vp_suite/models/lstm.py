@@ -20,8 +20,8 @@ class LSTM(VideoPredictionModel):
     def model_desc(cls):
         return "NonConvLSTM"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(LSTM, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(LSTM, self).__init__(dataset_config, device, **model_args)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)
@@ -38,7 +38,7 @@ class LSTM(VideoPredictionModel):
         self.encoded_shape = encoded_zeros.shape[1:]
         self.encoded_numel = encoded_zeros.numel() // encoded_zeros.shape[0]
         self.to_linear = nn.Linear(self.encoded_numel, self.bottleneck_dim)
-        if self.use_actions:
+        if self.action_conditional:
             inflated_action_size = self.bottleneck_dim // 10
             self.bottleneck_dim += inflated_action_size
             self.action_inflate = nn.Linear(self.action_size, inflated_action_size)
@@ -76,7 +76,7 @@ class LSTM(VideoPredictionModel):
 
         # actions
         actions = kwargs.get("actions", None)
-        if self.use_actions:
+        if self.action_conditional:
             if actions is None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
         if type(actions) == torch.Tensor:
@@ -86,7 +86,7 @@ class LSTM(VideoPredictionModel):
                     torch.zeros(b, self.lstm_hidden_dim, device=self.device)) for _ in self.rnn_layers]
 
         for t, encoded in enumerate(encoded_frames):
-            if self.use_actions:
+            if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t].flatten(1, -1))
                 encoded = torch.cat([encoded, inflated_action], dim=-1)
             for (lstm_cell, hidden) in zip(self.rnn_layers, hiddens):
@@ -99,7 +99,7 @@ class LSTM(VideoPredictionModel):
         # preds 2, 3, ...
         for t in range(pred_length - 1):
             encoded = self.encode(preds[-1])
-            if self.use_actions:
+            if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t - T_in].flatten(1, -1))
                 encoded = torch.cat([encoded, inflated_action], dim=-1)
             for (lstm_cell, hidden) in zip(self.rnn_layers, hiddens):

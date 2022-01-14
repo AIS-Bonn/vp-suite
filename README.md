@@ -46,7 +46,7 @@ vp_trainer = Trainer()
 
 ```python
 # check available datasets
-from vp_suite.dataset._factory import AVAILABLE_DATASETS
+from vp_suite.dataset import AVAILABLE_DATASETS
 
 print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
@@ -63,9 +63,9 @@ if model_checkpoint != "":
     vp_trainer.load_model(model_checkpoint)
 else:
     # check available model types
-    from vp_suite.models._factory import pred_models
+    from vp_suite.models import MODEL_CLASSES
 
-    print({k: v.desc for k, v in pred_models.items()})
+    print({k: v.desc for k, v in MODEL_CLASSES.items()})
     # should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...}
     vp_trainer.create_model('lstm')
 ```
@@ -92,7 +92,7 @@ vp_tester = Tester()
 
 ```python
 # check available datasets
-from vp_suite.dataset._factory import AVAILABLE_DATASETS
+from vp_suite.dataset import AVAILABLE_DATASETS
 
 print(AVAILABLE_DATASETS)
 # should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]

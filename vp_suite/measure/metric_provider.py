@@ -1,24 +1,11 @@
-from vp_suite.measure.image_wise import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
-from vp_suite.measure.fvd.fvd import FrechetVideoDistance as FVD
-
-METRICS = {
-    "mse": MSE,
-    "l1": L1,
-    "smooth_l1": SmoothL1,
-    "lpips": LPIPS,
-    "ssim": SSIM,
-    "psnr": PSNR,
-    "fvd": FVD
-}
-
-AVAILABLE_METRICS = METRICS.keys()
+from vp_suite.measure import METRIC_CLASSES
 
 class PredictionMetricProvider():
     def __init__(self, config):
 
         self.device = config["device"]
-        self.available_metrics = METRICS if config["metrics"] == "all" \
-            else {k: METRICS[k] for k in config["metrics"]}
+        self.available_metrics = METRIC_CLASSES if config["metrics"] == "all" \
+            else {k: METRIC_CLASSES[k] for k in config["metrics"]}
         if config["img_c"] not in [2, 3]:
             print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
             self.available_metrics.pop("fvd")

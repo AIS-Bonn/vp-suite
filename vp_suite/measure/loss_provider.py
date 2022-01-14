@@ -1,19 +1,6 @@
 import torch
+from vp_suite.measure import LOSS_CLASSES
 
-from vp_suite.measure.image_wise import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
-from vp_suite.measure.fvd.fvd import FrechetVideoDistance as FVD
-
-LOSSES = {
-    "mse": MSE,
-    "l1": L1,
-    "smooth_l1": SmoothL1,
-    "lpips": LPIPS,
-    "ssim": SSIM,
-    "psnr": PSNR,
-    "fvd": FVD
-}
-
-AVAILABLE_LOSSES = LOSSES.keys()
 
 class PredictionLossProvider():
     def __init__(self, config):
@@ -23,7 +10,7 @@ class PredictionLossProvider():
         if "fvd" in loss_scales.keys() and config["img_c"] not in [2, 3]:
             print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
             loss_scales.pop("fvd")
-        self.losses = {k: (LOSSES[k](device=self.device), scale) for k, scale in loss_scales.items()}
+        self.losses = {k: (LOSS_CLASSES[k](device=self.device), scale) for k, scale in loss_scales.items()}
 
     def get_losses(self, pred, target):
         '''

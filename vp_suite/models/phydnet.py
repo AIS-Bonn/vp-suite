@@ -20,8 +20,8 @@ class PhyDNet(VideoPredictionModel):
     def model_desc(cls):
         return "PhyDNet"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(PhyDNet, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(PhyDNet, self).__init__(dataset_config, device, **model_args)
 
         self.criterion = MSE(self.device)
         self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,
@@ -45,7 +45,7 @@ class PhyDNet(VideoPredictionModel):
 
         empty_actions = torch.zeros(frames.shape[0], in_length + pred_length, device=self.device)
         actions = kwargs.get("actions", empty_actions)
-        if self.use_actions:
+        if self.action_conditional:
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
 
@@ -79,7 +79,7 @@ class PhyDNet(VideoPredictionModel):
 
             actions = data["actions"].to(self.device)
             empty_actions = torch.zeros(img_data.shape[0], img_data.shape[1], device=self.device)
-            if self.use_actions:
+            if self.action_conditional:
                 if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
                     raise ValueError("Given actions are None or of the wrong size!")
 

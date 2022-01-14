@@ -13,7 +13,8 @@ def test_all_models(cfg):  # TODO re-write...
     for (use_actions, arch) in product([False, True], AVAILABLE_MODELS):
         cfg.use_actions = use_actions
         cfg.pred_arch = arch
-        model = create_pred_model(cfg)
+        model_class = MODEL_CLASSES.get(model_type, MODEL_CLASSES["copy"])
+        model = model_class(config, **model_args).to(self.device)
 
         print("")
         print(f"Checking {model.__class__.__name__} (action-conditional: {getattr(model, 'use_actions', False)})")

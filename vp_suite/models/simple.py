@@ -14,8 +14,8 @@ class SimpleV1(VideoPredictionModel):
     def model_desc(cls):
         return "SimpleV1"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(SimpleV1, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(SimpleV1, self).__init__(dataset_config, device, **model_args)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
@@ -44,16 +44,20 @@ class SimpleV1(VideoPredictionModel):
 class SimpleV2(VideoPredictionModel):
 
     hidden_channels = 64
-    min_context_frames = 5
-    temporal_dim = min_context_frames
+    temporal_dim = None
 
     @classmethod
     def model_desc(cls):
         return "SimpleV2"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(SimpleV2, self).__init__(trainer_cfg)
+    def _config(self):
+        return {"temporal_dim": self.temporal_dim}
 
+    def __init__(self, dataset_config, device, temporal_dim, **model_args):
+        super(SimpleV2, self).__init__(dataset_config, device, **model_args)
+
+        self.temporal_dim = temporal_dim
+        self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(
             nn.Conv3d(self.img_c, self.hidden_channels, (self.temporal_dim, 5, 5), (1, 1, 1), (0, 2, 2), bias=False),

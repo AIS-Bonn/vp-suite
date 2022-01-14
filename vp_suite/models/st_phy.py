@@ -30,8 +30,8 @@ class STPhy(VideoPredictionModel):
     def model_desc(cls):
         return "ST-Phy"
 
-    def __init__(self, trainer_cfg, **model_args):
-        super(STPhy, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(STPhy, self).__init__(dataset_config, device, **model_args)
 
         self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
         self.dim_phy_hidden = [self.phy_cell_channels] * self.num_layers
@@ -40,7 +40,7 @@ class STPhy(VideoPredictionModel):
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
         self.recurrent_cell = STLSTMCell
 
-        if self.use_actions:
+        if self.action_conditional:
             self.recurrent_cell = ActionConditionalSTLSTMCell
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
@@ -89,7 +89,7 @@ class STPhy(VideoPredictionModel):
 
         empty_actions = torch.zeros(batch_size, T, device=self.device)
         actions = kwargs.get("actions", empty_actions)
-        if self.use_actions:
+        if self.action_conditional:
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
         actions = actions.transpose(0, 1)
@@ -135,7 +135,7 @@ class STPhy(VideoPredictionModel):
                 phy_h_t[i] = phy_cell(next_cell_input, actions[t], phy_h_t[i])
 
                 # st
-                if self.use_actions:
+                if self.action_conditional:
                     ac = self.action_inflate(actions[t]).view(-1, self.inflated_action_dim, self.enc_h, self.enc_w)
                     inflated_action = self.action_conv_h(ac) + self.action_conv_w(ac)
                     st_h_t[i], st_c_t[i], st_memory, delta_c, delta_m \

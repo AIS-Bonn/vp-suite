@@ -8,14 +8,16 @@ class VideoPredictionModel(nn.Module):
     can_handle_actions = False  # models by default won't be able to handle actions
     min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
 
-    def __init__(self, trainer_cfg, **model_args):
+    def __init__(self, dataset_config, device="cpu", **model_args):
         super(VideoPredictionModel, self).__init__()
-        if trainer_cfg is not None:
-            self.img_shape = trainer_cfg["img_shape"]
-            self.img_c, self.img_h, self.img_w = self.img_shape
-            self.action_size = trainer_cfg["action_size"]
-            self.use_actions = trainer_cfg["use_actions"]  # in that case, action_size > 0
-            self.device = trainer_cfg["device"]
+        if dataset_config is not None:
+            self.img_shape = dataset_config["img_shape"]
+            self.img_c = dataset_config["img_c"]
+            self.img_h = dataset_config["img_h"]
+            self.img_w = dataset_config["img_w"]
+            self.action_size = dataset_config["action_size"]
+            self.action_conditional = model_args.get("action_conditional", False)
+            self.device = device
 
     @classmethod
     def model_desc(cls):
@@ -25,6 +27,17 @@ class VideoPredictionModel(nn.Module):
     def desc(self):
         return self.__class__.model_desc()
 
+    @property
+    def config(self):
+        model_config = {
+            "action_conditional": self.action_conditional
+        }
+        return {**model_config, **self._config}
+
+    @property
+    def _config(self):
+        """ Model-specific config TODO"""
+        return {}
 
     def forward(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]

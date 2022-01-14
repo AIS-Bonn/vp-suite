@@ -20,15 +20,15 @@ class STLSTM(VideoPredictionModel):
     def model_desc(cls):
         return "ST-LSTM"
     
-    def __init__(self, trainer_cfg, **model_args):
-        super(STLSTM, self).__init__(trainer_cfg)
+    def __init__(self, dataset_config, device, **model_args):
+        super(STLSTM, self).__init__(dataset_config, device, **model_args)
 
         self.num_hidden = [self.enc_channels] * self.num_layers
-        self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, trainer_cfg["device"])
+        self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
         self.recurrent_cell = STLSTMCell
 
-        if self.use_actions:
+        if self.action_conditional:
             self.recurrent_cell = ActionConditionalSTLSTMCell
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
@@ -56,7 +56,7 @@ class STLSTM(VideoPredictionModel):
 
         frames = frames.transpose(0, 1)  # [t, b, c, h, w]
         actions = kwargs.get("actions", None)
-        if self.use_actions:
+        if self.action_conditional:
             if actions is None or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
             else:
@@ -83,12 +83,12 @@ class STLSTM(VideoPredictionModel):
         for t in range(T-1):
 
             next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen
-            if self.use_actions:
+            if self.action_conditional:
                 ac = self.action_inflate(actions[t]).view(-1, self.inflated_action_dim, self.enc_h, self.enc_w)
                 inflated_action = self.action_conv_h(ac) + self.action_conv_w(ac)
 
             for i in range(self.num_layers):
-                if self.use_actions:
+                if self.action_conditional:
                     h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](next_cell_input, h_t[i], c_t[i],
                                                                                  memory, inflated_action)
                 else:
