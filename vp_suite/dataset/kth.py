@@ -17,13 +17,14 @@ class KTHActionsDataset(BaseVPDataset):
     Going beyond 30 frames is therefore not recommended.
     Code by Angel Villar-Corrales, modified.
     '''
-    MAX_SEQ_LEN = 30
     NAME = "KTH Actions"
-    ACTION_SIZE = 0
-    DEFAULT_FRAME_SHAPE = (64, 64, 3)
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
     SHORT_CLASSES = ['walking', 'running', 'jogging']
+
+    max_seq_len = 30
+    action_size = 0
+    frame_shape = (64, 64, 3)
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(KTHActionsDataset, self).__init__(split, img_processor, **dataset_kwargs)
@@ -31,6 +32,12 @@ class KTHActionsDataset(BaseVPDataset):
         self.data_dir = str((Path(self.data_dir) / "processed").resolve())
         torchfile_name = f'{self.split}_meta{self.DEFAULT_FRAME_SHAPE[0]}x{self.DEFAULT_FRAME_SHAPE[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
+
+    def _config(self):
+        return {
+            "classes": self.CLASSES,
+            "short_classes": self.SHORT_CLASSES
+        }
 
     def get_from_idx(self, i):
         for c, c_data in self.data.items():

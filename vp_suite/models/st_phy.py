@@ -16,6 +16,9 @@ from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
 
 class STPhy(VideoPredictionModel):
 
+    NAME = "ST-Phy"
+    CAN_HANDLE_ACTIONS = True
+
     phy_kernel_size = (7, 7)
     phy_cell_channels = 49
     st_cell_channels = 64
@@ -24,11 +27,6 @@ class STPhy(VideoPredictionModel):
     reconstruction_loss_scale = 0.1
     decoupling_loss_scale = 100.0
     moment_loss_scale = 1.0
-    can_handle_actions = True
-
-    @classmethod
-    def model_desc(cls):
-        return "ST-Phy"
 
     def __init__(self, dataset_config, device, **model_args):
         super(STPhy, self).__init__(dataset_config, device, **model_args)
@@ -77,10 +75,22 @@ class STPhy(VideoPredictionModel):
                 ind += 1
         self.criterion = MSE(device=self.device)
 
-    def forward(self, x, **kwargs):
-        return self.pred_n(x, pred_length=1, **kwargs)
+    def _config(self):
+        return {
+            "phy_kernel_size": self.phy_kernel_size,
+            "phy_cell_channels": self.phy_cell_channels,
+            "st_cell_channels": self.st_cell_channels,
+            "num_layers": self.num_layers,
+            "inflated_action_dim": self.inflated_action_dim,
+            "reconstruction_loss_scale": self.reconstruction_loss_scale,
+            "decoupling_loss_scale": self.decoupling_loss_scale,
+            "moment_loss_scale": self.moment_loss_scale
+        }
 
-    def pred_n(self, input, pred_length=1, **kwargs):
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_length=1, **kwargs)
+
+    def forward(self, input, pred_length=1, **kwargs):
 
         frames = input.transpose(0, 1)  # [t, b, c, h, w]
         input_length, batch_size, _, _, _ = frames.shape
@@ -183,8 +193,8 @@ class STPhy(VideoPredictionModel):
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \
-                = self.pred_n(input_frames, pred_length=config["pred_frames"], actions=actions,
-                              teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
+                = self(input_frames, pred_length=config["pred_frames"], actions=actions,
+                               teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss
             _, loss = loss_provider.get_losses(predictions, target_frames)

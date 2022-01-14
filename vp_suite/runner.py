@@ -37,13 +37,13 @@ class Runner:
         """
         ATTENTION: this removes any loaded models and datasets
         """
-        self._reset_datasets()
-        self._reset_models()
+        self.reset_datasets()
+        self.reset_models()
         img_processor = ImgProcessor(value_min=value_min, value_max=value_max)
         dataset_class = DATASET_CLASSES[dataset]
         self._load_dataset(dataset_class, img_processor, **dataset_kwargs)
         print(f"INFO: loaded dataset '{self.dataset.NAME}' from {self.dataset.data_dir} "
-              f"(action size: {self.dataset.ACTION_SIZE})")
+              f"(action size: {self.dataset.action_size})")
         self.datasets_ready = True
 
     def _reset_models(self):

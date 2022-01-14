@@ -5,7 +5,6 @@ import wandb
 
 import torch.nn
 from torch.utils.data import DataLoader, Subset
-from tqdm import tqdm
 
 import vp_suite.constants as constants
 from vp_suite.runner import Runner
@@ -48,7 +47,7 @@ class Trainer(Runner):
         """
         overrides existing model
         """
-        self._reset_models()
+        self.reset_models()
         assert self.datasets_ready, "ERROR: no dataset loaded -> load a dataset first before loading a model."
 
         model_ckpt = os.path.join(model_dir, ckpt_name)
@@ -59,13 +58,13 @@ class Trainer(Runner):
         """
         overrides existing model
         """
-        self._reset_models()
+        self.reset_models()
         assert self.datasets_ready, "ERROR: no dataset loaded -> load a dataset first before loading a model."
 
         # parameter processing
         assert model_type in AVAILABLE_MODELS, f"ERROR: invalid model type specified! " \
                                                f"Available model types: {AVAILABLE_MODELS}"
-        if action_conditional and not self.model.can_handle_actions:
+        if action_conditional and not self.model.CAN_HANDLE_ACTIONS:
             print("WARNING: specified model can't handle actions -> argument 'action_conditional' set to False")
             action_conditional = False
         model_args.update(action_conditional=action_conditional)
@@ -76,14 +75,15 @@ class Trainer(Runner):
 
     def _model_setup(self, model, loaded=False):
         """ TODO docs """
-        check_model_and_data_compat(model.config, self.dataset_config, model)
+        check_model_and_data_compat(model, self.dataset_config)
         self.model = model
         ac_str = "(action-conditional)" if self.model_config["action_conditional"] else ""
         loaded_str = "loaded" if loaded else "created new"
-        print(f"INFO: {loaded_str} model '{self.model.desc}' {ac_str}")
+        print(f"INFO: {loaded_str} model '{self.model.NAME}' {ac_str}")
         total_params = sum(p.numel() for p in self.model.parameters())
         trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
+        self.models_ready = True
 
     def _prepare_training(self, **training_kwargs):
         """
@@ -99,10 +99,9 @@ class Trainer(Runner):
         self.val_data.set_seq_len(run_config["context_frames"], run_config["pred_frames"],
                                   run_config["seq_step"])
 
-        # If the model is loaded, compatibility needs to be checked with the loaded dataset and the run parameters
-        if self.is_loaded_model:
-            _, _, = check_run_and_model_compat(self.model_config, run_config, self.model, strict_mode=True)
-            check_model_and_data_compat(self.model_config, self.dataset_config, self.model)
+        # Compatibility needs to be checked with the loaded dataset and the run parameters
+        _, _, = check_run_and_model_compat(self.model, run_config, strict_mode=True)
+        check_model_and_data_compat(self.model, self.dataset_config)
 
         self.run_config = run_config
 
@@ -145,7 +144,7 @@ class Trainer(Runner):
         out_path = constants.OUT_PATH / timestamp('train')
         out_path.mkdir(parents=True)
         best_model_path = str((out_path / 'best_model.pth').resolve())
-        with_training = self.model.trainable and not self.run_config["no_train"]
+        with_training = self.model.TRAINABLE and not self.run_config["no_train"]
 
         # HYPERPARAMETER OPTIMIZATION
         using_optuna = trial is not None
@@ -155,7 +154,7 @@ class Trainer(Runner):
                 if "choices" in p_dict.keys():
                     if param == "model_type":
                         print(f"WARNING: hyperopt across model and dataset parameters is not yet supported "
-                              f"-> using {self.model.desc}")
+                              f"-> using {self.model.NAME}")
                     self.run_config[param] = trial.suggest_categorical(param, p_dict["choices"])
                 else:
                     suggest = trial.suggest_int if p_dict["type"] == "int" else trial.suggest_float
@@ -203,17 +202,13 @@ class Trainer(Runner):
             # train
             print(f'\nTraining (epoch: {epoch+1} of {config["epochs"]})')
             if with_training:
-                # use prediction model's own training loop if available
-                if callable(getattr(self.model, "train_iter", None)):
-                    self.model.train_iter(config, train_loader, optimizer, loss_provider, epoch)
-                else:
-                    train_iter(self.model, config, train_loader, optimizer, loss_provider)
+                self.model.train_iter(config, train_loader, optimizer, loss_provider, epoch)
             else:
                 print("Skipping training loop.")
 
             # eval
             print("Validating...")
-            val_losses, indicator_loss = eval_iter(self.model, config, val_loader, loss_provider)
+            val_losses, indicator_loss = self.model.eval_iter(config, val_loader, loss_provider)
             if with_training:
                 optimizer_scheduler.step(indicator_loss)
             print("Validation losses (mean over entire validation set):")
@@ -250,65 +245,3 @@ class Trainer(Runner):
         torch.save(self.model, str((out_path / 'final_model.pth').resolve()))
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
-
-
-def train_iter(model, config, loader, optimizer, loss_provider):
-    loop = tqdm(loader)
-    for batch_idx, data in enumerate(loop):
-
-        # input
-        img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
-        input = img_data[:, :config["context_frames"]]
-        targets = img_data[:, config["context_frames"]
-                              : config["context_frames"] + config["pred_frames"]]
-        actions = data["actions"].to(config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
-
-        # fwd
-        predictions, model_losses = model.pred_n(input, pred_length=config["pred_frames"], actions=actions)
-
-        # loss
-        _, total_loss = loss_provider.get_losses(predictions, targets)
-        if model_losses is not None:
-            for value in model_losses.values():
-                total_loss += value
-
-        # bwd
-        optimizer.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 100)
-        optimizer.step()
-
-        # bookkeeping
-        loop.set_postfix(loss=total_loss.item())
-        # loop.set_postfix(mem=torch.cuda.memory_allocated())
-
-def eval_iter(model, config, loader, loss_provider):
-    model.eval()
-    loop = tqdm(loader)
-    all_losses = []
-    indicator_losses = []
-
-    with torch.no_grad():
-        for batch_idx, data in enumerate(loop):
-
-            # fwd
-            img_data = data["frames"].to(config["device"])  # [b, T, h, w], with T = total_frames
-            input = img_data[:, :config["context_frames"]]
-            targets = img_data[:, config["context_frames"]
-                                  : config["context_frames"] + config["pred_frames"]]
-            actions = data["actions"].to(config["device"])
-
-            predictions, model_losses = model.pred_n(input, pred_length=config["pred_frames"], actions=actions)
-
-            # metrics
-            loss_values, _ = loss_provider.get_losses(predictions, targets)
-            all_losses.append(loss_values)
-            indicator_losses.append(loss_values[config["val_rec_criterion"]])
-
-    indicator_loss = torch.stack(indicator_losses).mean()
-    all_losses = {
-        k: torch.stack([loss_values[k] for loss_values in all_losses]).mean().item() for k in all_losses[0].keys()
-    }
-    model.train()
-
-    return all_losses, indicator_loss

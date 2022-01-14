@@ -11,13 +11,14 @@ class VPData(TypedDict):
 
 class BaseVPDataset(Dataset):
 
-    MAX_SEQ_LEN = NotImplemented
     NAME = NotImplemented
-    ACTION_SIZE = NotImplemented
-    DEFAULT_FRAME_SHAPE = NotImplemented
     DEFAULT_DATA_DIR = NotImplemented
     VALID_SPLITS = ["train", "test"]
-    TRAIN_KEEP_RATIO = 0.8
+
+    max_seq_len = NotImplemented
+    action_size = NotImplemented
+    frame_shape = NotImplemented
+    train_keep_ratio = 0.8
 
     def __init__(self, split, img_processor, **dataset_kwargs):
 
@@ -39,16 +40,19 @@ class BaseVPDataset(Dataset):
     @property
     def config(self):
         """ Dataset config that is used across all datasets """
-        img_h, img_w, img_c = self.DEFAULT_FRAME_SHAPE
+        img_h, img_w, img_c = self.frame_shape
         base_config = {
-            "action_size": self.ACTION_SIZE,
+            "action_size": self.action_size,
             "img_h": img_h,
             "img_w": img_w,
             "img_c": img_c,
-            "img_shape": self.DEFAULT_FRAME_SHAPE,
+            "img_shape": self.frame_shape,
             "value_min": self.img_processor.value_min,
             "value_max": self.img_processor.value_max,
-            "supports_actions": self.ACTION_SIZE > 0
+            "supports_actions": self.action_size > 0,
+            "max_seq_len": self.max_seq_len,
+            "frame_shape": self.frame_shape,
+            "train_keep_ratio": self.train_keep_ratio
         }
         return {**base_config, **self._config}
 
@@ -67,8 +71,8 @@ class BaseVPDataset(Dataset):
         if seq_step is not None:
             self.seq_step = seq_step
         self.seq_len = (self.total_frames - 1) * self.seq_step + 1
-        assert self.MAX_SEQ_LEN >= self.seq_len, \
-            f"Dataset '{self.NAME}' supports videos with up to {self.MAX_SEQ_LEN} frames, " \
+        assert self.max_seq_len >= self.seq_len, \
+            f"Dataset '{self.NAME}' supports videos with up to {self.max_seq_len} frames, " \
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
         self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
@@ -121,7 +125,7 @@ class BaseVPDataset(Dataset):
     def get_train_val(cls, img_processor, **dataset_args):
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", img_processor, **dataset_args)
-            len_train = int(len(D_main) * cls.TRAIN_KEEP_RATIO)
+            len_train = int(len(D_main) * cls.train_keep_ratio)
             len_val = len(D_main) - len_train
             D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
         elif cls.VALID_SPLITS == ["train", "val", "test"]:

@@ -12,12 +12,13 @@ import vp_suite.constants as constants
 
 class BAIRPushingDataset(BaseVPDataset):
 
-    MAX_SEQ_LEN = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
     NAME = "BAIR robot pushing"
-    ACTION_SIZE = 4
-    DEFAULT_FRAME_SHAPE = (64, 64, 3)
     DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
-    TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
+
+    max_seq_len = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
+    action_size = 4
+    frame_shape = (64, 64, 3)
+    train_keep_ratio = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(BAIRPushingDataset, self).__init__(split, img_processor, **dataset_kwargs)

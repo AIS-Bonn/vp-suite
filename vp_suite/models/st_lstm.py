@@ -8,17 +8,15 @@ from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalST
 
 
 class STLSTM(VideoPredictionModel):
+
+    NAME = "ST-LSTM"
+    CAN_HANDLE_ACTIONS = True
     
     enc_channels = 64
     num_layers = 3
     reconstruction_loss_scale = 0.1
     decoupling_loss_scale = 100.0
     inflated_action_dim = 3
-    can_handle_actions = True
-
-    @classmethod
-    def model_desc(cls):
-        return "ST-LSTM"
     
     def __init__(self, dataset_config, device, **model_args):
         super(STLSTM, self).__init__(dataset_config, device, **model_args)
@@ -49,10 +47,19 @@ class STLSTM(VideoPredictionModel):
         adapter_num_hidden = self.num_hidden[0]
         self.adapter = nn.Conv2d(adapter_num_hidden, adapter_num_hidden, 1, stride=1, padding=0, bias=False)
 
-    def forward(self, x, **kwargs):
-        return self.pred_n(x, pred_length=1, **kwargs)
+    def _config(self):
+        return {
+            "enc_channels": self.enc_channels,
+            "num_layers": self.num_layers,
+            "reconstruction_loss_scale": self.reconstruction_loss_scale,
+            "decoupling_loss_scale": self.decoupling_loss_scale,
+            "inflated_action_dim": self.inflated_action_dim
+        }
 
-    def pred_n(self, frames, pred_length=1, **kwargs):
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_length=1, **kwargs)
+
+    def forward(self, frames, pred_length=1, **kwargs):
 
         frames = frames.transpose(0, 1)  # [t, b, c, h, w]
         actions = kwargs.get("actions", None)

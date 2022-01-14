@@ -11,14 +11,12 @@ from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 class PhyDNet(VideoPredictionModel):
 
+    NAME = "PhyDNet"
+    CAN_HANDLE_ACTIONS = True
+
     moment_loss_scale = 1.0
     phy_kernel_size = (7, 7)
     phy_cell_channels = 49
-    can_handle_actions = True
-
-    @classmethod
-    def model_desc(cls):
-        return "PhyDNet"
 
     def __init__(self, dataset_config, device, **model_args):
         super(PhyDNet, self).__init__(dataset_config, device, **model_args)
@@ -33,11 +31,18 @@ class PhyDNet(VideoPredictionModel):
                 self.constraints[ind, i, j] = 1
                 ind += 1
 
-    def forward(self, x, **kwargs):
-        return self.pred_n(x, pred_length=1, **kwargs)
+    def _config(self):
+        return {
+            "moment_loss_scale": self.moment_loss_scale,
+            "phy_kernel_size": self.phy_kernel_size,
+            "phy_cell_channels": self.phy_cell_channels
+        }
 
-    # For PhyDNet, pred_n() is used for inference only (no training).
-    def pred_n(self, frames, pred_length=1, **kwargs):
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_length=1, **kwargs)
+
+    # For PhyDNet, forward() is used for inference only (no training).
+    def forward(self, frames, pred_length=1, **kwargs):
 
         # shape: [b, t, c, ...]
         in_length = frames.shape[1]

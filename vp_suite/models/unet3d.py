@@ -8,16 +8,17 @@ from vp_suite.models._base_model import VideoPredictionModel
 
 class UNet3D(VideoPredictionModel):
 
+    NAME = "UNet-3D"
+    CAN_HANDLE_ACTIONS = True
+
     features = [8, 16, 32, 64]
     temporal_dim = None
-    can_handle_actions = True
-
-    @classmethod
-    def model_desc(cls):
-        return "UNet-3D"
 
     def _config(self):
-        return {"temporal_dim": self.temporal_dim}
+        return {
+            "temporal_dim": self.temporal_dim,
+            "features": self.features
+        }
 
     def __init__(self, dataset_config, device, temporal_dim, **model_args):
         super(UNet3D, self).__init__(dataset_config, device, **model_args)
@@ -66,7 +67,7 @@ class UNet3D(VideoPredictionModel):
         # final
         self.final_conv = nn.Conv2d(in_channels=self.features[0], out_channels=self.img_c, kernel_size=(1, 1))
 
-    def pred_n(self, x, pred_length=1, **kwargs):
+    def forward(self, x, pred_length=1, **kwargs):
         # input: T_in frames: [b, T_in, c, h, w]
         # output: pred_length (P) frames: [b, P, c, h, w]
         preds = []
@@ -82,7 +83,7 @@ class UNet3D(VideoPredictionModel):
                 actions = actions.transpose(0, 1)  # [T_in+pred, b, ...]
 
         for t in range(pred_length):
-            pred, loss_dict = self.forward(x, **{"actions": actions[t:t+input_length]})
+            pred, loss_dict = self.pred_1(x, **{"actions": actions[t:t + input_length]})
             pred = pred.unsqueeze(dim=1)
             preds.append(pred)
             loss_dicts.append(loss_dict)
@@ -95,7 +96,7 @@ class UNet3D(VideoPredictionModel):
             loss_dict = None
         return pred, loss_dict
 
-    def forward(self, x, **kwargs):
+    def pred_1(self, x, **kwargs):
         # input: T frames: [b, T, c, h, w]
         # output: single frame: [b, c, h, w]
         assert x.shape[1] == self.temporal_dim, f"{self.temporal_dim} frames needed as pred input, {x.shape[1]} are given"

@@ -12,16 +12,14 @@ class ConvLSTM(VideoPredictionModel):
     Modified from https://github.com/ndrplz/ConvLSTM_pytorch
     '''
 
+    NAME = "ConvLSTM"
+    CAN_HANDLE_ACTIONS = True
+
     lstm_kernel_size = (3, 3)
     lstm_num_layers = 3
     lstm_channels = 64
     encoding_channels = 16, lstm_channels
     decoding_channels = lstm_channels, 32, 16, 8
-    can_handle_actions = True
-
-    @classmethod
-    def model_desc(cls):
-        return "ConvLSTM"
 
     def __init__(self, dataset_config, device, **model_args):
         super(ConvLSTM, self).__init__(dataset_config, device, **model_args)
@@ -54,10 +52,19 @@ class ConvLSTM(VideoPredictionModel):
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.action_size * self.enc_h * self.enc_w)
 
-    def forward(self, x, **kwargs):
-        return self.pred_n(x, pred_length=1, **kwargs)
+    def _config(self):
+        return {
+            "lstm_kernel_size": self.lstm_kernel_size,
+            "lstm_num_layers": self.lstm_num_layers,
+            "lstm_channels": self.lstm_channels,
+            "encoding_channels": self.encoding_channels,
+            "decoding_channels": self.decoding_channels
+        }
 
-    def pred_n(self, x, pred_length=1, **kwargs):
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_length=1, **kwargs)
+
+    def forward(self, x, pred_length=1, **kwargs):
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]

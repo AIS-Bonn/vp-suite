@@ -19,14 +19,15 @@ import vp_suite.constants as constants
 
 class SynpickVideoDataset(BaseVPDataset):
 
-    MAX_SEQ_LEN = 90  # a trajectory in the SynPick dataset is at least 90 frames
     NAME = "SynPick bin picking"
-    ACTION_SIZE = 3
-    DEFAULT_FRAME_SHAPE = (135, 240, 3)
-    SKIP_FIRST_N = 72
     DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
-    TRAIN_KEEP_RATIO = 0.9
+    SKIP_FIRST_N = 72
+
+    max_seq_len = 90  # a trajectory in the SynPick dataset is at least 90 frames
+    action_size = 3
+    frame_shape = (135, 240, 3)
+    train_keep_ratio = 0.9
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(SynpickVideoDataset, self).__init__(split, img_processor, **dataset_kwargs)
@@ -48,6 +49,11 @@ class SynpickVideoDataset(BaseVPDataset):
             gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
             self.gripper_pos[ep] = gripper_pos
         self.total_len = len(self.image_ids)
+
+    def _config(self):
+        return {
+            "skip_first_n": self.SKIP_FIRST_N
+        }
 
     def set_seq_len_(self):
         # Determine which dataset indices are valid for given sequence length T

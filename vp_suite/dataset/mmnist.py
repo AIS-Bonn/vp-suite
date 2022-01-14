@@ -13,12 +13,13 @@ import vp_suite.constants as constants
 
 class MovingMNISTDataset(BaseVPDataset):
 
-    MAX_SEQ_LEN = 20  # default MMNIST sequences span 20 frames
     NAME = "Moving MNIST"
-    ACTION_SIZE = 0
-    DEFAULT_FRAME_SHAPE = (64, 64, 3)
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
-    TRAIN_KEEP_RATIO = 0.96  # big dataset -> val can be smaller
+
+    max_seq_len = 20  # default MMNIST sequences span 20 frames
+    action_size = 0
+    frame_shape = (64, 64, 3)
+    train_keep_ratio = 0.96  # big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         super(MovingMNISTDataset, self).__init__(split, img_processor, **dataset_kwargs)
