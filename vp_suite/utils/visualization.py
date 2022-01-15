@@ -117,7 +117,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
             pred_model.eval()
             with torch.no_grad():
                 in_traj = in_traj[:context_frames].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
-                pr_traj, _ = pred_model.forward(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
+                pr_traj, _ = pred_model(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
                 pr_traj_vis = dataset.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
 

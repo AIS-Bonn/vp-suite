@@ -32,13 +32,13 @@ class Tester(Runner):
         self.test_data = dataset_class.get_test(img_processor, **dataset_kwargs)
         self.dataset = self.test_data
 
-    def _prepare_testing(self, **testing_kwargs):
+    def _prepare_testing(self, **run_kwargs):
         """
         Updates the current config with the given training parameters,
         prepares the dataset for usage and checks model compatibility.
         """
 
-        run_config = self._get_run_config(**testing_kwargs)  # TODO respect testing args
+        run_config = self._get_run_config(**run_kwargs)
 
         # prepare dataset for testing
         self.test_data.set_seq_len(run_config["context_frames"], run_config["pred_frames"],
@@ -70,14 +70,14 @@ class Tester(Runner):
             self.models.append(model_info)
         self.models_ready = True
 
-    def test(self, **testing_kwargs):
+    def test(self, brief_test=False, **run_kwargs):
 
         # PREPARATION
-        self._prepare_testing(**testing_kwargs)
+        self._prepare_testing(**run_kwargs)
         test_loader = DataLoader(self.test_data, batch_size=1, shuffle=True, num_workers=0)
         iter_loader = iter(test_loader)
-        mini_test = testing_kwargs.get("mini", False)
-        eval_length = 10 if mini_test else len(iter_loader)
+        test_mode = "brief" if brief_test else "full"
+        eval_length = 10 if test_mode == "brief" else len(iter_loader)
 
         # assemble and save combined configuration
         config = {**self.run_config, **self.dataset_config, "device": self.device}
@@ -98,9 +98,9 @@ class Tester(Runner):
                     for (model, _, preprocess, postprocess, model_metrics_per_dp) in self.models:
                         input = preprocess(input)  # test format to model format
                         if getattr(model, "use_actions", False):
-                            pred, _ = model.forward(input, pred_length=config["pred_frames"], actions=actions)
+                            pred, _ = model(input, pred_length=config["pred_frames"], actions=actions)
                         else:
-                            pred, _ = model.forward(input, pred_length=config["pred_frames"])
+                            pred, _ = model(input, pred_length=config["pred_frames"])
                         pred = postprocess(pred)  # model format to test format
                         cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
                         model_metrics_per_dp.append(cur_metrics)
@@ -120,7 +120,7 @@ class Tester(Runner):
 
         # log or display metrics
         if eval_length > 0:
-            wandb_full_suffix = "" if mini_test else "(full test)"
+            wandb_full_suffix = f"{test_mode} test"
             for i, (model, model_dir, _, _, model_metrics_per_dp) in enumerate(self.models):
 
                 # model_metrics_per_dp: list of N lists of F metric dicts (called D).
@@ -139,7 +139,7 @@ class Tester(Runner):
                 # Log model to WandB
                 if not config["no_wandb"]:
                     print("Logging test results to WandB for all models...")
-                    wandb.init(config={"mini_test": mini_test, "model_dir": model_dir},
+                    wandb.init(config={"test_mode": test_mode, "model_dir": model_dir},
                                project="vp-suite-testing", name=f"{model.NAME}{wandb_full_suffix}",
                                dir=str(constants.WANDB_PATH.resolve()), reinit=(i > 0))
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
