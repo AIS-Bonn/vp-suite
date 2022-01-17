@@ -4,10 +4,11 @@ from vp_suite.dataset._wrapper import DatasetWrapper
 from vp_suite.utils.img_processor import ImgProcessor
 
 @pytest.mark.slow
-@pytest.mark.parametrize('dataset_class', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
-def test_dataset(dataset_class):
+@pytest.mark.parametrize('dataset_str', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
+def test_dataset(dataset_str):
 
     img_processor = ImgProcessor(value_min=0.0, value_max=1.0)
+    dataset_class = DATASET_CLASSES[dataset_str]
     train_wrapper = DatasetWrapper(dataset_class, img_processor, "train")
     train_wrapper.set_seq_len(1, 1, 1)
     test_wrapper = DatasetWrapper(dataset_class, img_processor, "test")
@@ -23,4 +24,5 @@ def test_dataset(dataset_class):
         assert set(ex_.keys()) == {"frames", "actions"}
         assert ex_["frames"].shape[1] == train_wrapper.frame_shape[-1]
         assert ex_["frames"].shape[2:] == train_wrapper.frame_shape[:2]
-        assert ex_["actions"].shape[-1] == train_wrapper.action_size
+        if train_wrapper.action_size > 0:
+            assert ex_["actions"].shape[-1] == train_wrapper.action_size
