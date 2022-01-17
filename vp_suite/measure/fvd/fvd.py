@@ -29,7 +29,7 @@ class FrechetVideoDistance(BaseMeasure):
     max_T = 16
     i3d_in_shape = (224, 224)
     i3d_num_classes = 400
-    i3d_ckpt_file = str((Path(__file__) / "pytorch_i3d" / "models" / "rgb_imagenet.pt").resolve())
+    i3d_ckpt_file = str((Path(__file__).parent / "pytorch_i3d" / "models" / "rgb_imagenet.pt").resolve())
     input_chunks = 1
     drop_last_chunk = False
 
