@@ -25,7 +25,7 @@ def test_models_without_actions(model_key):
     b = 2
     t = model.min_context_frames
     h, w, c = IMG_SHAPE
-    x = torch.randn(b, t, c, h, w)
+    x = torch.randn(b, t, c, h, w, device=DEVICE)
     pred_1 = model.pred_1(x)
     pred_5 = model(x, pred_length = 5)
 
@@ -46,12 +46,12 @@ def test_models_with_actions(model_key):
     }
     model : VideoPredictionModel = model_class(DEVICE, **model_args).to(DEVICE)
     b = 2
-    t = model.min_context_frames
+    t = TEMPORAL_DIM
     h, w, c = IMG_SHAPE
-    x = torch.randn(b, t, c, h, w)
-    a = torch.randn(b, t, ACTION_SIZE)
+    x = torch.randn(b, t, c, h, w, device=DEVICE)
+    a = torch.randn(b, t, ACTION_SIZE, device=DEVICE)
     pred_1 = model.pred_1(x, actions=a)
-    pred_5 = model(x, pred_length = 5, actions=a)
+    pred_5, _ = model(x, pred_length = 5, actions=a)
 
-    assert pred_1.shape == (b, 1, c, h, w)
+    assert pred_1.shape == (b, c, h, w)
     assert pred_5.shape == (b, 5, c, h, w)

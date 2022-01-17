@@ -88,7 +88,7 @@ class STPhy(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs)
+        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
 
     def forward(self, input, pred_length=1, **kwargs):
 

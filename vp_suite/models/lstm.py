@@ -66,7 +66,7 @@ class LSTM(VideoPredictionModel):
         return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs)
+        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
 

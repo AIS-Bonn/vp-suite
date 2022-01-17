@@ -31,7 +31,7 @@ class SimpleV1(VideoPredictionModel):
 
     def pred_1(self, x, **kwargs):
         assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
-        return self.cnn(x)
+        return self.cnn(x).squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]

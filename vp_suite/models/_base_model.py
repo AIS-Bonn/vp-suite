@@ -15,13 +15,13 @@ class VideoPredictionModel(nn.Module):
 
     def __init__(self, device="cpu", **model_args):
         super(VideoPredictionModel, self).__init__()
+        self.device = device
         self.img_shape = model_args.get("img_shape", (None, None, None))  # h, w, c
         self.img_h, self.img_wm, self.img_c = self.img_shape
         self.action_size = model_args.get("action_size", 0)
         self.action_conditional = model_args.get("action_conditional", False)
-        self.device = device
 
-        configurable_params = ["action_conditional"] + list(self._config.keys())
+        configurable_params = self.config.keys()
         for model_arg in model_args.keys():
             assert model_arg in configurable_params, f"ERROR: encountered invalid model parameter '{model_arg}'. " \
                                                      f"Model '{self.NAME}' supports the following arguments: " \
@@ -31,15 +31,16 @@ class VideoPredictionModel(nn.Module):
     def config(self):
         model_config = {
             "model_dir": self.model_dir,
+            "img_shape": self.img_shape,
+            "action_size": self.action_size,
             "action_conditional": self.action_conditional,
             "min_context_frames": self.min_context_frames
         }
-        return {**model_config, **self._config}
+        return {**model_config, **self._config()}
 
-    @property
     def _config(self):
         """ Model-specific config TODO doc"""
-        return {}
+        return dict()
 
     def pred_1(self, x, **kwargs):
         """ Predicts a single frame """
