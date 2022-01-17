@@ -77,11 +77,11 @@ class VPSuite:
         assert model_type in AVAILABLE_MODELS, f"ERROR: invalid model type specified! " \
                                                f"Available model types: {AVAILABLE_MODELS}"
         model_class = MODEL_CLASSES[model_type]
-        if "img_shape" in model_args.keys() and "action_size" in model_args.keys():
-            model_args.update(img_shape=model_args["img_shape"], action_size=model_args["action_size"])
-        else:
-            assert len(self.datasets) > 0, \
-                "ERROR: no datasets loaded and no action and frame size specified for model construction"
+        for param in ["img_shape", "action_size"]:
+            if param not in model_args.keys():
+                print(f"INFO: model parameter '{param}' not specified -> trying to take from last loaded dataset...")
+                assert len(self.datasets) > 0, f"ERROR: no dataset loaded to take parameter '{param}' from"
+                model_args.update({param: self.datasets[-1].config[param]})
         if action_conditional and not model_class.CAN_HANDLE_ACTIONS:
             print("WARNING: specified model can't handle actions -> argument 'action_conditional' set to False")
             action_conditional = False
@@ -92,7 +92,6 @@ class VPSuite:
         self._model_setup(model)
 
     def _model_setup(self, model, loaded=False):
-        """ TODO docs """
         ac_str = "(action-conditional)" if model.config["action_conditional"] else ""
         loaded_str = "loaded" if loaded else "created new"
         print(f"INFO: {loaded_str} model '{model.NAME}' {ac_str}")
