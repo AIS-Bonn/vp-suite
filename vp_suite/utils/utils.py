@@ -59,3 +59,17 @@ def download_from_url(url: str, dst_path : str):
     print(f"Downloading from {url}...")
     with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=filename) as t:
         urlretrieve(url, dst_path, reporthook=t.update_to)
+
+def _check_optuna_config(optuna_cfg : dict):
+    try:
+        for parameter, p_dict in optuna_cfg.items():
+            assert isinstance(p_dict, dict)
+            if "choices" in p_dict.keys():
+                assert (isinstance(p_dict["choices"], list))
+            else:
+                assert {"type", "min", "max"}.issubset(set(p_dict.keys()))
+                assert p_dict["min"] <= p_dict["max"]
+                if p_dict["type"] == "float":
+                    assert p_dict.get("scale", '') in ["log", "uniform"]
+    except AssertionError:
+        print("ERROR: invalid optuna config")

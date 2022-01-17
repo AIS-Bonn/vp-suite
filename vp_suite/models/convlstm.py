@@ -21,8 +21,8 @@ class ConvLSTM(VideoPredictionModel):
     encoding_channels = 16, lstm_channels
     decoding_channels = lstm_channels, 32, 16, 8
 
-    def __init__(self, dataset_config, device, **model_args):
-        super(ConvLSTM, self).__init__(dataset_config, device, **model_args)
+    def __init__(self, device, **model_args):
+        super(ConvLSTM, self).__init__(device, **model_args)
 
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 

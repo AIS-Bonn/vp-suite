@@ -28,8 +28,8 @@ class STPhy(VideoPredictionModel):
     decoupling_loss_scale = 100.0
     moment_loss_scale = 1.0
 
-    def __init__(self, dataset_config, device, **model_args):
-        super(STPhy, self).__init__(dataset_config, device, **model_args)
+    def __init__(self, device, **model_args):
+        super(STPhy, self).__init__(device, **model_args)
 
         self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
         self.dim_phy_hidden = [self.phy_cell_channels] * self.num_layers

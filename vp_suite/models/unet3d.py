@@ -20,10 +20,11 @@ class UNet3D(VideoPredictionModel):
             "features": self.features
         }
 
-    def __init__(self, dataset_config, device, temporal_dim, **model_args):
-        super(UNet3D, self).__init__(dataset_config, device, **model_args)
+    def __init__(self, device, **model_args):
+        super(UNet3D, self).__init__(device, **model_args)
 
-        self.temporal_dim = temporal_dim
+        assert "temporal_dim" in model_args.keys(), "ERROR: model {self.NAME} requires parameter 'temporal_dim'"
+        self.temporal_dim = model_args["temporal_dim"]
         self.min_context_frames = self.temporal_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()

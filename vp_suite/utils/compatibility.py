@@ -4,10 +4,11 @@ from torchvision import transforms as TF
 from vp_suite.utils.models import ScaleToModel, ScaleToTest
 
 
-def check_model_and_data_compat(model, dataset_config):
+def check_model_and_data_compat(model, dataset):
     """ TODO doc """
 
     model_config = model.config
+    dataset_config = dataset.config
 
     # img shape
     model_img_shape = model_config.get("img_shape", dataset_config["img_shape"])
@@ -22,7 +23,7 @@ def check_model_and_data_compat(model, dataset_config):
             "ERROR: action size of action-conditional model and dataset must be equal"
 
 
-def check_run_and_model_compat(model, run_config, strict_mode=False, model_dir:str=None):
+def check_run_and_model_compat(model, run_config, strict_mode=False):
     '''
     Checks consistency of the config of a loaded model with given the run configuration.
     Creates appropriate adapter modules to bridge the differences if possible and not in strict_mode.
@@ -31,7 +32,7 @@ def check_run_and_model_compat(model, run_config, strict_mode=False, model_dir:s
     '''
     model_config = model.config
     model_preprocessing, model_postprocessing = [], []
-    model_origin_str =  "" if model_dir is None else f"(loaded from {model_dir})"
+    model_dir_str =  f"(location: {model.model_dir})"
 
     # value range
     model_value_range = list(model_config["tensor_value_range"])
@@ -47,18 +48,18 @@ def check_run_and_model_compat(model, run_config, strict_mode=False, model_dir:s
     if model.CAN_HANDLE_ACTIONS:
         if mdl_ac:
             if not run_ac:
-                raise ValueError(f"ERROR: Action-conditioned model '{model.NAME}' {model_origin_str}"
+                raise ValueError(f"ERROR: Action-conditioned model '{model.NAME}' {model_dir_str}"
                                  f"can't be invoked without using actions -> set 'use_actions' to True in test cfg!")
             else:
                 assert model_config["action_size"] == run_config["action_size"], \
-                    f"ERROR: Action-conditioned model '{model.NAME}' {model_origin_str} " \
+                    f"ERROR: Action-conditioned model '{model.NAME}' {model_dir_str} " \
                     f"was trained with action size {model_config['action_size']}, " \
                     f"which is different from the dataset's action size ({run_config['action_size']})"
         elif run_ac:
-            raise ValueError(f"ERROR: Action-conditionable model '{model.NAME}' {model_origin_str}"
+            raise ValueError(f"ERROR: Action-conditionable model '{model.NAME}' {model_dir_str}"
                              f"was trained without using actions -> set 'use_actions' to False in test cfg!")
     elif run_ac:
-        print(f"WARNING: Model '{model.NAME}' {model_origin_str} can't handle actions"
+        print(f"WARNING: Model '{model.NAME}' {model_dir_str} can't handle actions"
               f" -> Testing it without using the actions provided by the dataset")
 
     # img_shape
@@ -66,7 +67,7 @@ def check_run_and_model_compat(model, run_config, strict_mode=False, model_dir:s
     test_c, test_h, test_w = run_config["img_shape"]
     if model_c != test_c:
         raise ValueError(f"ERROR: Test dataset provides {test_c}-channel images but "
-                         f"Model '{model.NAME}' {model_origin_str} expects {model_c} channels")
+                         f"Model '{model.NAME}' {model_dir_str} expects {model_c} channels")
     elif model_h != test_h or model_w != test_w:
         if strict_mode:
             raise ValueError(f"ERROR: model and run img sizes differ")
@@ -77,7 +78,7 @@ def check_run_and_model_compat(model, run_config, strict_mode=False, model_dir:s
     if run_config["context_frames"] is None:
         run_config["context_frames"] = model_config["context_frames"]
     elif run_config["context_frames"] < model.min_context_frames:
-        raise ValueError(f"ERROR: Model '{model.NAME}' {model_origin_str} needs at least "
+        raise ValueError(f"ERROR: Model '{model.NAME}' {model_dir_str} needs at least "
                          f"{model.min_context_frames} context frames as it uses temporal convolution "
                          f"with said number as kernel size")
     if run_config["pred_frames"] is None:

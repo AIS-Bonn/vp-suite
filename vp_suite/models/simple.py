@@ -9,10 +9,11 @@ class SimpleV1(VideoPredictionModel):
 
     temporal_dim = None
 
-    def __init__(self, dataset_config, device, temporal_dim, **model_args):
-        super(SimpleV1, self).__init__(dataset_config, device, **model_args)
+    def __init__(self, device, **model_args):
+        super(SimpleV1, self).__init__(device, **model_args)
 
-        self.temporal_dim = temporal_dim
+        assert "temporal_dim" in model_args.keys(), "ERROR: model {self.NAME} requires parameter 'temporal_dim'"
+        self.temporal_dim = model_args["temporal_dim"]
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
@@ -54,10 +55,11 @@ class SimpleV2(VideoPredictionModel):
             "hidden_channels": self.hidden_channels
         }
 
-    def __init__(self, dataset_config, device, temporal_dim, **model_args):
-        super(SimpleV2, self).__init__(dataset_config, device, **model_args)
+    def __init__(self, device, **model_args):
+        super(SimpleV2, self).__init__(device, **model_args)
 
-        self.temporal_dim = temporal_dim
+        assert "temporal_dim" in model_args.keys(), "ERROR: model {self.NAME} requires parameter 'temporal_dim'"
+        self.temporal_dim = model_args["temporal_dim"]
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(
