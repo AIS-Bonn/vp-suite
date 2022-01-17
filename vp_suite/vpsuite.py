@@ -125,7 +125,7 @@ class VPSuite:
         torch.manual_seed(run_config["seed"])
 
         # opt. direction
-        run_config["opt_direction"] = "maximize" if LOSS_CLASSES[run_config["val_rec_criterion"]].bigger_is_better \
+        run_config["opt_direction"] = "maximize" if LOSS_CLASSES[run_config["val_rec_criterion"]].BIGGER_IS_BETTER \
             else "minimize"
 
         return run_config

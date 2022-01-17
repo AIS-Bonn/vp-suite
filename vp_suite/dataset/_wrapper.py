@@ -58,6 +58,10 @@ class DatasetWrapper:
         return self.datasets["main"].action_size
 
     @property
+    def frame_shape(self):
+        return self.datasets["main"].frame_shape
+
+    @property
     def config(self):
         return self.datasets["main"].config
 

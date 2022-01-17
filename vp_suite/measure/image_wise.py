@@ -40,10 +40,13 @@ class SmoothL1(BaseMeasure):
 
 
 class PSNR(BaseMeasure):
+
+    BIGGER_IS_BETTER = True
+    OPT_VALUE = float("inf")
+
     def __init__(self, device):
         super(PSNR, self).__init__(device)
         self.criterion = piqa.psnr.PSNR().to(device)
-        self.bigger_is_better = True
 
     def forward(self, pred, target):
         if pred.ndim == 5:
@@ -74,10 +77,13 @@ class LPIPS(BaseMeasure):
 
 
 class SSIM(BaseMeasure):
+
+    BIGGER_IS_BETTER = True
+    OPT_VALUE = 1
+
     def __init__(self, device):
         super(SSIM, self).__init__(device)
         self.criterion = piqa.ssim.SSIM().to(device)
-        self.bigger_is_better = True
 
     def forward(self, pred, target):
         pred = pred.reshape(-1, *pred.shape[-3:])  # [..., 3, h, w]

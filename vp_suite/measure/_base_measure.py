@@ -3,7 +3,8 @@ from torch import nn as nn
 
 class BaseMeasure(nn.Module):
 
-    bigger_is_better = False
+    BIGGER_IS_BETTER = False  # specifying whether bigger values are better
+    OPT_VALUE = 0.  # specifying the best value attainable (e.g. with equal tensors)
 
     def __init__(self, device):
         super(BaseMeasure, self).__init__()

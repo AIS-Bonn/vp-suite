@@ -30,7 +30,7 @@ class PredictionMetricProvider():
             pred_ = pred[:, :frame_cnt]
             target_ = target[:, :frame_cnt]
             frame_cnt_metrics = {
-                f"{key} ({'↑' if metric.bigger_is_better else '↓'})":
+                f"{key} ({'↑' if metric.BIGGER_IS_BETTER else '↓'})":
                     metric.to_display(metric(pred_, target_).item())
                 for key, metric in self.metrics.items()
             }
