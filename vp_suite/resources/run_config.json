@@ -15,5 +15,6 @@
     "context_frames": 10,
     "pred_frames": 10,
     "use_actions": false,
-    "seq_step": 1
+    "seq_step": 1,
+    "out_dir": null
 }

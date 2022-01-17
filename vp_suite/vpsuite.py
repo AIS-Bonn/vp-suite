@@ -161,7 +161,8 @@ class VPSuite:
                                   drop_last=True)
         val_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
         best_val_loss = float("inf")
-        out_path = constants.OUT_PATH / timestamp('train')
+        out_path = Path(run_config["out_dir"]) if run_config["out_dir"] is not None \
+            else constants.OUT_PATH / timestamp('train')
         out_path.mkdir(parents=True)
         model.model_dir = str(out_path.resolve())
         best_model_path = str((out_path / 'best_model.pth').resolve())
