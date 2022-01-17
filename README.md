@@ -35,44 +35,32 @@ that will contain all downloaded data as well as run logs, outputs and trained m
 #### Training models
 
 1. Set up the trainer:
-
-```python
-from vp_suite.trainer import Trainer
-
-vp_trainer = Trainer()
-```
-
 2. Load one of the provided datasets (will be downloaded automatically) [create your own](#training-on-custom-datasets):
+3. Create video prediction model (either from scratch or from a pretrained checkpoint, can be one of the provided models or your own):
+4. Run the training loop, optionally providing custom configuration
 
 ```python
-# check available datasets
-from vp_suite.dataset import AVAILABLE_DATASETS
+from vp_suite import VPSuite
 
+suite = VPSuite()
+
+# check available datasets (should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...])
+from vp_suite.dataset import AVAILABLE_DATASETS
 print(AVAILABLE_DATASETS)
-# should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (see docs for customization options)
-vp_trainer.load_dataset("MM")
-```
-
-3. Create video prediction model (either from scratch or from a pretrained checkpoint, can be one of the provided models or your own):
-
-```python
+suite.load_dataset("MM")
 model_checkpoint = ""  # set to valid model path to load a checkpoint
 if model_checkpoint != "":
-    vp_trainer.load_model(model_checkpoint)
+   suite.load_model(model_checkpoint)
 else:
-    # check available model types
-    from vp_suite.models import MODEL_CLASSES
-
-    print({k: v.desc for k, v in MODEL_CLASSES.items()})
-    # should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...}
-    vp_trainer.create_model('lstm')
-```
-
-4. Run the training loop, optionally providing custom configuration
-```python
-vp_trainer.train(lr=2e-4, epochs=100)
+   # check available model types (should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...})
+   from vp_suite.models import MODEL_CLASSES
+   print({k: v.desc for k, v in MODEL_CLASSES.items()})
+   
+   suite.create_model('lstm')
+   
+suite.train(lr=2e-4, epochs=100)
 ```
 
 This will train the model, log training progress to the console (and optionally to [Weights & Biases](https://wandb.ai)),
@@ -80,37 +68,28 @@ save model checkpoints on improvement and, optionally, generate and save predict
 
 #### Evaluating models
 
-1. Set up the tester:
+1. Set up the tester
+2. Load one of the provided datasets or (will be downloaded automatically) [create your own](#training-on-custom-datasets)
+3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/Flunzmas/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded)
+4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
 
 ```python
-from vp_suite.tester import Tester
+from vp_suite import VPSuite
 
-vp_tester = Tester()
-```
+suite = VPSuite()
 
-2. Load one of the provided datasets or (will be downloaded automatically) [create your own](#training-on-custom-datasets):
-
-```python
-# check available datasets
+# check available datasets (should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...])
 from vp_suite.dataset import AVAILABLE_DATASETS
-
 print(AVAILABLE_DATASETS)
-# should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...]
 
 # load moving MNIST dataset from default location (see docs for customization options)
-vp_tester.load_dataset("MM")
-```
+suite.load_dataset("MM")
 
-3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/Flunzmas/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded):
-```python
 # get the filepaths to the models you'd like to test
 model_dirs = ["out/model_foo/", "out/model_bar/"]
-vp_tester.load_models(model_dirs)
-```
-
-4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
-```python
-vp_tester.test(context_frames=5, pred_frames=10)
+for model_dir in model_dirs:
+    suite.load_model(model_dir, ckpt_name="best_model.pth")
+suite.test(context_frames=5, pred_frames=10)
 ```
 
 This code will evaluate the loaded models on the loaded dataset (its test portion, if avaliable), creating detailed summaries of prediction performance across a customizable set of metrics.
@@ -125,15 +104,16 @@ The following snippet provides a full example:
 
 ```python
 import json
-from vp_suite.trainer import Trainer
+from vp_suite import VPSuite
+from vp_suite.constants import PKG_RESOURCES
 
-vp_trainer = Trainer()
-vp_trainer.load_dataset(dataset="KTH")  # select dataset of choice
-vp_trainer.create_model(model_type="lstm")  # select model of choice
-with open("vp_suite/resources/optuna_example_config.json", 'r') as cfg_file:
+suite = VPSuite()
+suite.load_dataset(dataset="KTH")  # select dataset of choice
+suite.create_model(model_type="lstm")  # select model of choice
+with open(str((PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
     optuna_cfg = json.load(cfg_file)
 # optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
-vp_trainer.hyperopt(optuna_cfg, trials=30, epochs=10)
+suite.hyperopt(optuna_cfg, trials=30, epochs=10)
 ```
 This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to the console.
 
@@ -150,25 +130,24 @@ While this package comes with a few pre-defined models/datasets/metrics etc. for
 
 1. Create a file `model_<your name>.py` in the folder `vp_suite/models`.
 2. Create a class that derives from `vp_suite.models.base_model.VideoPredictionModel` and override the things you need.
-3. Write your model code or import existing code so that the superclass interface is still served. If desired, you can implement a custom training loop iteration `train_iter(cfg, train_loader, optimizer, loss_provider, epoch)` that gets called instead of the default training loop iteration.
-4. Write tests for your model (`test/test_models.py`) and register it in the `pred_models` dict of `vp_suite/models/factory.py`.
-5. Check training performance on different datasets, fix things and contribute to the project 😊
+3. Write your model code or import existing code so that the superclass interface is still served.
+   If desired, you can implement a custom training loop iteration `train_iter(self, config, loader, optimizer, loss_provider, epoch)` that gets called instead of the default training loop iteration.
+4. Check training performance on different datasets, fix things and contribute to the project 😊
 
 #### Training on custom datasets
 
 1. Create a file `dataset_<your name>.py` in the folder `vp_suite/dataset`.
 2. Create a class that derives from `vp_suite.dataset.base_dataset.BaseVPDataset` and override the things you need.
 3. Write your dataset code or import existing code so that the superclass interface is served and the dataset initialization with `vp_suite/dataset/factory.py` still works.
-4. Write tests for your dataset (`test/test_dataset.py`) and register it in the `dataset_classes` dict of `vp_suite/dataset/factory.py`.
-5. Check training performance with different models, fix things and contribute to the project 😊
+4. Register it in the `DATASET_CLASSES` dict of `vp_suite/dataset/__init__.py`.
+5. Run pytest, check training performance with different models, fix things and contribute to the project 😊
 
 #### Custom losses, metrics and optimization
 
 1. Create a new file in `vp_suite/measure`, containing your loss or metric.
 2. Make `vp_suite.measure.base_measure.BaseMeasure` its superclass and provide all needed implementations and attributes.
-3. Register the measure in the `METRICS` dict of `vp_suite/measure/metric_provider.py` and, if it can also be used as a loss, in the `LOSSES` dict of `vp_suite/measure/loss_provider.py`.
-4. Write tests for the measure (`test/test_measures.py`).
-5. Check training/evaluation performance with different models and datasets, fix things and contribute to the project 😊
+3. Register the measure in the `METRIC_CLASSES` dict of `vp_suite/measure/__init__.py` and, if it can also be used as a loss, in the `LOSS_CLASSES` dict.
+4. Run pytest, check training/evaluation performance with different models and datasets, fix things and contribute to the project 😊
 
 ### Contributing
 
