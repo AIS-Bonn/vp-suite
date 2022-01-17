@@ -1,5 +1,5 @@
-from image_wise import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
-from fvd.fvd import FrechetVideoDistance
+from vp_suite.measure.image_wise import MSE, L1, SmoothL1, LPIPS, SSIM, PSNR
+from vp_suite.measure.fvd.fvd import FrechetVideoDistance
 
 # === losses ===================================================================
 

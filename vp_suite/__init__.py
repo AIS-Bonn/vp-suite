@@ -1,1 +1,1 @@
-from vpsuite import VPSuite
+from vp_suite.vpsuite import VPSuite

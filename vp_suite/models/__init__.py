@@ -1,14 +1,11 @@
-import sys
-sys.path.append("")
-
-from convlstm import ConvLSTM
-from copy_last_frame import CopyLastFrame
-from phydnet import PhyDNet
-from st_lstm import STLSTM
-from st_phy import STPhy
-from unet3d import UNet3D
-from lstm import LSTM
-from simple import SimpleV1, SimpleV2
+from vp_suite.models.convlstm import ConvLSTM
+from vp_suite.models.copy_last_frame import CopyLastFrame
+from vp_suite.models.phydnet import PhyDNet
+from vp_suite.models.st_lstm import STLSTM
+from vp_suite.models.st_phy import STPhy
+from vp_suite.models.unet3d import UNet3D
+from vp_suite.models.lstm import LSTM
+from vp_suite.models.simple import SimpleV1, SimpleV2
 
 MODEL_CLASSES = {
     "unet": UNet3D,
