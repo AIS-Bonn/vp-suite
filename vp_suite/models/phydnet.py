@@ -11,9 +11,11 @@ from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 class PhyDNet(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "PhyDNet"
     CAN_HANDLE_ACTIONS = True
 
+    # model hyperparameters
     moment_loss_scale = 1.0
     phy_kernel_size = (7, 7)
     phy_cell_channels = 49
@@ -22,8 +24,9 @@ class PhyDNet(VideoPredictionModel):
         super(PhyDNet, self).__init__(device, **model_args)
 
         self.criterion = MSE(self.device)
-        self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,
-                                  self.action_size, self.device)
+        img_shape_ = self.img_c, self.img_h, self.img_w
+        self.encoder = EncoderRNN(img_shape_, self.phy_cell_channels, self.phy_kernel_size,
+                                  self.action_conditional, self.action_size, self.device)
         self.constraints = torch.zeros((self.phy_cell_channels, *self.phy_kernel_size), device=self.device)
         ind = 0
         for i in range(0, self.phy_kernel_size[0]):
@@ -39,12 +42,13 @@ class PhyDNet(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
+        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     # For PhyDNet, forward() is used for inference only (no training).
     def forward(self, frames, pred_length=1, **kwargs):
 
         # shape: [b, t, c, ...]
+        print(frames.shape)
         in_length = frames.shape[1]
         out_frames = []
 
@@ -56,13 +60,13 @@ class PhyDNet(VideoPredictionModel):
 
         ac_index = 0
         for ei in range(in_length - 1):
-            encoder_output, encoder_hidden, output_image, _, _ = self.encoder(frames[:, ei, :, :, :], actions[:, ac_index], (ei == 0))
+            encoder_output, encoder_hidden, output_image, _, _ = self.encoder(frames[:, ei, :, :, :], actions[:, ac_index], (ac_index == 0))
             ac_index += 1
 
         decoder_input = frames[:, -1, :, :, :]  # first decoder input = last image of input sequence
 
         for di in range(pred_length):
-            decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input, actions[:, ac_index])
+            decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input, actions[:, ac_index], (ac_index == 0))
             out_frames.append(output_image)
             decoder_input = output_image
             ac_index += 1

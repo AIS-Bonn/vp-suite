@@ -12,7 +12,7 @@ class Autoencoder(nn.Module):
         super(Autoencoder, self).__init__()
 
         self.img_shape = img_shape
-        self.img_c, self.img_h, self.img_w = img_shape
+        self.img_h, self.img_w, self.img_c = img_shape
         self.enc_c = encoded_channels
         self.device = device
 
@@ -64,7 +64,7 @@ class Decoder(nn.Module):
 
         self.act_fn = nn.ReLU(inplace=True)
         self.in_channels = in_channels
-        self.out_c, self.out_h, self.out_w = out_shape
+        self.out_h, self.out_w, self.out_c = out_shape
 
         self.fc1 = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=1)
         self.conv1 = nn.ConvTranspose2d(self.in_channels, 64, kernel_size=6, stride=2, padding=0)

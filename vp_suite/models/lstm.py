@@ -7,9 +7,11 @@ from vp_suite.models._base_model import VideoPredictionModel
 
 class LSTM(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "NonConvLSTM"
     CAN_HANDLE_ACTIONS = True
 
+    # model hyperparameters
     bottleneck_dim = 1024
     lstm_hidden_dim = 1024
     lstm_kernel_size = (5, 5)
@@ -28,7 +30,7 @@ class LSTM(VideoPredictionModel):
             self.enc2, self.act_fn,
             self.enc3, self.act_fn,
         )
-        zeros = torch.zeros(1, *self.img_shape)
+        zeros = torch.zeros(1, self.img_c, self.img_h, self.img_w)
         encoded_zeros = self.encoder(zeros)
         self.encoded_shape = encoded_zeros.shape[1:]
         self.encoded_numel = encoded_zeros.numel() // encoded_zeros.shape[0]
@@ -66,15 +68,16 @@ class LSTM(VideoPredictionModel):
         return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
+        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         T_in, b, c, h, w = x.shape
-        assert self.img_shape == (c, h, w),\
-            f"input image does not match specified size (input image shape: {x.shape}, specified: {self.img_shape})"
+        assert self.img_shape == (h, w, c),\
+            f"input image does not match specified size " \
+            f"(input image shape: {x.shape[2:]}, specified: {self.img_shape})"
         encoded_frames = [self.encode(frame) for frame in list(x)]
 
         # actions

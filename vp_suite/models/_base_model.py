@@ -5,10 +5,13 @@ from tqdm import tqdm
 
 class VideoPredictionModel(nn.Module):
 
+    # model-specific constants
     NAME = None
+    REQUIRED_ARGS = []
     CAN_HANDLE_ACTIONS = False  # models by default won't be able to handle actions
     TRAINABLE = True  # most implemented models will be trainable
 
+    # model hyperparameters
     min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
     action_conditional = None
     model_dir = None  # specifies save location of model
@@ -17,15 +20,18 @@ class VideoPredictionModel(nn.Module):
         super(VideoPredictionModel, self).__init__()
         self.device = device
         self.img_shape = model_args.get("img_shape", (None, None, None))  # h, w, c
-        self.img_h, self.img_wm, self.img_c = self.img_shape
+        self.img_h, self.img_w, self.img_c = self.img_shape
         self.action_size = model_args.get("action_size", 0)
         self.action_conditional = model_args.get("action_conditional", False)
 
-        configurable_params = self.config.keys()
-        for model_arg in model_args.keys():
-            assert model_arg in configurable_params, f"ERROR: encountered invalid model parameter '{model_arg}'. " \
-                                                     f"Model '{self.NAME}' supports the following arguments: " \
-                                                     f"{configurable_params}"
+        for required_arg in self.REQUIRED_ARGS:
+            assert required_arg in model_args.keys(), f"ERROR: model {self.NAME} requires parameter '{required_arg}'"
+
+        for model_arg, model_arg_val in model_args.items():
+            if hasattr(self, model_arg):
+                setattr(self, model_arg, model_arg_val)
+            else:
+                print(f"INFO: model_arg '{model_arg}' is not usable for init of model '{self.NAME}' -> skipping")
 
     @property
     def config(self):
@@ -53,20 +59,13 @@ class VideoPredictionModel(nn.Module):
         # input: T frames: [b, T, c, h, w]
         # output: pred_length (P) frames: [b, P, c, h, w]
         preds = []
-        loss_dicts = []
         for i in range(pred_length):
-            pred, loss_dict = self.pred_1(x, **kwargs)
-            pred = pred.unsqueeze(dim=1)
+            pred = self.pred_1(x, **kwargs).unsqueeze(dim=1)
             preds.append(pred)
-            loss_dicts.append(loss_dict)
-            x = torch.cat([x[:, 1:], pred], dim=1)
+            x = torch.cat([x, pred], dim=1)
 
         pred = torch.cat(preds, dim=1)
-        if loss_dicts[0] is not None:
-            loss_dict = {k: torch.mean([loss_dict[k] for loss_dict in loss_dicts]) for k in loss_dicts[0]}
-        else:
-            loss_dict = None
-        return pred, loss_dict
+        return pred, None
 
     def train_iter(self, config, loader, optimizer, loss_provider, epoch):
         """ Default training iteration, traversing the whole loader and TODO """

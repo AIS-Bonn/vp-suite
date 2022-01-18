@@ -12,9 +12,11 @@ class ConvLSTM(VideoPredictionModel):
     Modified from https://github.com/ndrplz/ConvLSTM_pytorch
     '''
 
+    # model-specific constants
     NAME = "ConvLSTM"
     CAN_HANDLE_ACTIONS = True
 
+    # model hyperparameters
     lstm_kernel_size = (3, 3)
     lstm_num_layers = 3
     lstm_channels = 64
@@ -23,7 +25,6 @@ class ConvLSTM(VideoPredictionModel):
 
     def __init__(self, device, **model_args):
         super(ConvLSTM, self).__init__(device, **model_args)
-
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 
         # Make sure that both `kernel_size` and `hidden_dim` are lists having len == num_layers
@@ -62,14 +63,14 @@ class ConvLSTM(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
+        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         T_in, b, c, h, w = x.shape
-        assert self.img_shape == (c, h, w), "input image does not match specified size"
+        assert self.img_shape == (h, w, c), "input image does not match specified size"
         encoded_frames = [self.autoencoder.encode(frame) for frame in list(x)]
 
         # actions
@@ -83,12 +84,10 @@ class ConvLSTM(VideoPredictionModel):
         # build up belief over given frames
         hidden_state = self._init_hidden((b, self.lstm_channels, self.enc_h, self.enc_w))
         for t, encoded in enumerate(encoded_frames):
-            print(self.action_conditional)
             if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t])\
                     .view(-1, self.action_size, self.enc_h, self.enc_w)
                 encoded = torch.cat([encoded, inflated_action], dim=-3)
-            print(encoded.shape)
             hidden_state = self.lstm(encoded, hidden_state)
 
         # pred 1

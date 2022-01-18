@@ -3,6 +3,7 @@ from vp_suite.models._base_model import VideoPredictionModel
 
 class CopyLastFrame(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "CopyLastFrame"
     TRAINABLE = False
 
@@ -10,4 +11,4 @@ class CopyLastFrame(VideoPredictionModel):
         super(CopyLastFrame, self).__init__(device, **model_args)
 
     def pred_1(self, x, **kwargs):
-        return x[:, -1, :, :, :], None
+        return x[:, -1, :, :, :]

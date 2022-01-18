@@ -5,15 +5,16 @@ from vp_suite.models._base_model import VideoPredictionModel
 
 class SimpleV1(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "SimpleV1"
+    REQUIRED_ARGS = ["temporal_dim"]
 
+    # model hyperparameters
     temporal_dim = None
 
     def __init__(self, device, **model_args):
         super(SimpleV1, self).__init__(device, **model_args)
 
-        assert "temporal_dim" in model_args.keys(), "ERROR: model {self.NAME} requires parameter 'temporal_dim'"
-        self.temporal_dim = model_args["temporal_dim"]
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
@@ -31,7 +32,7 @@ class SimpleV1(VideoPredictionModel):
 
     def pred_1(self, x, **kwargs):
         assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
-        return self.cnn(x).squeeze(dim=1)
+        return self.cnn(x).squeeze(dim=2)  # [b, c, h, w]
 
     def forward(self, x, pred_length=1, **kwargs):
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
@@ -39,13 +40,16 @@ class SimpleV1(VideoPredictionModel):
         for t in range(pred_length):
             input = x[:, :, -self.temporal_dim:]
             output_frames.append(self.pred_1(input))
-        return torch.cat(output_frames, dim=2).transpose(1, 2), None
+        return torch.stack(output_frames, dim=1), None
 
 
 class SimpleV2(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "SimpleV2"
+    REQUIRED_ARGS = ["temporal_dim"]
 
+    # model hyperparameters
     hidden_channels = 64
     temporal_dim = None
 
@@ -58,8 +62,6 @@ class SimpleV2(VideoPredictionModel):
     def __init__(self, device, **model_args):
         super(SimpleV2, self).__init__(device, **model_args)
 
-        assert "temporal_dim" in model_args.keys(), "ERROR: model {self.NAME} requires parameter 'temporal_dim'"
-        self.temporal_dim = model_args["temporal_dim"]
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(

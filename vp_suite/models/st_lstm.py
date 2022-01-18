@@ -9,9 +9,11 @@ from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalST
 
 class STLSTM(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "ST-LSTM"
     CAN_HANDLE_ACTIONS = True
     
+    # model hyperparameters
     enc_channels = 64
     num_layers = 3
     reconstruction_loss_scale = 0.1
@@ -57,7 +59,7 @@ class STLSTM(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
+        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, frames, pred_length=1, **kwargs):
 
@@ -86,7 +88,7 @@ class STLSTM(VideoPredictionModel):
             delta_m_list.append(zeros)
 
         memory = torch.zeros([b, self.num_hidden[0], self.enc_h, self.enc_w]).to(self.device)
-
+        x_gen, inflated_action = None, None
         for t in range(T-1):
 
             next_cell_input = self.autoencoder.encode(frames[t]) if t < t_in else x_gen

@@ -10,11 +10,11 @@ from vp_suite.models.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
 class PhyCell_Cell(nn.Module):
-    def __init__(self, input_dim, action_size, F_hidden_dim, kernel_size, bias=1):
+    def __init__(self, input_dim, action_conditional, action_size, F_hidden_dim, kernel_size, bias=1):
         super(PhyCell_Cell, self).__init__()
         self.input_dim = input_dim
         self.action_size = action_size
-        self.use_actions = self.action_size > 0
+        self.action_conditional = action_conditional
         self.F_hidden_dim = F_hidden_dim
         self.kernel_size = kernel_size
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
@@ -34,7 +34,7 @@ class PhyCell_Cell(nn.Module):
                                   kernel_size=(3, 3),
                                   padding=(1, 1), bias=self.bias)
 
-        if self.use_actions:
+        if self.action_conditional:
             self.frame_action_conv = nn.Conv2d(in_channels=self.input_dim+self.action_size,
                                                out_channels=self.input_dim, kernel_size=(1, 1))
             self.hidden_action_conv = nn.Conv2d(in_channels=self.input_dim+self.action_size,
@@ -44,7 +44,7 @@ class PhyCell_Cell(nn.Module):
     def forward(self, frame, action, hidden):  # x [batch_size, hidden_dim, height, width]
 
 
-        if self.use_actions:
+        if self.action_conditional:
             inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *frame.shape[-2:])
             frame_action = torch.cat([frame, inflated_action], dim=1)  # concatenate along channel axis
             frame = self.frame_action_conv(frame_action)
@@ -61,7 +61,8 @@ class PhyCell_Cell(nn.Module):
 
 
 class PhyCell(nn.Module):
-    def __init__(self, input_shape, input_dim, F_hidden_dims, n_layers, kernel_size, action_size, device):
+    def __init__(self, input_shape, input_dim, F_hidden_dims, n_layers, kernel_size, action_conditional,
+                 action_size, device):
         super(PhyCell, self).__init__()
         self.input_shape = input_shape
         self.input_dim = input_dim
@@ -75,6 +76,7 @@ class PhyCell(nn.Module):
         for i in range(0, self.n_layers):
             print('PhyCell layer ', i, 'input dim ', self.input_dim, ' hidden dim ', self.F_hidden_dims[i])
             cell_list.append(PhyCell_Cell(input_dim=self.input_dim,
+                                          action_conditional=action_conditional,
                                           action_size=action_size,
                                           F_hidden_dim=self.F_hidden_dims[i],
                                           kernel_size=self.kernel_size))
@@ -149,26 +151,28 @@ class ConvLSTM_Cell(nn.Module):
 
 
 class ConvLSTM(nn.Module):
-    def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size, action_size, device):
+    def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size, action_conditional,
+                 action_size, device):
         super(ConvLSTM, self).__init__()
         self.input_shape = input_shape
-        self.input_dim = input_dim + action_size
+        self.input_dim = input_dim
         self.hidden_dims = hidden_dims
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.H, self.C = [], []
         self.action_size = action_size
-        self.use_actions = self.action_size > 0
+        self.action_conditional = action_conditional
         self.device = device
 
         cell_list = []
+        cur_input_dim = self.input_dim + (self.action_size if self.action_conditional else 0)
         for i in range(0, self.n_layers):
-            cur_input_dim = self.input_dim if i == 0 else self.hidden_dims[i - 1]
             print('ConvLSTM layer ', i, 'input dim ', cur_input_dim, ' hidden dim ', self.hidden_dims[i])
             cell_list.append(ConvLSTM_Cell(input_shape=self.input_shape,
                                            input_dim=cur_input_dim,
                                            hidden_dim=self.hidden_dims[i],
                                            kernel_size=self.kernel_size))
+            cur_input_dim = self.hidden_dims[i]
         self.cell_list = nn.ModuleList(cell_list)
 
     def forward(self, frame, action, first_timestep=False):  # input_ [batch_size, channels, width, height]
@@ -177,7 +181,7 @@ class ConvLSTM(nn.Module):
             self.initHidden(batch_size)  # init Hidden at each forward start
 
         input = frame
-        if self.use_actions:
+        if self.action_conditional:
             inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *self.input_shape)
             input = torch.cat([input, inflated_action], dim=-3)
 
@@ -228,7 +232,7 @@ class DecoderSplit(nn.Module):
 
 class EncoderRNN(torch.nn.Module):
 
-    def __init__(self, img_shape, phy_cell_channels, phy_kernel_size, action_size, device):
+    def __init__(self, img_shape, phy_cell_channels, phy_kernel_size, action_conditional, action_size, device):
         super(EncoderRNN, self).__init__()
         img_c, _, _ = img_shape
         self.encoder_E = DCGANEncoder(nc=img_c).to(device)
@@ -246,10 +250,12 @@ class EncoderRNN(torch.nn.Module):
 
         phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
         self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,
-                               n_layers=3, kernel_size=phy_kernel_size, action_size=action_size, device=device)
+                               n_layers=3, kernel_size=phy_kernel_size, action_conditional=action_conditional,
+                               action_size=action_size, device=device)
         self.phycell.to(device)
         self.convcell = ConvLSTM(input_shape=self.shape_Er[1:], input_dim=self.shape_Ep[0], hidden_dims=[128, 128, 64],
-                                 n_layers=3, kernel_size=(3, 3), action_size=action_size, device=device)
+                                 n_layers=3, kernel_size=(3, 3), action_conditional=action_conditional,
+                                 action_size=action_size, device=device)
         self.convcell.to(device)
         self.device = device
 

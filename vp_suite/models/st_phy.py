@@ -16,9 +16,11 @@ from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
 
 class STPhy(VideoPredictionModel):
 
+    # model-specific constants
     NAME = "ST-Phy"
     CAN_HANDLE_ACTIONS = True
 
+    # model hyperparameters
     phy_kernel_size = (7, 7)
     phy_cell_channels = 49
     st_cell_channels = 64
@@ -53,8 +55,8 @@ class STPhy(VideoPredictionModel):
             st_in_channel = self.dim_st_hidden[0] if i == 0 else self.dim_st_hidden[i - 1]
             st_cells.append(self.recurrent_cell(st_in_channel, self.dim_st_hidden[i], self.enc_h, self.enc_w,
                                        filter_size=5, stride=1, layer_norm=True))
-            phy_cells.append(PhyCell_Cell(input_dim=self.st_cell_channels, action_size=self.action_size,
-                                          F_hidden_dim=self.dim_phy_hidden[i],
+            phy_cells.append(PhyCell_Cell(input_dim=self.st_cell_channels, action_conditional=self.action_conditional,
+                                          action_size=self.action_size, F_hidden_dim=self.dim_phy_hidden[i],
                                           kernel_size=self.phy_kernel_size).to(self.device))
             hc_bias = i < self.num_layers - 1
             hidden_convs.append(nn.Conv2d(in_channels=self.st_cell_channels + self.dim_st_hidden[i],
@@ -88,7 +90,7 @@ class STPhy(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs).squeeze(dim=1)
+        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, input, pred_length=1, **kwargs):
 
