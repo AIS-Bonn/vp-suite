@@ -12,6 +12,7 @@
         "mse": 1.0
     },
     "val_rec_criterion": "mse",
+    "metrics": "all",
     "context_frames": 10,
     "pred_frames": 10,
     "use_actions": false,

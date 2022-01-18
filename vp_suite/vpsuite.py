@@ -77,11 +77,16 @@ class VPSuite:
         assert model_type in AVAILABLE_MODELS, f"ERROR: invalid model type specified! " \
                                                f"Available model types: {AVAILABLE_MODELS}"
         model_class = MODEL_CLASSES[model_type]
-        for param in ["img_shape", "action_size"]:
+        for param in model_class.REQUIRED_ARGS:
             if param not in model_args.keys():
                 print(f"INFO: model parameter '{param}' not specified -> trying to take from last loaded dataset...")
-                assert len(self.datasets) > 0, f"ERROR: no dataset loaded to take parameter '{param}' from"
-                model_args.update({param: self.datasets[-1].config[param]})
+                if len(self.datasets) < 1:
+                    raise ValueError(f"ERROR: no dataset loaded to take parameter '{param}' from")
+                param_val = self.datasets[-1].config.get(param, None)
+                if param_val is None:
+                    raise ValueError(f"ERROR: dataset '{self.datasets[-1].NAME}' doesn't provide parameter '{param}', "
+                                     f"so it has to be specified on model creation")
+                model_args.update({param: param_val})
         if action_conditional and not model_class.CAN_HANDLE_ACTIONS:
             print("WARNING: specified model can't handle actions -> argument 'action_conditional' set to False")
             action_conditional = False
@@ -147,8 +152,8 @@ class VPSuite:
         model = self.models[-1]
 
         # compat checks: run <--> model; model <--> dataset
-        _, _, = check_run_and_model_compat(model, run_config, strict_mode=True)
-        check_model_and_data_compat(model, dataset)
+        check_run_and_model_compat(model, run_config)
+        _, _ = check_model_and_data_compat(model, dataset, strict_mode=True)
 
         return model, dataset, run_config
 
@@ -163,7 +168,7 @@ class VPSuite:
         best_val_loss = float("inf")
         out_path = Path(run_config["out_dir"]) if run_config["out_dir"] is not None \
             else constants.OUT_PATH / timestamp('train')
-        out_path.mkdir(parents=True)
+        out_path.mkdir(parents=True, exist_ok=True)
         model.model_dir = str(out_path.resolve())
         best_model_path = str((out_path / 'best_model.pth').resolve())
         with_training = model.TRAINABLE and not run_config["no_train"]
@@ -250,7 +255,7 @@ class VPSuite:
                 vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
                 vis_out_path.mkdir()
                 visualize_vid(val_data, config["context_frames"], config["pred_frames"], model,
-                              config["device"], vis_out_path, num_vis=10)
+                              config["device"], vis_out_path, dataset.img_processor, num_vis=10)
 
                 if not config["no_wandb"]:
                     vid_filenames = sorted(os.listdir(str(vis_out_path)))
@@ -300,20 +305,35 @@ class VPSuite:
             test_set.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
             assert test_set.is_ready, "ERROR TODO"
 
-        # compat checks and adapters
-        model_info_list = []
+        # compat-check run arguments against models and skip incompatible models
+        test_models = []
         for model in self.models:
-            for test_set in test_sets:  # compat-check each dataset against each model (TODO ignore some if not compat)
-                check_model_and_data_compat(model, test_set)
-            preprocessing, postprocessing = check_run_and_model_compat(model, run_config)
-            model_info_list.append((model, preprocessing, postprocessing, []))
+            try:
+                check_run_and_model_compat(model, run_config)
+                test_models.append(model)
+            except ValueError as e:
+                print(f"skipping test of model '{model.NAME}' because of incompatibility with run config: {str(e)}")
 
-        # all models OK -> finalize and add baseline copy model (doesn't need check)
-        clf_baseline_ = CopyLastFrame().to(self.device)
-        clf_baseline = (clf_baseline_, nn.Identity(), nn.Identity(), [])
-        model_info_list.append(clf_baseline)
+        # compat-check loaded models against each dataset and skip incompatible model-dataset pairs
+        model_lists_all_test_sets = []
+        for test_set in test_sets:
+            test_set_model_list = []
+            for model in test_models:
+                try:
+                    # model-data compat check returns adapters if discrepancies can be bridged for testing
+                    preprocessing, postprocessing = check_model_and_data_compat(model, test_set)
+                    test_set_model_list.append((model, preprocessing, postprocessing, []))
+                except ValueError as e:
+                    print(f"skipping test of model '{model.NAME}' on dataset '{test_set.NAME}' "
+                          f"because of incompatibility: {str(e)}")
+            model_lists_all_test_sets.append(test_set_model_list)
 
-        return model_info_list, test_sets, run_config
+            # add baseline copy model (doesn't need checks)
+            clf_baseline = CopyLastFrame().to(self.device)
+            test_set_model_list.append((clf_baseline, nn.Identity(), nn.Identity(), []))
+
+        test_sets_and_model_lists = zip(test_sets, model_lists_all_test_sets)
+        return test_sets_and_model_lists, run_config
 
     def _test_on_dataset(self, model_info_list, dataset, run_config, brief_test):
 
@@ -360,7 +380,7 @@ class VPSuite:
                 vis_out_dir = Path(model.model_dir) / f"vis_{timestamp('test')}"
                 vis_out_dir.mkdir()
                 visualize_vid(test_data, config["context_frames"], config["pred_frames"],
-                              model, config["device"], vis_out_dir, vis_idx=vis_idx)
+                              model, config["device"], vis_out_dir, dataset.img_processor, vis_idx=vis_idx)
 
         # log or display metrics
         if eval_length > 0:
@@ -401,6 +421,6 @@ class VPSuite:
                             print(f" -> {k}: {v}")
 
     def test(self, brief_test=False, **run_kwargs):
-        model_info_list, test_sets, run_config = self._prepare_testing(**run_kwargs)
-        for test_set in test_sets:
+        test_sets_and_model_lists, run_config = self._prepare_testing(**run_kwargs)
+        for test_set, model_info_list in test_sets_and_model_lists:
             self._test_on_dataset(model_info_list, test_set, run_config, brief_test)

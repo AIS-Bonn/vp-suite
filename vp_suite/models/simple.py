@@ -7,7 +7,7 @@ class SimpleV1(VideoPredictionModel):
 
     # model-specific constants
     NAME = "SimpleV1"
-    REQUIRED_ARGS = ["temporal_dim"]
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters
     temporal_dim = None
@@ -47,7 +47,7 @@ class SimpleV2(VideoPredictionModel):
 
     # model-specific constants
     NAME = "SimpleV2"
-    REQUIRED_ARGS = ["temporal_dim"]
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters
     hidden_channels = 64

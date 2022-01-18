@@ -29,11 +29,12 @@ class PredictionMetricProvider():
         for frame_cnt in frames:
             pred_ = pred[:, :frame_cnt]
             target_ = target[:, :frame_cnt]
-            frame_cnt_metrics = {
-                f"{key} ({'↑' if metric.BIGGER_IS_BETTER else '↓'})":
-                    metric.to_display(metric(pred_, target_).item())
-                for key, metric in self.metrics.items()
-            }
+            frame_cnt_metrics = dict()
+            for key, metric in self.metrics.items():
+                metric_val = metric(pred_, target_)
+                if metric_val is not None:
+                    frame_cnt_metrics[f"{key} ({'↑' if metric.BIGGER_IS_BETTER else '↓'})"] \
+                        = metric.to_display(metric_val.item())
             # remove metrics that returned 'None' (e.g. because they don't support the current frame cnt
             frame_cnt_metrics = {k: v for k, v in frame_cnt_metrics.items() if v is not None}
             metrics.append(frame_cnt_metrics)

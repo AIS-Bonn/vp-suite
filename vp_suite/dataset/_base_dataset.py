@@ -47,16 +47,14 @@ class BaseVPDataset(Dataset):
             "img_w": img_w,
             "img_c": img_c,
             "img_shape": self.frame_shape,
-            "value_min": self.img_processor.value_min,
-            "value_max": self.img_processor.value_max,
+            "tensor_value_range": [self.img_processor.value_min, self.img_processor.value_max],
             "supports_actions": self.action_size > 0,
             "max_seq_len": self.max_seq_len,
             "frame_shape": self.frame_shape,
             "train_keep_ratio": self.train_keep_ratio
         }
-        return {**base_config, **self._config}
+        return {**base_config, **self._config()}
 
-    @property
     def _config(self):
         """ Dataset-specific config, TODO should be overwritten be the datasets """
         return {}

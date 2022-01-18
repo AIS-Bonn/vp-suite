@@ -1,13 +1,12 @@
 import torch
 import torch.nn as nn
-
 from tqdm import tqdm
 
 class VideoPredictionModel(nn.Module):
 
     # model-specific constants
     NAME = None
-    REQUIRED_ARGS = []
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]
     CAN_HANDLE_ACTIONS = False  # models by default won't be able to handle actions
     TRAINABLE = True  # most implemented models will be trainable
 
@@ -15,20 +14,28 @@ class VideoPredictionModel(nn.Module):
     min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
     action_conditional = None
     model_dir = None  # specifies save location of model
+    tensor_value_range = None
 
     def __init__(self, device="cpu", **model_args):
         super(VideoPredictionModel, self).__init__()
-        self.device = device
-        self.img_shape = model_args.get("img_shape", (None, None, None))  # h, w, c
-        self.img_h, self.img_w, self.img_c = self.img_shape
-        self.action_size = model_args.get("action_size", 0)
-        self.action_conditional = model_args.get("action_conditional", False)
 
+        # set required parameters
+        self.device = device
         for required_arg in self.REQUIRED_ARGS:
             assert required_arg in model_args.keys(), f"ERROR: model {self.NAME} requires parameter '{required_arg}'"
+            setattr(self, required_arg, model_args[required_arg])
+            if required_arg == "img_shape":
+                self.img_h, self.img_w, self.img_c = self.img_shape
+            elif required_arg == "tensor_value_range":
+                assert isinstance(self.tensor_value_range, list) or isinstance(self.tensor_value_range, tuple)
+                assert len(self.tensor_value_range) == 2
 
+        # set optional parameters
+        self.action_conditional = model_args.get("action_conditional", False)
         for model_arg, model_arg_val in model_args.items():
-            if hasattr(self, model_arg):
+            if model_arg in self.REQUIRED_ARGS:
+                continue  # skip required args as they have been set up already
+            elif hasattr(self, model_arg):
                 setattr(self, model_arg, model_arg_val)
             else:
                 print(f"INFO: model_arg '{model_arg}' is not usable for init of model '{self.NAME}' -> skipping")
@@ -37,10 +44,11 @@ class VideoPredictionModel(nn.Module):
     def config(self):
         model_config = {
             "model_dir": self.model_dir,
+            "min_context_frames": self.min_context_frames,
             "img_shape": self.img_shape,
             "action_size": self.action_size,
             "action_conditional": self.action_conditional,
-            "min_context_frames": self.min_context_frames
+            "tensor_value_range": self.tensor_value_range
         }
         return {**model_config, **self._config()}
 

@@ -95,7 +95,7 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
                 os.remove(out_fn)
 
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
-                  out_path, num_vis=5, vis_idx=None, mode="gif"):
+                  out_path, img_processor, num_vis=5, vis_idx=None, mode="gif"):
 
     out_fn_template = "vis_{}." + mode
 
@@ -106,10 +106,10 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
         out_filename = str(out_path / out_fn_template.format(str(i)))
         data = dataset[n] # [in_l + pred_l, c, h, w]
 
-        gt_rgb_vis = dataset.postprocess_img(data["frames"][:context_frames+pred_frames])
+        gt_rgb_vis = img_processor.postprocess_img(data["frames"][:context_frames+pred_frames])
         gt_colorized_vis = data.get("colorized", None)
         if gt_colorized_vis is not None:
-            gt_colorized_vis = dataset.postprocess_img(gt_colorized_vis)  # [in_l, h, w, c]
+            gt_colorized_vis = img_processor.postprocess_img(gt_colorized_vis)  # [in_l, h, w, c]
         actions = data["actions"].to(device).unsqueeze(dim=0)
         in_traj = data["frames"]
 
@@ -119,7 +119,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
                 in_traj = in_traj[:context_frames].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
-                pr_traj_vis = dataset.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
+                pr_traj_vis = img_processor.postprocess_img(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
 
                 save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
                     GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)

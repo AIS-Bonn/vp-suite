@@ -41,22 +41,22 @@ def test_hyperopt():
     suite.create_model(model_type=model1)
     with open(str((constants.PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
         optuna_cfg = json.load(cfg_file)
-    suite.hyperopt(optuna_cfg, batch_size=16, n_trials=3, epochs=1, no_wandb=True)
+    suite.hyperopt(optuna_cfg, batch_size=16, n_trials=1, epochs=1, no_wandb=True)
 
 
 @pytest.mark.slow
 def test_full_testing_single_dataset_single_model():
     suite = VPSuite()
-    suite.load_dataset(dataset=dataset1)
+    suite.load_dataset(dataset=dataset1, split="test")
     suite.create_model(model_type=model1)
     suite.test(context_frames=4, pred_frames=6, no_wandb=True)
 
 
 @pytest.mark.slow
-def test_full_testing_multi_dataset_multi_model():
+def test_brief_testing_multi_dataset_multi_model():
     suite = VPSuite()
-    suite.load_dataset(dataset=dataset1)
-    suite.load_dataset(dataset=dataset2)
+    suite.load_dataset(dataset=dataset1, split="test")
+    suite.load_dataset(dataset=dataset2, split="test")
     suite.create_model(model_type=model1)
-    suite.create_model(model_type=model2)
+    suite.create_model(model_type=model2, temporal_dim=3)
     suite.test(brief_test=True, context_frames=4, pred_frames=6, no_wandb=True)

@@ -10,7 +10,7 @@ class UNet3D(VideoPredictionModel):
 
     # model-specific constants
     NAME = "UNet-3D"
-    REQUIRED_ARGS = ["temporal_dim"]
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters

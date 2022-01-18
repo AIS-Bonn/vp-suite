@@ -65,6 +65,10 @@ class DatasetWrapper:
     def config(self):
         return self.datasets["main"].config
 
+    @property
+    def img_processor(self):
+        return self.datasets["main"].img_processor
+
     def set_seq_len(self, context_frames, pred_frames, seq_step):
         self.datasets["main"].set_seq_len(context_frames, pred_frames, seq_step)
         # set the seq_len for val_data aswell if it's a separate dataset

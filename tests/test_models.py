@@ -22,7 +22,8 @@ def test_models_without_actions(model_key):
         "action_size": ACTION_SIZE,
         "img_shape": IMG_SHAPE,
         "temporal_dim": TEMPORAL_DIM,
-        "action_conditional": False
+        "action_conditional": False,
+        "tensor_value_range": [0.0, 1.0]
     }
     model : VideoPredictionModel = model_class(DEVICE, **model_args).to(DEVICE)
     t = 3 # model.min_context_frames
@@ -42,7 +43,8 @@ def test_models_with_actions(model_key):
         "action_size": ACTION_SIZE,
         "img_shape": IMG_SHAPE,
         "temporal_dim": TEMPORAL_DIM,
-        "action_conditional": model_class.CAN_HANDLE_ACTIONS
+        "action_conditional": model_class.CAN_HANDLE_ACTIONS,
+        "tensor_value_range": [0.0, 1.0]
     }
     model : VideoPredictionModel = model_class(DEVICE, **model_args).to(DEVICE)
     t = 3 # model.min_context_frames

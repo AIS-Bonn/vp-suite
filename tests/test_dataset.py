@@ -3,7 +3,6 @@ from vp_suite.dataset import DATASET_CLASSES
 from vp_suite.dataset._wrapper import DatasetWrapper
 from vp_suite.utils.img_processor import ImgProcessor
 
-@pytest.mark.slow
 @pytest.mark.parametrize('dataset_str', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
 def test_dataset(dataset_str):
 

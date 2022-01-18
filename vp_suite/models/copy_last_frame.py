@@ -5,6 +5,7 @@ class CopyLastFrame(VideoPredictionModel):
 
     # model-specific constants
     NAME = "CopyLastFrame"
+    REQUIRED_ARGS = []
     TRAINABLE = False
 
     def __init__(self, device=None, **model_args):
