@@ -1,5 +1,4 @@
-[📚 **Link to Documentation** 📚](https://flunzmas-vp-suite.readthedocs.io/en/latest/)  [![Documentation Status](https://readthedocs.org/projects/flunzmas-vp-suite/badge/?version=latest)](https://flunzmas-vp-suite.readthedocs.io/en/latest/?badge=latest)
-
+[📚 **Link to Documentation** 📚](https://flunzmas-vp-suite.readthedocs.io/en/latest/)
 
 ### Introduction
 
@@ -19,7 +18,7 @@ This repo aims at providing a suite that facilitates scientific work in the subf
 
 From PyPi: 
 ```
-pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ vp-suite
+pip install vp-suite
 ```
 
 From source:
