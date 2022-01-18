@@ -43,22 +43,13 @@ that will contain all downloaded data as well as run logs, outputs and trained m
 from vp_suite import VPSuite
 
 suite = VPSuite()
+suite.load_dataset("MM")  # load moving MNIST dataset from default location
 
-# check available datasets (should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...])
-from vp_suite.dataset import AVAILABLE_DATASETS
-print(AVAILABLE_DATASETS)
-
-# load moving MNIST dataset from default location (see docs for customization options)
-suite.load_dataset("MM")
-model_checkpoint = ""  # set to valid model path to load a checkpoint
+model_checkpoint = ""  # Set to valid model path to load a checkpoint
 if model_checkpoint != "":
    suite.load_model(model_checkpoint)
 else:
-   # check available model types (should output something like {'unet': "UNet-3D", 'lstm': "ConvLSTM", ...})
-   from vp_suite.models import MODEL_CLASSES
-   print({k: v.desc for k, v in MODEL_CLASSES.items()})
-   
-   suite.create_model('lstm')
+   suite.create_model('lstm')  # create a ConvLSTM-Based Prediction Model
    
 suite.train(lr=2e-4, epochs=100)
 ```
@@ -77,13 +68,7 @@ save model checkpoints on improvement and, optionally, generate and save predict
 from vp_suite import VPSuite
 
 suite = VPSuite()
-
-# check available datasets (should output something like ['MM', 'KTH', 'BAIR', 'SPV', ...])
-from vp_suite.dataset import AVAILABLE_DATASETS
-print(AVAILABLE_DATASETS)
-
-# load moving MNIST dataset from default location (see docs for customization options)
-suite.load_dataset("MM")
+suite.load_dataset("MM")  # load moving MNIST dataset from default location
 
 # get the filepaths to the models you'd like to test
 model_dirs = ["out/model_foo/", "out/model_bar/"]
@@ -186,4 +171,6 @@ If you use this package/repository for your academic work, please consider citin
 
 ### License stuffs
 
-This project comes with an [MIT License](https://github.com/Flunzmas/vp-suite/blob/main/LICENSE).
+This project comes with an [MIT License](https://github.com/Flunzmas/vp-suite/blob/main/LICENSE), except for the following components:
+
+- Module `vp_suite.measure.fvd.pytorch_i3d` (Apache 2.0 License, taken and modified from [here](https://github.com/piergiaj/pytorch-i3d))
