@@ -28,7 +28,7 @@ class VPSuite:
 
     DEFAULT_RUN_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
 
-    def __init__(self, device="cpu"):
+    def __init__(self, device="cuda"):
         self.device = "cuda" if device == "cuda" and torch.cuda.is_available() else "cpu"
 
         self.clear_models()
