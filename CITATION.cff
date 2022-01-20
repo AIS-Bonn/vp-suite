@@ -1,0 +1,9 @@
+authors:
+  - affiliation: "Institute for Autonomous Intelligent Systems (AIS), University of Bonn"
+    family-names: Boltres
+    given-names: Andreas
+cff-version: 1.2.0
+license: MIT
+message: If you use this software, please cite it using these metadata. 
+repository-code: "https://github.com/Flunzmas/vp-suite/"
+title: "vp-suite"
