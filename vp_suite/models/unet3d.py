@@ -3,10 +3,13 @@ from torch import nn as nn
 from torchvision.transforms import functional as TF
 
 from vp_suite.models.model_blocks.conv import DoubleConv3d, DoubleConv2d
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 
 class UNet3D(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "UNet-3D"
@@ -14,16 +17,16 @@ class UNet3D(VideoPredictionModel):
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    features = [8, 16, 32, 64]
-    temporal_dim = None
-
-    def _config(self):
-        return {
-            "temporal_dim": self.temporal_dim,
-            "features": self.features
-        }
+    features = [8, 16, 32, 64]  #: TODO
+    temporal_dim = None  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(UNet3D, self).__init__(device, **model_args)
 
         self.min_context_frames = self.temporal_dim
@@ -69,29 +72,24 @@ class UNet3D(VideoPredictionModel):
         # final
         self.final_conv = nn.Conv2d(in_channels=self.features[0], out_channels=self.img_c, kernel_size=(1, 1))
 
-    def forward(self, x, pred_length=1, **kwargs):
-        # input: T_in frames: [b, T_in, c, h, w]
-        # output: pred_length (P) frames: [b, P, c, h, w]
-        preds = []
-
-        # actions
-        b, input_length, _, _, _ = x.shape
-        empty_actions = torch.zeros(b, input_length + pred_length, device=self.device)
-        actions = kwargs.get("actions", empty_actions)
-
-
-        for t in range(pred_length):
-            pred = self.pred_1(x, actions=actions)
-            pred = pred.unsqueeze(dim=1)
-            preds.append(pred)
-            x = torch.cat([x[:, 1:], pred], dim=1)
-
-        pred = torch.cat(preds, dim=1)
-        return pred, None
+    def _config(self):
+        return {
+            "temporal_dim": self.temporal_dim,
+            "features": self.features
+        }
 
     def pred_1(self, x, **kwargs):
-        # input: T frames: [b, T, c, h, w] and T actions: [b, T, a]
-        # output: single frame: [b, c, h, w]
+        r"""
+        input: T frames: [b, T, c, h, w] and T actions: [b, T, a]
+        output: single frame: [b, c, h, w]
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         T_in = x.shape[1]
         x = x[:, -self.temporal_dim:].permute((0, 2, 1, 3, 4))  # [b, c, temporal_dim, h, w]
         actions = kwargs.get("actions", torch.zeros(1, 1))
@@ -138,3 +136,32 @@ class UNet3D(VideoPredictionModel):
 
         # FINAL
         return self.final_conv(x)
+
+    def forward(self, x, pred_length=1, **kwargs):
+        r"""
+        input: T_in frames: [b, T_in, c, h, w]
+        output: pred_length (P) frames: [b, P, c, h, w]
+
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
+        preds = []
+
+        # actions
+        b, input_length, _, _, _ = x.shape
+        empty_actions = torch.zeros(b, input_length + pred_length, device=self.device)
+        actions = kwargs.get("actions", empty_actions)
+
+        for t in range(pred_length):
+            pred = self.pred_1(x, actions=actions)
+            pred = pred.unsqueeze(dim=1)
+            preds.append(pred)
+            x = torch.cat([x[:, 1:], pred], dim=1)
+
+        pred = torch.cat(preds, dim=1)
+        return pred, None

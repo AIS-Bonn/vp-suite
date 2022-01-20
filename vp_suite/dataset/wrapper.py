@@ -1,13 +1,21 @@
 from torch.utils.data import Subset
 
-
-
 class DatasetWrapper:
-    """ A class that wraps torch Datasets to handle training and testing data in the same way """
+    r"""A class that wraps torch Datasets to handle training and testing data in the same way
 
-    ALLOWED_SPLITS = ["train", "test"]
+    """
+
+    ALLOWED_SPLITS = ["train", "test"]  #: TODO
 
     def __init__(self, dataset_class, img_processor, split, **dataset_kwargs):
+        r"""
+
+        Args:
+            dataset_class ():
+            img_processor ():
+            split ():
+            **dataset_kwargs ():
+        """
         super(DatasetWrapper, self).__init__()
 
         assert split in self.ALLOWED_SPLITS, "TODO"
@@ -28,50 +36,116 @@ class DatasetWrapper:
         self.is_ready = False  # set to true after seq_len has been set (pre-requisite for training)
 
     def is_training_set(self):
+        r"""
+
+        Returns:
+
+        """
         return "train" in self.datasets.keys() and "val" in self.datasets.keys()
 
     def is_test_set(self):
+        r"""
+
+        Returns:
+
+        """
         return "test" in self.datasets.keys()
 
     @property
     def train_data(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets.get("train", None)
 
     @property
     def val_data(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets.get("val", None)
 
     @property
     def test_data(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets.get("test", None)
 
     @property
     def NAME(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].NAME
 
     @property
     def data_dir(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].data_dir
 
     @property
     def action_size(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].action_size
 
     @property
     def frame_shape(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].frame_shape
 
     @property
     def config(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].config
 
     @property
     def img_processor(self):
+        r"""
+
+        Returns:
+
+        """
         return self.datasets["main"].img_processor
 
     def set_seq_len(self, context_frames, pred_frames, seq_step):
+        r"""
+
+        Args:
+            context_frames ():
+            pred_frames ():
+            seq_step ():
+
+        Returns:
+
+        """
         self.datasets["main"].set_seq_len(context_frames, pred_frames, seq_step)
-        # set the seq_len for val_data aswell if it's a separate dataset
+
+        # set the seq_len for val_data as well if it's a separate dataset
         if self.is_training_set() and not getattr(self.val_data, "ready_for_usage", True):
             self.val_data.set_seq_len(context_frames, pred_frames, seq_step)
         self.is_ready = True

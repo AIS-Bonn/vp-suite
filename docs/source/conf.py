@@ -14,16 +14,13 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
-
 # -- Project information -----------------------------------------------------
 
 def get_project_info():
-    # sys.path.append(os.path.abspath('../../'))
     from vp_suite.__about__ import __version__ as release,\
         __name__ as project, \
         __author__ as author, \
         __copyright_short__ as copyright
-    # sys.path.pop(-1)
     return project, copyright, author, release
 
 project, copyright, author, release = get_project_info()
@@ -33,7 +30,27 @@ project, copyright, author, release = get_project_info()
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'm2r2']
+extensions = [
+    'm2r2',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
+]
+
+add_module_names = False
+autodoc_preserve_defaults = True
+napoleon_use_param = True
+
+autodoc_default_flags = ['members', 'show-inheritance']
+autodoc_default_options = {
+    'special-members': '__init__',
+}
+
+intersphinx_mapping = {
+    'python':   ('https://docs.python.org/3', None),
+    'PIL':      ('https://pillow.readthedocs.io/en/stable/', None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -42,7 +59,6 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['resources/*']
-
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -7,20 +7,30 @@ from tqdm import tqdm
 from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
-from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 class BAIRPushingDataset(BaseVPDataset):
+    r"""
+
+    """
 
     NAME = "BAIR robot pushing"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
 
-    max_seq_len = 30  # a trajectory in the BAIR robot pushing dataset is 30 timesteps
+    max_seq_len = 30  #: a trajectory in the BAIR robot pushing dataset is 30 timesteps
     action_size = 4
     frame_shape = (64, 64, 3)
-    train_keep_ratio = 0.96  # big dataset -> val can be smaller
+    train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):
+        r"""
+
+        Args:
+            split ():
+            img_processor ():
+            **dataset_kwargs ():
+        """
         super(BAIRPushingDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str((Path(self.data_dir) / "softmotion30_44k" / split).resolve())
@@ -36,10 +46,22 @@ class BAIRPushingDataset(BaseVPDataset):
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
     def __len__(self):
+        r"""
+
+        Returns:
+
+        """
         return len(self.obs_fps)
 
     def __getitem__(self, i) -> VPData:
+        r"""
 
+        Args:
+            i ():
+
+        Returns:
+
+        """
         assert self.ready_for_usage, \
             "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
 
@@ -53,6 +75,11 @@ class BAIRPushingDataset(BaseVPDataset):
         return data
 
     def download_and_prepare_dataset(self):
+        r"""
+
+        Returns:
+
+        """
 
         d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
@@ -67,6 +94,14 @@ class BAIRPushingDataset(BaseVPDataset):
 # === BAIR data preparation tools ==============================================
 
 def download_and_extract_bair(d_path):
+    r"""
+
+    Args:
+        d_path ():
+
+    Returns:
+
+    """
     tar_fname = "bair_robot_pushing_dataset_v0.tar"
     tar_path = str(d_path / tar_fname)
     if not os.path.exists(tar_path):
@@ -82,6 +117,15 @@ def download_and_extract_bair(d_path):
     os.remove(tar_path)
 
 def split_bair_traj_files(data_dir, delete_tfrecords):
+    r"""
+
+    Args:
+        data_dir ():
+        delete_tfrecords ():
+
+    Returns:
+
+    """
     bair_ep_length = 30
 
     data_files = [fn for fn in sorted(os.listdir(str(data_dir.resolve()))) if str(fn).endswith(".tfrecords")]

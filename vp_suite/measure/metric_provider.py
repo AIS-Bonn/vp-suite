@@ -1,8 +1,16 @@
 from vp_suite.measure import METRIC_CLASSES
 
 class PredictionMetricProvider():
-    def __init__(self, config):
+    r"""
 
+    """
+
+    def __init__(self, config):
+        r"""
+
+        Args:
+            config ():
+        """
         self.device = config["device"]
         self.available_metrics = METRIC_CLASSES if config["metrics"] == "all" \
             else {k: METRIC_CLASSES[k] for k in config["metrics"]}
@@ -12,12 +20,19 @@ class PredictionMetricProvider():
         self.metrics = {k: metric(device=self.device) for k, metric in self.available_metrics.items()}
 
     def get_metrics(self, pred, target, frames=None, all_frame_cnts=False):
-        '''
+        r"""
         input type: torch.tensor (torch.float)
         input shape: [b, t, c, h, w]
-        If frames is specified, only considers the first 'frames' frames.
-        '''
 
+        Args:
+            pred ():
+            target ():
+            frames (): If frames is specified, only considers the first 'frames' frames.
+            all_frame_cnts ():
+
+        Returns:
+
+        """
         if pred.shape != target.shape:
             raise ValueError("Output images and target images are of different shape!")
         pred = pred.contiguous()

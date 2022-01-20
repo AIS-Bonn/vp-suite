@@ -1,10 +1,8 @@
-import argparse
 import json
 import math
 import os
 import random
 import shutil
-import time
 from pathlib import Path
 
 import cv2
@@ -13,23 +11,33 @@ import torch
 from tqdm import tqdm
 
 from vp_suite.utils.utils import most
-from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 
 class SynpickVideoDataset(BaseVPDataset):
+    r"""
+
+    """
 
     NAME = "SynPick bin picking"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
-    SKIP_FIRST_N = 72
+    SKIP_FIRST_N = 72  #: TODO
 
-    max_seq_len = 90  # a trajectory in the SynPick dataset is at least 90 frames
+    max_seq_len = 90  #: a trajectory in the SynPick dataset is at least 90 frames
     action_size = 3
     frame_shape = (135, 240, 3)
     train_keep_ratio = 0.9
 
     def __init__(self, split, img_processor, **dataset_kwargs):
+        r"""
+
+        Args:
+            split ():
+            img_processor ():
+            **dataset_kwargs ():
+        """
         super(SynpickVideoDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str((Path(self.data_dir) / "processed" / split).resolve())
@@ -51,11 +59,21 @@ class SynpickVideoDataset(BaseVPDataset):
         self.total_len = len(self.image_ids)
 
     def _config(self):
+        r"""
+
+        Returns:
+
+        """
         return {
             "skip_first_n": self.SKIP_FIRST_N
         }
 
-    def set_seq_len_(self):
+    def _set_seq_len(self):
+        r"""
+
+        Returns:
+
+        """
         # Determine which dataset indices are valid for given sequence length T
         last_valid_idx = -1 * self.seq_len
         for idx in range(self.total_len - self.seq_len + 1):
@@ -93,7 +111,14 @@ class SynpickVideoDataset(BaseVPDataset):
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
     def __getitem__(self, i) -> VPData:
+        r"""
 
+        Args:
+            i ():
+
+        Returns:
+
+        """
         assert self.ready_for_usage, \
             "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
 
@@ -113,27 +138,77 @@ class SynpickVideoDataset(BaseVPDataset):
         return data
 
     def __len__(self):
+        r"""
+
+        Returns:
+
+        """
         return len(self.valid_idx)
 
     def comp_gripper_pos(self, old, new):
+        r"""
+
+        Args:
+            old ():
+            new ():
+
+        Returns:
+
+        """
         x_diff, y_diff = new[0] - old[0], new[1] - old[1]
         return math.sqrt(x_diff * x_diff + y_diff * y_diff)
 
     def get_gripper_pos_xydist(self, gripper_pos):
+        r"""
+
+        Args:
+            gripper_pos ():
+
+        Returns:
+
+        """
         return [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
 
     def get_gripper_pos_diff(self, gripper_pos):
+        r"""
+
+        Args:
+            gripper_pos ():
+
+        Returns:
+
+        """
         gripper_pos_numpy = np.array(gripper_pos)
         return np.stack([new-old for old, new in zip(gripper_pos_numpy, gripper_pos_numpy[1:])], axis=0)
 
     def ep_num_from_id(self, file_id: str):
+        r"""
+
+        Args:
+            file_id ():
+
+        Returns:
+
+        """
         return int(file_id[-17:-11])
 
     def frame_num_from_id(self, file_id: str):
+        r"""
+
+        Args:
+            file_id ():
+
+        Returns:
+
+        """
         return int(file_id[-10:-4])
 
     def download_and_prepare_dataset(self):
+        r"""
 
+        Returns:
+
+        """
         self.DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
         d_path_processed = self.DEFAULT_DATA_DIR / "processed"
         d_path_raw = self.DEFAULT_DATA_DIR / "raw"
@@ -153,11 +228,30 @@ class SynpickVideoDataset(BaseVPDataset):
 # === SynPick data preparation tools ===========================================
 
 def download_synpick(d_path_raw):
+    r"""
+
+    Args:
+        d_path_raw ():
+
+    Returns:
+
+    """
     raise NotImplementedError("ERROR: SynPick dataset is not yet downloadable! "
                               "Please context the paper authors to resolve this issue.")
 
 def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
+    r"""
 
+    Args:
+        in_path ():
+        out_path ():
+        seed ():
+        resize_ratio ():
+        train_keep_ratio ():
+
+    Returns:
+
+    """
     random.seed(seed)
     train_path = in_path / "train"
     test_path = in_path / "test"
@@ -202,6 +296,16 @@ def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
     copy_synpick_scene_gts(all_scene_gts, out_path)
 
 def copy_synpick_imgs(all_fps, out_path, resize_ratio):
+    r"""
+
+    Args:
+        all_fps ():
+        out_path ():
+        resize_ratio ():
+
+    Returns:
+
+    """
 
     # prepare and execute file copying
     all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
@@ -222,6 +326,15 @@ def copy_synpick_imgs(all_fps, out_path, resize_ratio):
             cv2.imwrite(str((op / out_fp).absolute()), resized_img)
 
 def copy_synpick_scene_gts(all_fps, out_path):
+    r"""
+
+    Args:
+        all_fps ():
+        out_path ():
+
+    Returns:
+
+    """
 
     # prepare and execute file copying
     all_out_paths = [(out_path / "train" / "scene_gt"), (out_path / "val" / "scene_gt"),

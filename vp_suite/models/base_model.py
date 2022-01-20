@@ -3,20 +3,30 @@ import torch.nn as nn
 from tqdm import tqdm
 
 class VideoPredictionModel(nn.Module):
+    r"""
+
+    """
 
     # model-specific constants
-    NAME = None
-    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]
-    CAN_HANDLE_ACTIONS = False  # models by default won't be able to handle actions
-    TRAINABLE = True  # most implemented models will be trainable
+    NAME = None  #: The model's name
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]  #: TODO
+    CAN_HANDLE_ACTIONS = False  #: Whether the model can handle actions or not
+    TRAINABLE = True  #: Whether the model is trainable or not
 
     # model hyperparameters
-    min_context_frames = 1  # models by default will be able to deal with arbitrarily many context frames
-    action_conditional = None
-    model_dir = None  # specifies save location of model
-    tensor_value_range = None
+    min_context_frames = 1  # : Minimum number of context frames required for the model to work. Be default models
+    # will be able to deal with arbitrarily many context frames.
+    action_conditional = None  #: TODO
+    model_dir = None  #: specifies save location of model
+    tensor_value_range = None  #: TODO
 
     def __init__(self, device="cpu", **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(VideoPredictionModel, self).__init__()
 
         # set required parameters
@@ -42,6 +52,11 @@ class VideoPredictionModel(nn.Module):
 
     @property
     def config(self):
+        r"""
+
+        Returns:
+
+        """
         model_config = {
             "model_dir": self.model_dir,
             "min_context_frames": self.min_context_frames,
@@ -53,19 +68,37 @@ class VideoPredictionModel(nn.Module):
         return {**model_config, **self._config()}
 
     def _config(self):
-        """ Model-specific config TODO doc"""
+        r""" Model-specific config
+        """
         return dict()
 
     def pred_1(self, x, **kwargs):
-        """ Predicts a single frame """
-        # input: T frames: [b, T, c, h, w]
-        # output: single frame: [b, c, h, w]
+        r"""Predicts a single frame
+        input: T frames: [b, T, c, h, w]
+        output: single frame: [b, c, h, w]
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def forward(self, x, pred_length=1, **kwargs):
-        """ Predicts pred_length frames into the future. """
+        r""" Predicts pred_length frames into the future.
         # input: T frames: [b, T, c, h, w]
         # output: pred_length (P) frames: [b, P, c, h, w]
+
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
         preds = []
         for i in range(pred_length):
             pred = self.pred_1(x, **kwargs).unsqueeze(dim=1)
@@ -76,7 +109,18 @@ class VideoPredictionModel(nn.Module):
         return pred, None
 
     def train_iter(self, config, loader, optimizer, loss_provider, epoch):
-        """ Default training iteration, traversing the whole loader and TODO """
+        r"""Default training iteration
+
+        Args:
+            config ():
+            loader ():
+            optimizer ():
+            loss_provider ():
+            epoch ():
+
+        Returns:
+
+        """
         loop = tqdm(loader)
         for batch_idx, data in enumerate(loop):
 
@@ -108,7 +152,16 @@ class VideoPredictionModel(nn.Module):
             # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
     def eval_iter(self, config, loader, loss_provider):
-        """ Default evaluation iteration, traversing the whole loader and TODO """
+        r"""Default evaluation iteration
+
+        Args:
+            config ():
+            loader ():
+            loss_provider ():
+
+        Returns:
+
+        """
         self.eval()
         loop = tqdm(loader)
         all_losses = []

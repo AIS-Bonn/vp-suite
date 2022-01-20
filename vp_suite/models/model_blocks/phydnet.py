@@ -10,7 +10,20 @@ from vp_suite.models.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
 class PhyCell_Cell(nn.Module):
+    r"""
+
+    """
     def __init__(self, input_dim, action_conditional, action_size, F_hidden_dim, kernel_size, bias=1):
+        r"""
+
+        Args:
+            input_dim ():
+            action_conditional ():
+            action_size ():
+            F_hidden_dim ():
+            kernel_size ():
+            bias ():
+        """
         super(PhyCell_Cell, self).__init__()
         self.input_dim = input_dim
         self.action_size = action_size
@@ -41,9 +54,18 @@ class PhyCell_Cell(nn.Module):
                                                out_channels=self.input_dim, kernel_size=(1, 1))
 
 
-    def forward(self, frame, action, hidden):  # x [batch_size, hidden_dim, height, width]
+    def forward(self, frame, action, hidden):
+        r"""
+        x [batch_size, hidden_dim, height, width]
 
+        Args:
+            frame ():
+            action ():
+            hidden ():
 
+        Returns:
+
+        """
         if self.action_conditional:
             inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *frame.shape[-2:])
             frame_action = torch.cat([frame, inflated_action], dim=1)  # concatenate along channel axis
@@ -61,8 +83,23 @@ class PhyCell_Cell(nn.Module):
 
 
 class PhyCell(nn.Module):
+    r"""
+
+    """
     def __init__(self, input_shape, input_dim, F_hidden_dims, n_layers, kernel_size, action_conditional,
                  action_size, device):
+        r"""
+
+        Args:
+            input_shape ():
+            input_dim ():
+            F_hidden_dims ():
+            n_layers ():
+            kernel_size ():
+            action_conditional ():
+            action_size ():
+            device ():
+        """
         super(PhyCell, self).__init__()
         self.input_shape = input_shape
         self.input_dim = input_dim
@@ -82,10 +119,21 @@ class PhyCell(nn.Module):
                                           kernel_size=self.kernel_size))
         self.cell_list = nn.ModuleList(cell_list)
 
-    def forward(self, frame, action, first_timestep=False):  # input_ [batch_size, channels, width, height]
+    def forward(self, frame, action, first_timestep=False):
+        r"""
+        in: [batch_size, channels, width, height]
+
+        Args:
+            frame ():
+            action ():
+            first_timestep ():
+
+        Returns:
+
+        """
         batch_size = frame.data.size()[0]
         if (first_timestep):
-            self.initHidden(batch_size)  # init Hidden at each forward start
+            self.init_hidden(batch_size)  # init Hidden at each forward start
 
         for j, cell in enumerate(self.cell_list):
             if j == 0:  # bottom layer
@@ -95,29 +143,45 @@ class PhyCell(nn.Module):
 
         return self.H, self.H
 
-    def initHidden(self, batch_size):
+    def init_hidden(self, batch_size):
+        r"""
+
+        Args:
+            batch_size ():
+
+        Returns:
+
+        """
         self.H = []
         for i in range(self.n_layers):
             self.H.append(
                 torch.zeros(batch_size, self.input_dim, self.input_shape[0], self.input_shape[1]).to(self.device))
 
-    def setHidden(self, H):
+    def _set_hidden(self, H):
+        r"""
+
+        Args:
+            H ():
+
+        Returns:
+
+        """
         self.H = H
 
 
 class ConvLSTM_Cell(nn.Module):
+    r"""
+
+    """
     def __init__(self, input_shape, input_dim, hidden_dim, kernel_size, bias=1):
-        """
-        input_shape: (int, int)
-            Height and width of input tensor as (height, width).
-        input_dim: int
-            Number of channels of input tensor.
-        hidden_dim: int
-            Number of channels of hidden state.
-        kernel_size: (int, int)
-            Size of the convolutional kernel.
-        bias: bool
-            Whether or not to add the bias.
+        r"""
+
+        Args:
+            input_shape ((int, int)): Height and width of input tensor as (height, width).
+            input_dim (int): Number of channels of input tensor.
+            hidden_dim (int): Number of channels of hidden state.
+            kernel_size (int): Size of the convolutional kernel.
+            bias (bool): Whether or not to add the bias.
         """
         super(ConvLSTM_Cell, self).__init__()
 
@@ -151,8 +215,23 @@ class ConvLSTM_Cell(nn.Module):
 
 
 class ConvLSTM(nn.Module):
+    r"""
+
+    """
     def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size, action_conditional,
                  action_size, device):
+        r"""
+
+        Args:
+            input_shape ():
+            input_dim ():
+            hidden_dims ():
+            n_layers ():
+            kernel_size ():
+            action_conditional ():
+            action_size ():
+            device ():
+        """
         super(ConvLSTM, self).__init__()
         self.input_shape = input_shape
         self.input_dim = input_dim
@@ -175,10 +254,21 @@ class ConvLSTM(nn.Module):
             cur_input_dim = self.hidden_dims[i]
         self.cell_list = nn.ModuleList(cell_list)
 
-    def forward(self, frame, action, first_timestep=False):  # input_ [batch_size, channels, width, height]
+    def forward(self, frame, action, first_timestep=False):
+        r"""
+        in: [batch_size, channels, width, height]
+
+        Args:
+            frame ():
+            action ():
+            first_timestep ():
+
+        Returns:
+
+        """
         batch_size = frame.data.size()[0]
         if (first_timestep):
-            self.initHidden(batch_size)  # init Hidden at each forward start
+            self.init_hidden(batch_size)  # init Hidden at each forward start
 
         input = frame
         if self.action_conditional:
@@ -193,7 +283,15 @@ class ConvLSTM(nn.Module):
 
         return (self.H, self.C), self.H  # (hidden, output)
 
-    def initHidden(self, batch_size):
+    def init_hidden(self, batch_size):
+        r"""
+
+        Args:
+            batch_size ():
+
+        Returns:
+
+        """
         self.H, self.C = [], []
         for i in range(self.n_layers):
             self.H.append(
@@ -201,38 +299,92 @@ class ConvLSTM(nn.Module):
             self.C.append(
                 torch.zeros(batch_size, self.hidden_dims[i], self.input_shape[0], self.input_shape[1]).to(self.device))
 
-    def setHidden(self, hidden):
+    def set_hidden(self, hidden):
+        r"""
+
+        Args:
+            hidden ():
+
+        Returns:
+
+        """
         H, C = hidden
         self.H, self.C = H, C
 
 
 class EncoderSplit(nn.Module):
+    r"""
+
+    """
     def __init__(self, nc=64, nf=64):
+        r"""
+
+        Args:
+            nc ():
+            nf ():
+        """
         super(EncoderSplit, self).__init__()
         self.c1 = DCGANConv(nc, nf, stride=1)  # (64) x 16 x 16
         self.c2 = DCGANConv(nf, nf, stride=1)  # (64) x 16 x 16
 
     def forward(self, input):
+        r"""
+
+        Args:
+            input ():
+
+        Returns:
+
+        """
         h1 = self.c1(input)
         h2 = self.c2(h1)
         return h2
 
 
 class DecoderSplit(nn.Module):
+    r"""
+
+    """
     def __init__(self, nc=64, nf=64):
+        r"""
+
+        Args:
+            nc ():
+            nf ():
+        """
         super(DecoderSplit, self).__init__()
         self.upc1 = DCGANConvTranspose(nf, nf, stride=1)  # (64) x 16 x 16
         self.upc2 = DCGANConvTranspose(nf, nc, stride=1)  # (32) x 32 x 32
 
     def forward(self, input):
+        r"""
+
+        Args:
+            input ():
+
+        Returns:
+
+        """
         d1 = self.upc1(input)
         d2 = self.upc2(d1)
         return d2
 
 
 class EncoderRNN(torch.nn.Module):
+    r"""
 
+    """
     def __init__(self, img_shape, phy_cell_channels, phy_kernel_size, action_conditional, action_size, device):
+        r"""
+
+        Args:
+            img_shape ():
+            phy_cell_channels ():
+            phy_kernel_size ():
+            action_conditional ():
+            action_size ():
+            device ():
+        """
         super(EncoderRNN, self).__init__()
         img_c, _, _ = img_shape
         self.encoder_E = DCGANEncoder(nc=img_c).to(device)
@@ -261,6 +413,17 @@ class EncoderRNN(torch.nn.Module):
 
 
     def forward(self, frame, action, first_timestep=False, decoding=False):
+        r"""
+
+        Args:
+            frame ():
+            action ():
+            first_timestep ():
+            decoding ():
+
+        Returns:
+
+        """
         frame = self.encoder_E(frame)  # general encoder 64x64x1 -> 32x32x32
 
         if decoding:  # input=None in decoding phase
@@ -283,7 +446,15 @@ class EncoderRNN(torch.nn.Module):
 
 
 class _MK(nn.Module):
+    r"""
+
+    """
     def __init__(self, shape):
+        r"""
+
+        Args:
+            shape ():
+        """
         super(_MK, self).__init__()
         self._size = torch.Size(shape)
         self._dim = len(shape)
@@ -302,16 +473,47 @@ class _MK(nn.Module):
 
     @property
     def M(self):
+        r"""
+
+        Returns:
+
+        """
         return list(self._buffers['_M'+str(j)] for j in range(self.dim()))
+
     @property
     def invM(self):
+        r"""
+
+        Returns:
+
+        """
         return list(self._buffers['_invM'+str(j)] for j in range(self.dim()))
 
     def size(self):
+        r"""
+
+        Returns:
+
+        """
         return self._size
+
     def dim(self):
+        r"""
+
+        Returns:
+
+        """
         return self._dim
+
     def _packdim(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         assert x.dim() >= self.dim()
         if x.dim() == self.dim():
             x = x[np.newaxis,:]
@@ -320,10 +522,24 @@ class _MK(nn.Module):
         return x
 
     def forward(self):
+        r"""
+
+        Returns:
+
+        """
         pass
 
 
 def _apply_axis_left_dot(x, mats):
+    r"""
+
+    Args:
+        x ():
+        mats ():
+
+    Returns:
+
+    """
     assert x.dim() == len(mats) + 1
     sizex = x.size()
     k = x.dim() - 1
@@ -337,18 +553,31 @@ def _apply_axis_left_dot(x, mats):
 class K2M(_MK):
     """
     convert convolution kernel to moment matrix
+
     Arguments:
         shape (tuple of int): kernel shape
-    Usage:
-        k2m = K2M([5,5])
-        k = torch.randn(5,5,dtype=torch.float64)
-        m = k2m(k)
+
+    Examples:
+        >>> k2m = K2M([5,5])
+        >>> k = torch.randn(5,5,dtype=torch.float64)
+        >>> m = k2m(k)
     """
     def __init__(self, shape):
-        super(K2M, self).__init__(shape)
-    def forward(self, k):
+        r"""
+
+        Args:
+            shape ():
         """
-        k (Tensor): torch.size=[...,*self.shape]
+        super(K2M, self).__init__(shape)
+
+    def forward(self, k):
+        r"""
+
+        Args:
+            k (Tensor): torch.size=[...,*self.shape]
+
+        Returns:
+
         """
         sizek = k.size()
         k = self._packdim(k)
@@ -357,8 +586,16 @@ class K2M(_MK):
         return k
 
 def tensordot(a,b,dim):
-    """
+    r"""
     tensordot in PyTorch, see numpy.tensordot?
+
+    Args:
+        a ():
+        b ():
+        dim ():
+
+    Returns:
+
     """
     l = lambda x,y:x*y
     if isinstance(dim,int):
@@ -401,8 +638,15 @@ def tensordot(a,b,dim):
     c = a@b
     return c.view(sizea0+sizeb1)
 
-
 def find_divisor_for_group_norm(x):
+    r"""
+
+    Args:
+        x ():
+
+    Returns:
+
+    """
     sq = math.floor(math.sqrt(x))
     while True:
         if x // sq == x / sq: return x // sq

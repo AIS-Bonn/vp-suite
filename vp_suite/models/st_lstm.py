@@ -2,25 +2,34 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 
 
 class STLSTM(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "ST-LSTM"
     CAN_HANDLE_ACTIONS = True
     
     # model hyperparameters
-    enc_channels = 64
-    num_layers = 3
-    reconstruction_loss_scale = 0.1
-    decoupling_loss_scale = 100.0
-    inflated_action_dim = 3
+    enc_channels = 64  #: TODO
+    num_layers = 3  #: TODO
+    reconstruction_loss_scale = 0.1  #: TODO
+    decoupling_loss_scale = 100.0  #: TODO
+    inflated_action_dim = 3  #: TODO
     
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(STLSTM, self).__init__(device, **model_args)
 
         self.num_hidden = [self.enc_channels] * self.num_layers
@@ -59,9 +68,28 @@ class STLSTM(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, frames, pred_length=1, **kwargs):
+        r"""
+
+        Args:
+            frames ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
 
         frames = frames.transpose(0, 1)  # [t, b, c, h, w]
         actions = kwargs.get("actions", None)

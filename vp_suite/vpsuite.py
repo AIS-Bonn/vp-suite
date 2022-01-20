@@ -10,9 +10,9 @@ import wandb
 from tqdm import tqdm
 
 import vp_suite.constants as constants
-from vp_suite.dataset._wrapper import DatasetWrapper
+from vp_suite.dataset.wrapper import DatasetWrapper
 from vp_suite.dataset import DATASET_CLASSES
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models import MODEL_CLASSES, AVAILABLE_MODELS
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure import LOSS_CLASSES
@@ -25,10 +25,25 @@ from vp_suite.utils.compatibility import check_model_and_data_compat, check_run_
 
 
 class VPSuite:
+    r"""TODO.
 
-    DEFAULT_RUN_CONFIG = (constants.PKG_RESOURCES / 'run_config.json').resolve()
+    TODO.
+
+    Attributes:
+        device(str): A string specifying which device to work on ('cuda' or 'gpu')
+        datasets(List[:class:`DatasetWrapper`]): The loaded datasets.
+        models(List[:class:`VideoPredictionModel`]): The loaded/created models.
+
+    """
+
+    _DEFAULT_RUN_CONFIG : Path = constants.PKG_RESOURCES / 'run_config.json'
 
     def __init__(self, device="cuda"):
+        r"""
+
+        Args:
+            device ():
+        """
         self.device = "cuda" if device == "cuda" and torch.cuda.is_available() else "cpu"
 
         self.clear_models()
@@ -36,21 +51,50 @@ class VPSuite:
 
     @property
     def training_sets(self):
+        r"""
+
+        Returns:
+
+        """
         return [d for d in self.datasets if d.is_training_set()]
 
     @property
     def test_sets(self):
+        r"""
+
+        Returns:
+
+        """
         return [d for d in self.datasets if d.is_test_set()]
 
     def clear_datasets(self):
+        r"""
+
+        Returns:
+
+        """
         self.datasets : List[DatasetWrapper] = []
 
     def clear_models(self):
+        r"""
+
+        Returns:
+
+        """
         self.models : List[VideoPredictionModel] = []
 
     def load_dataset(self, dataset="MM", split="train", value_min=0.0, value_max=1.0, **dataset_kwargs):
-        """
-        ATTENTION TODO
+        r"""
+
+        Args:
+            dataset ():
+            split ():
+            value_min ():
+            value_max ():
+            **dataset_kwargs ():
+
+        Returns:
+
         """
         img_processor = ImgProcessor(value_min=value_min, value_max=value_max)
         dataset_class = DATASET_CLASSES[dataset]
@@ -60,17 +104,29 @@ class VPSuite:
         self.datasets.append(dataset)
 
     def load_model(self, model_dir, ckpt_name="best_model.pth"):
-        """
-        overrides existing model
-        """
+        r"""
 
+        Args:
+            model_dir ():
+            ckpt_name ():
+
+        Returns:
+
+        """
         model_ckpt = os.path.join(model_dir, ckpt_name)
         model = torch.load(model_ckpt)
         self._model_setup(model, loaded=True)
 
     def create_model(self, model_type, action_conditional=False, **model_args):
-        """
-        overrides existing model
+        r"""
+
+        Args:
+            model_type ():
+            action_conditional ():
+            **model_args ():
+
+        Returns:
+
         """
 
         # parameter processing
@@ -97,6 +153,15 @@ class VPSuite:
         self._model_setup(model)
 
     def _model_setup(self, model, loaded=False):
+        r"""
+
+        Args:
+            model ():
+            loaded ():
+
+        Returns:
+
+        """
         ac_str = "(action-conditional)" if model.config["action_conditional"] else ""
         loaded_str = "loaded" if loaded else "created new"
         print(f"INFO: {loaded_str} model '{model.NAME}' {ac_str}")
@@ -106,7 +171,15 @@ class VPSuite:
         self.models.append(model)
 
     def _get_run_config(self, split="train", **run_args):
-        """ TODO """
+        r"""
+
+        Args:
+            split ():
+            **run_args ():
+
+        Returns:
+
+        """
         assert len(self.models) > 0, "No model available. " \
                                 "Load a pretrained model or create a new instance before starting training or test runs"
         if split == "train":
@@ -116,7 +189,7 @@ class VPSuite:
             assert len(self.test_sets) > 0, "No test sets loaded. " \
                                                 "Load a dataset in test mode before starting training or test runs"
 
-        with open(self.DEFAULT_RUN_CONFIG, 'r') as tc_file:
+        with open(str(self._DEFAULT_RUN_CONFIG.resolve()), 'r') as tc_file:
             run_config = json.load(tc_file)
 
         # update config
@@ -138,8 +211,13 @@ class VPSuite:
 # ===== TRAINING ================================================================
 
     def _prepare_training(self, **training_kwargs):
-        """
+        r"""
         Prepares a single dataset and a single model for training.
+        Args:
+            **training_kwargs ():
+
+        Returns:
+
         """
         run_config = self._get_run_config("train", **training_kwargs)
 
@@ -158,7 +236,15 @@ class VPSuite:
         return model, dataset, run_config
 
     def train(self, trial=None, **training_kwargs):
+        r"""
 
+        Args:
+            trial ():
+            **training_kwargs ():
+
+        Returns:
+
+        """
         # PREPARATION
         model, dataset, run_config = self._prepare_training(**training_kwargs)
         train_data, val_data = dataset.train_data, dataset.val_data
@@ -274,7 +360,16 @@ class VPSuite:
         return best_val_loss  # return best validation loss for hyperparameter optimization
 
     def hyperopt(self, optuna_config=None, n_trials=30, **run_kwargs):
+        r"""
 
+        Args:
+            optuna_config ():
+            n_trials ():
+            **run_kwargs ():
+
+        Returns:
+
+        """
         from functools import partial
         from vp_suite.utils.utils import _check_optuna_config
         run_config = self._get_run_config(**run_kwargs)
@@ -294,8 +389,13 @@ class VPSuite:
 # ===== TESTING ================================================================
 
     def _prepare_testing(self, **run_kwargs):
-        """
+        r"""
         Prepares multiple datasets and models for testing
+        Args:
+            **run_kwargs ():
+
+        Returns:
+
         """
         run_config = self._get_run_config("test", **run_kwargs)
 
@@ -336,7 +436,17 @@ class VPSuite:
         return test_sets_and_model_lists, run_config
 
     def _test_on_dataset(self, model_info_list, dataset, run_config, brief_test):
+        r"""
 
+        Args:
+            model_info_list ():
+            dataset ():
+            run_config ():
+            brief_test ():
+
+        Returns:
+
+        """
         # PREPARATION
         test_data = dataset.test_data
         test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=0)
@@ -421,6 +531,15 @@ class VPSuite:
                             print(f" -> {k}: {v}")
 
     def test(self, brief_test=False, **run_kwargs):
+        r"""
+
+        Args:
+            brief_test ():
+            **run_kwargs ():
+
+        Returns:
+
+        """
         test_sets_and_model_lists, run_config = self._prepare_testing(**run_kwargs)
         for test_set, model_info_list in test_sets_and_model_lists:
             self._test_on_dataset(model_info_list, test_set, run_config, brief_test)

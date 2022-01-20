@@ -5,22 +5,31 @@ import random
 from tqdm import tqdm
 
 from vp_suite.measure.image_wise import MSE
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.phydnet import EncoderRNN, K2M
 
 
 class PhyDNet(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "PhyDNet"
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    moment_loss_scale = 1.0
-    phy_kernel_size = (7, 7)
-    phy_cell_channels = 49
+    moment_loss_scale = 1.0  #: TODO
+    phy_kernel_size = (7, 7)  #: TODO
+    phy_cell_channels = 49  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(PhyDNet, self).__init__(device, **model_args)
 
         self.criterion = MSE(self.device)
@@ -42,10 +51,31 @@ class PhyDNet(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
-    # For PhyDNet, forward() is used for inference only (no training).
     def forward(self, frames, pred_length=1, **kwargs):
+        r"""
+
+        Note:
+            For this model, forward() is used for inference only (no training).
+
+        Args:
+            frames ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
 
         # shape: [b, t, c, ...]
         print(frames.shape)
@@ -76,6 +106,18 @@ class PhyDNet(VideoPredictionModel):
 
 
     def train_iter(self, config, data_loader, optimizer, loss_provider, epoch):
+        r"""
+
+        Args:
+            config ():
+            data_loader ():
+            optimizer ():
+            loss_provider ():
+            epoch ():
+
+        Returns:
+
+        """
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)

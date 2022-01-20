@@ -1,18 +1,27 @@
 import torch
 from torch import nn as nn
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 
 class SimpleV1(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "SimpleV1"
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters
-    temporal_dim = None
+    temporal_dim = None  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(SimpleV1, self).__init__(device, **model_args)
 
         self.min_context_frames = self.temporal_dim
@@ -22,19 +31,48 @@ class SimpleV1(VideoPredictionModel):
         self._init_to_clf()
 
     def _init_to_clf(self):
+        r"""
+
+        Returns:
+
+        """
         clf_weights = torch.zeros(self.img_c, self.img_c, self.temporal_dim, 5, 5)
         for i in range(self.img_c):
             clf_weights[i, i, -1, 2, 2] = 1.0
         self.cnn.weight.data = clf_weights
 
     def _config(self):
+        r"""
+
+        Returns:
+
+        """
         return {"temporal_dim": self.temporal_dim}
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
         return self.cnn(x).squeeze(dim=2)  # [b, c, h, w]
 
     def forward(self, x, pred_length=1, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
         for t in range(pred_length):
@@ -44,14 +82,17 @@ class SimpleV1(VideoPredictionModel):
 
 
 class SimpleV2(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "SimpleV2"
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters
-    hidden_channels = 64
-    temporal_dim = None
+    hidden_channels = 64  #: TODO
+    temporal_dim = None  #: TODO
 
     def _config(self):
         return {
@@ -60,6 +101,12 @@ class SimpleV2(VideoPredictionModel):
         }
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(SimpleV2, self).__init__(device, **model_args)
 
         self.min_context_frames = self.temporal_dim
@@ -72,15 +119,29 @@ class SimpleV2(VideoPredictionModel):
         )
         self.final_merge = nn.Conv2d(2 * self.img_c, self.img_c, kernel_size=(5, 5), stride=(1, 1),
                                      padding=(2, 2), bias=False)
-        self.init_to_clf()
+        self._init_to_clf()
 
-    def init_to_clf(self):
+    def _init_to_clf(self):
+        r"""
+
+        Returns:
+
+        """
         clf_weights = torch.zeros(self.img_c, 2 * self.img_c, 5, 5)
         for i in range(self.img_c):
             clf_weights[i, self.img_c + i, 2, 2] = 1.0
         self.final_merge.weight.data = clf_weights
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
         last_frame = x[:, :, -1]  # [b, c, h, w]
         big_branch = self.big_branch(x).squeeze(2)  # [b, c, h, w]
@@ -88,6 +149,16 @@ class SimpleV2(VideoPredictionModel):
         return out
 
     def forward(self, x, pred_length=1, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
         for t in range(pred_length):

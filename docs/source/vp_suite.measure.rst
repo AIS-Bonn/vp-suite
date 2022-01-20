@@ -1,6 +1,11 @@
 vp\_suite.measure package
 =========================
 
+.. automodule:: vp_suite.measure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -12,34 +17,10 @@ Subpackages
 Submodules
 ----------
 
-vp\_suite.measure.image\_wise module
-------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: vp_suite.measure.image_wise
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-vp\_suite.measure.loss\_provider module
----------------------------------------
-
-.. automodule:: vp_suite.measure.loss_provider
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-vp\_suite.measure.metric\_provider module
------------------------------------------
-
-.. automodule:: vp_suite.measure.metric_provider
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: vp_suite.measure
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   vp_suite.measure.base_measure
+   vp_suite.measure.image_wise
+   vp_suite.measure.loss_provider
+   vp_suite.measure.metric_provider

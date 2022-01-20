@@ -6,27 +6,36 @@ import imageio
 import torchfile
 from pathlib import Path
 
-from vp_suite.dataset._base_dataset import BaseVPDataset, VPData
+from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 class KTHActionsDataset(BaseVPDataset):
+    r"""
 
-    '''
-    Some sequences might even be shorter than 30 frames;
-    There, the last frame is repeated to reach MAX_SEQ_LEN.
-    Going beyond 30 frames is therefore not recommended.
     Code by Angel Villar-Corrales, modified.
-    '''
+
+    Note:
+        Some sequences might even be shorter than 30 frames;
+        There, the last frame is repeated to reach MAX_SEQ_LEN.
+        Going beyond 30 frames is therefore not recommended.
+    """
     NAME = "KTH Actions"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
-    CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']
-    SHORT_CLASSES = ['walking', 'running', 'jogging']
+    CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: TODO
+    SHORT_CLASSES = ['walking', 'running', 'jogging']  #: TODO
 
     max_seq_len = 30
     action_size = 0
     frame_shape = (64, 64, 3)
 
     def __init__(self, split, img_processor, **dataset_kwargs):
+        r"""
+
+        Args:
+            split ():
+            img_processor ():
+            **dataset_kwargs ():
+        """
         super(KTHActionsDataset, self).__init__(split, img_processor, **dataset_kwargs)
 
         self.data_dir = str((Path(self.data_dir) / "processed").resolve())
@@ -40,6 +49,14 @@ class KTHActionsDataset(BaseVPDataset):
         }
 
     def get_from_idx(self, i):
+        r"""
+
+        Args:
+            i ():
+
+        Returns:
+
+        """
         for c, c_data in self.data.items():
             len_c_data = sum([len(vid[b'files']) for vid in c_data])
             if i >= len_c_data:  # seq sits in another class
@@ -55,7 +72,14 @@ class KTHActionsDataset(BaseVPDataset):
         raise ValueError("invalid i")
 
     def __getitem__(self, i) -> VPData:
+        r"""
 
+        Args:
+            i ():
+
+        Returns:
+
+        """
         assert self.ready_for_usage, \
             "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
 
@@ -77,12 +101,21 @@ class KTHActionsDataset(BaseVPDataset):
         return data
 
     def __len__(self):
+        r"""
+
+        Returns:
+
+        """
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
     def download_and_prepare_dataset(self):
-        """
+        r"""
+
         Downloads and parepares the KTH datasets, using bash scripts from https://github.com/edenton/svg
         that have been modified by Ani Karapetyan.
+
+        Returns:
+
         """
         from vp_suite.utils.utils import run_command
         import vp_suite.constants as constants

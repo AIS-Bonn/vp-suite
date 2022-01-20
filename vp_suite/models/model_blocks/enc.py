@@ -1,3 +1,6 @@
+r"""
+This module contains encoder/decoder/autoencoder model blocks.
+"""
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
@@ -8,7 +11,17 @@ from vp_suite.models.model_blocks.conv import DCGANConv, DCGANConvTranspose
 
 
 class Autoencoder(nn.Module):
+    r"""
+
+    """
     def __init__(self, img_shape, encoded_channels, device):
+        r"""
+
+        Args:
+            img_shape ():
+            encoded_channels ():
+            device ():
+        """
         super(Autoencoder, self).__init__()
 
         self.img_shape = img_shape
@@ -25,19 +38,48 @@ class Autoencoder(nn.Module):
         self.encoded_numel = encoded_zeros.numel()
 
     def build_models(self):
+        r"""
+
+        Returns:
+
+        """
         self.encoder = Encoder(in_channels=self.img_c, out_channels=self.enc_c)
         self.decoder = Decoder(in_channels=self.enc_c, out_shape=self.img_shape)
 
     def encode(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         return self.encoder(x)
 
     def decode(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         return self.decoder(x)
 
 
 class Encoder(nn.Module):
+    r"""
 
+    """
     def __init__(self, in_channels, out_channels):
+        r"""
+
+        Args:
+            in_channels ():
+            out_channels ():
+        """
         super().__init__()
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -49,7 +91,14 @@ class Encoder(nn.Module):
         self.mean_layer = nn.Conv2d(in_channels=64, out_channels=self.out_channels, kernel_size=3, stride=1)
 
     def forward(self, x):
+        r"""
 
+        Args:
+            x ():
+
+        Returns:
+
+        """
         x = self.act_fn(self.conv1(x))
         x = self.act_fn(self.conv2(x))
         x = self.act_fn(self.mean_layer(x))
@@ -58,8 +107,16 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    r"""
 
+    """
     def __init__(self, in_channels, out_shape):
+        r"""
+
+        Args:
+            in_channels ():
+            out_shape ():
+        """
         super().__init__()
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -74,6 +131,14 @@ class Decoder(nn.Module):
 
 
     def forward(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         x = self.act_fn(self.fc1(x))
         x = self.act_fn(self.conv1(x))
         x = self.act_fn(self.conv2(x))
@@ -82,7 +147,16 @@ class Decoder(nn.Module):
 
 
 class DCGANEncoder(nn.Module):
+    r"""
+
+    """
     def __init__(self, nc=1, nf=32):
+        r"""
+
+        Args:
+            nc ():
+            nf ():
+        """
         super(DCGANEncoder, self).__init__()
         # input is (1) x 64 x 64
         self.c1 = DCGANConv(nc, nf, stride=2)  # (32) x 32 x 32
@@ -90,6 +164,14 @@ class DCGANEncoder(nn.Module):
         self.c3 = DCGANConv(nf, 2 * nf, stride=2)  # (64) x 16 x 16
 
     def forward(self, input):
+        r"""
+
+        Args:
+            input ():
+
+        Returns:
+
+        """
         h1 = self.c1(input)
         h2 = self.c2(h1)
         h3 = self.c3(h2)
@@ -97,6 +179,9 @@ class DCGANEncoder(nn.Module):
 
 
 class DCGANDecoder(nn.Module):
+    r"""
+
+    """
     def __init__(self, out_size, nc=1, nf=32):
         super(DCGANDecoder, self).__init__()
         self.upc1 = DCGANConvTranspose(2 * nf, nf, stride=2)  # (32) x 32 x 32
@@ -106,6 +191,14 @@ class DCGANDecoder(nn.Module):
         self.resize = Resize(size=out_size)
 
     def forward(self, input):
+        r"""
+
+        Args:
+            input ():
+
+        Returns:
+
+        """
         d1 = self.upc1(input)
         d2 = self.upc2(d1)
         d3 = self.upc3(d2)

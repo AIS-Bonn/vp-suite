@@ -1,15 +1,21 @@
+r"""Module for image-wise measures.
+
+APPLIES TO ALL LOSSES:
+- expected data type: torch.tensor (torch.float)
+- expected shape: [..., h, w] ([..., 3, h, w] for LPIPS and SSIM)
+- expected value range: [-1.0, 1.0]
+"""
 import torch
 from torch import nn as nn
 import piqa
 
-# APPLIES TO ALL LOSSES:
-# expected data type: torch.tensor (torch.float)
-# expected shape: [..., h, w] ([..., 3, h, w] for LPIPS and SSIM)
-# expected value range: [-1.0, 1.0]
-from vp_suite.measure._base_measure import BaseMeasure
+from vp_suite.measure.base_measure import BaseMeasure
 
 
 class MSE(BaseMeasure):
+    r"""
+
+    """
     def __init__(self, device):
         super(MSE, self).__init__(device)
         self.criterion = nn.MSELoss(reduction="none").to(device)
@@ -20,6 +26,9 @@ class MSE(BaseMeasure):
 
 
 class L1(BaseMeasure):
+    r"""
+
+    """
     def __init__(self, device):
         super(L1, self).__init__(device)
         self.criterion = nn.L1Loss(reduction="none").to(device)
@@ -30,6 +39,9 @@ class L1(BaseMeasure):
 
 
 class SmoothL1(BaseMeasure):
+    r"""
+
+    """
     def __init__(self, device):
         super(SmoothL1, self).__init__(device)
         self.criterion = nn.SmoothL1Loss(reduction="none").to(device)
@@ -40,6 +52,9 @@ class SmoothL1(BaseMeasure):
 
 
 class PSNR(BaseMeasure):
+    r"""
+
+    """
 
     BIGGER_IS_BETTER = True
     OPT_VALUE = float("inf")
@@ -58,10 +73,14 @@ class PSNR(BaseMeasure):
         return -self.criterion(pred, target)
 
     @classmethod
-    def to_display(cls, x): return -x
+    def to_display(cls, x):
+        return -x
 
 
 class LPIPS(BaseMeasure):
+    r"""
+
+    """
     def __init__(self, device):
         super(LPIPS, self).__init__(device)
         self.criterion = piqa.lpips.LPIPS().to(device)
@@ -71,12 +90,15 @@ class LPIPS(BaseMeasure):
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
         assert pred.shape[1] == 3, "pred channels != 3"
         assert target.shape[1] == 3, "target channels != 3"
-        pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0) # range: [0., 1.]
+        pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return self.criterion(pred, target)  # scalar
 
 
 class SSIM(BaseMeasure):
+    r"""
+
+    """
 
     BIGGER_IS_BETTER = True
     OPT_VALUE = 1
@@ -94,4 +116,6 @@ class SSIM(BaseMeasure):
         target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)
 
-    def to_display(cls, x): return 1.0 - x
+    @classmethod
+    def to_display(cls, x):
+        return 1.0 - x

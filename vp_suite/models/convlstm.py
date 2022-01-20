@@ -4,26 +4,32 @@ from torchvision.transforms import functional as TF
 
 from vp_suite.models.model_blocks.recurrent import ConvLSTMCell
 from vp_suite.models.model_blocks.enc import Autoencoder
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 
 class ConvLSTM(VideoPredictionModel):
-    '''
+    r"""
     Modified from https://github.com/ndrplz/ConvLSTM_pytorch
-    '''
+    """
 
     # model-specific constants
     NAME = "ConvLSTM"
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    lstm_kernel_size = (3, 3)
-    lstm_num_layers = 3
-    lstm_channels = 64
-    encoding_channels = 16, lstm_channels
-    decoding_channels = lstm_channels, 32, 16, 8
+    lstm_kernel_size = (3, 3)  #: TODO
+    lstm_num_layers = 3  #: TODO
+    lstm_channels = 64  #: TODO
+    encoding_channels = 16, lstm_channels  #: TODO
+    decoding_channels = lstm_channels, 32, 16, 8  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(ConvLSTM, self).__init__(device, **model_args)
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 
@@ -63,10 +69,28 @@ class ConvLSTM(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
+        r"""
 
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         T_in, b, c, h, w = x.shape
@@ -110,6 +134,15 @@ class ConvLSTM(VideoPredictionModel):
         return preds, None
 
     def lstm(self, input, hidden_state):
+        r"""
+
+        Args:
+            input ():
+            hidden_state ():
+
+        Returns:
+
+        """
         new_state_list = []
         for layer_idx in range(self.lstm_num_layers):
             h, c = hidden_state[layer_idx]
@@ -118,6 +151,14 @@ class ConvLSTM(VideoPredictionModel):
         return new_state_list
 
     def _init_hidden(self, image_size):
+        r"""
+
+        Args:
+            image_size ():
+
+        Returns:
+
+        """
         init_states = []
         for i in range(self.lstm_num_layers):
             init_states.append(self.cell_list[i].init_hidden(image_size))
@@ -125,12 +166,29 @@ class ConvLSTM(VideoPredictionModel):
 
     @staticmethod
     def _check_kernel_size_consistency(kernel_size):
+        r"""
+
+        Args:
+            kernel_size ():
+
+        Returns:
+
+        """
         if not (isinstance(kernel_size, tuple) or
                 (isinstance(kernel_size, list) and all([isinstance(elem, tuple) for elem in kernel_size]))):
             raise ValueError('`kernel_size` must be tuple or list of tuples')
 
     @staticmethod
     def _extend_for_multilayer(param, num_layers):
+        r"""
+
+        Args:
+            param ():
+            num_layers ():
+
+        Returns:
+
+        """
         if not isinstance(param, list):
             param = [param] * num_layers
         return param

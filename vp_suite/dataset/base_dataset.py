@@ -6,21 +6,36 @@ from copy import deepcopy
 from vp_suite.utils.img_processor import ImgProcessor
 
 class VPData(TypedDict):
-    frames: torch.Tensor  # shape: [t, c, h, w]
-    actions: torch.Tensor  # shape: [t, a]
+    r"""TODO
+
+    """
+    frames: torch.Tensor  #: shape: [t, c, h, w]
+    actions: torch.Tensor  #: shape: [t, a]
 
 class BaseVPDataset(Dataset):
+    r"""
 
-    NAME = NotImplemented
-    DEFAULT_DATA_DIR = NotImplemented
-    VALID_SPLITS = ["train", "test"]
+    Attributes:
 
-    max_seq_len = NotImplemented
-    action_size = NotImplemented
-    frame_shape = NotImplemented
-    train_keep_ratio = 0.8
+    """
+
+    NAME : str = NotImplemented  #: the dataset's name.
+    DEFAULT_DATA_DIR = NotImplemented  #: TODO
+    VALID_SPLITS = ["train", "test"]  #: TODO
+
+    max_seq_len = NotImplemented  #: TODO
+    action_size = NotImplemented  #: TODO
+    frame_shape = NotImplemented  #: TODO
+    train_keep_ratio = 0.8  #: TODO
 
     def __init__(self, split, img_processor, **dataset_kwargs):
+        r"""
+
+        Args:
+            split ():
+            img_processor ():
+            **dataset_kwargs ():
+        """
 
         super(BaseVPDataset, self).__init__()
         assert split in self.VALID_SPLITS, \
@@ -39,7 +54,11 @@ class BaseVPDataset(Dataset):
 
     @property
     def config(self):
-        """ Dataset config that is used across all datasets """
+        r"""TODO
+
+        Returns:
+
+        """
         img_h, img_w, img_c = self.frame_shape
         base_config = {
             "action_size": self.action_size,
@@ -56,13 +75,19 @@ class BaseVPDataset(Dataset):
         return {**base_config, **self._config()}
 
     def _config(self):
-        """ Dataset-specific config, TODO should be overwritten be the datasets """
+        r"""Dataset-specific config
+        """
         return {}
 
     def set_seq_len(self, context_frames : int, pred_frames : int, seq_step : int):
-        """
+        r"""
         Set the sequence length for the upcoming run. Asserts that the given parameters
         lead to a sequence length that does not exceed the possible range.
+
+        Args:
+            context_frames ():
+            pred_frames ():
+            seq_step ():
         """
         total_frames = context_frames + pred_frames
         self.total_frames = total_frames
@@ -74,32 +99,69 @@ class BaseVPDataset(Dataset):
             f"which is exceeded by your configuration: " \
             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
         self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
-        self.set_seq_len_()
+        self._set_seq_len()
         self.ready_for_usage = True
 
-    def set_seq_len_(self):
-        """
-        Optional logic for datasets with specific logic
+    def _set_seq_len(self):
+        r"""Optional logic for datasets with specific logic
+
         """
         pass
 
     def __len__(self) -> int:
+        r"""
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def __getitem__(self, i) -> VPData:
+        r"""
+
+        Args:
+            i ():
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def preprocess_img(self, img):
+        r"""
+
+        Args:
+            img ():
+
+        Returns:
+
+        """
         return self.img_processor.preprocess_img(img)
 
     def postprocess_img(self, img):
+        r"""
+
+        Args:
+            img ():
+
+        Returns:
+
+        """
         return self.img_processor.postprocess_img(img)
 
     def default_available(self, split, img_processor, **dataset_kwargs):
-        """
+        r"""
         Tries to load a dataset and a datapoint using the default data_dir value.
         If this succeeds, then we can safely use the default data dir,
         otherwise a new dataset has to be downloaded and prepared.
+
+        Args:
+            split ():
+            img_processor ():
+            **dataset_kwargs ():
+
+        Returns:
+
         """
         try:
             kwargs_ = deepcopy(dataset_kwargs)
@@ -112,7 +174,7 @@ class BaseVPDataset(Dataset):
         return True
 
     def download_and_prepare_dataset(self):
-        """
+        r"""
         Downloads the specific dataset, prepares it for the video prediction task (if needed)
         and stores it in a default location in the 'data/' folder.
         Implemented by the derived dataset classes
@@ -121,6 +183,15 @@ class BaseVPDataset(Dataset):
 
     @classmethod
     def get_train_val(cls, img_processor, **dataset_args):
+        r"""
+
+        Args:
+            img_processor ():
+            **dataset_args ():
+
+        Returns:
+
+        """
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", img_processor, **dataset_args)
             len_train = int(len(D_main) * cls.train_keep_ratio)
@@ -135,11 +206,29 @@ class BaseVPDataset(Dataset):
 
     @classmethod
     def get_test(cls, img_processor, **dataset_args):
+        r"""
+
+        Args:
+            img_processor ():
+            **dataset_args ():
+
+        Returns:
+
+        """
         D_test = cls("test", img_processor, **dataset_args)
         return D_test
 
     @classmethod
     def get_train_val_test(cls, img_processor, **dataset_args):
+        r"""
+
+        Args:
+            img_processor ():
+            **dataset_args ():
+
+        Returns:
+
+        """
         D_train, D_val = cls.get_train_val(img_processor, **dataset_args)
         D_test = cls.get_test(img_processor, **dataset_args)
         return D_train, D_val, D_test

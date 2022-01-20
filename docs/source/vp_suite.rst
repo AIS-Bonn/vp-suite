@@ -1,6 +1,11 @@
 vp\_suite package
 =================
 
+.. automodule:: vp_suite
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -15,26 +20,8 @@ Subpackages
 Submodules
 ----------
 
-vp\_suite.tester module
------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: vp_suite.tester
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-vp\_suite.trainer module
-------------------------
-
-.. automodule:: vp_suite.trainer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: vp_suite
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   vp_suite.constants
+   vp_suite.vpsuite

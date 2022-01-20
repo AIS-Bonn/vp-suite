@@ -8,10 +8,15 @@ Welcome to vp-suite's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: README
 
    readme
-   modules
+
+.. toctree::
+   :maxdepth: 4
+   :caption: API Reference
+
+   vp_suite
 
 Indices and tables
 ==================

@@ -2,7 +2,7 @@ import pytest
 import torch.cuda
 
 from vp_suite.models import MODEL_CLASSES
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 IMG_SHAPE = (64, 64, 3)
 ACTION_SIZE = 3

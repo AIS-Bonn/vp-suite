@@ -2,22 +2,31 @@ import torch
 from torch import nn as nn
 from torchvision import transforms as TF
 
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 
 
 class LSTM(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "NonConvLSTM"
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    bottleneck_dim = 1024
-    lstm_hidden_dim = 1024
-    lstm_kernel_size = (5, 5)
-    lstm_num_layers = 3
+    bottleneck_dim = 1024  #: TODO
+    lstm_hidden_dim = 1024  #: TODO
+    lstm_kernel_size = (5, 5)  #: TODO
+    lstm_num_layers = 3  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(LSTM, self).__init__(device, **model_args)
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -62,15 +71,50 @@ class LSTM(VideoPredictionModel):
         }
 
     def encode(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         return self.to_linear(self.encoder(x).flatten(1, -1))  # respect batch size
 
     def decode(self, x):
+        r"""
+
+        Args:
+            x ():
+
+        Returns:
+
+        """
         return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_length=1, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
 
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]

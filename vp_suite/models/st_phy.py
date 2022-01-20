@@ -8,29 +8,38 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from vp_suite.measure.image_wise import MSE
-from vp_suite.models._base_model import VideoPredictionModel
+from vp_suite.models.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
 from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
 from vp_suite.models.model_blocks.phydnet import PhyCell_Cell, K2M
 
 
 class STPhy(VideoPredictionModel):
+    r"""
+
+    """
 
     # model-specific constants
     NAME = "ST-Phy"
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    phy_kernel_size = (7, 7)
-    phy_cell_channels = 49
-    st_cell_channels = 64
-    num_layers = 3
-    inflated_action_dim = 3
-    reconstruction_loss_scale = 0.1
-    decoupling_loss_scale = 100.0
-    moment_loss_scale = 1.0
+    phy_kernel_size = (7, 7)  #: TODO
+    phy_cell_channels = 49  #: TODO
+    st_cell_channels = 64  #: TODO
+    num_layers = 3  #: TODO
+    inflated_action_dim = 3  #: TODO
+    reconstruction_loss_scale = 0.1  #: TODO
+    decoupling_loss_scale = 100.0  #: TODO
+    moment_loss_scale = 1.0  #: TODO
 
     def __init__(self, device, **model_args):
+        r"""
+
+        Args:
+            device ():
+            **model_args ():
+        """
         super(STPhy, self).__init__(device, **model_args)
 
         self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
@@ -90,9 +99,28 @@ class STPhy(VideoPredictionModel):
         }
 
     def pred_1(self, x, **kwargs):
+        r"""
+
+        Args:
+            x ():
+            **kwargs ():
+
+        Returns:
+
+        """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, input, pred_length=1, **kwargs):
+        r"""
+
+        Args:
+            input ():
+            pred_length ():
+            **kwargs ():
+
+        Returns:
+
+        """
 
         frames = input.transpose(0, 1)  # [t, b, c, h, w]
         input_length, batch_size, _, _, _ = frames.shape
@@ -176,13 +204,25 @@ class STPhy(VideoPredictionModel):
         losses = {
             "reconstruction": self.criterion(reconstructions, input[:, 1:]),
             "decouple": torch.mean(torch.stack(decouple_loss, dim=0)),
-            "moment": self.get_moment_loss()
+            "moment": self._get_moment_loss()
         }
 
         return predictions, losses
 
 
     def train_iter(self, config, data_loader, optimizer, loss_provider, epoch):
+        r"""
+
+        Args:
+            config ():
+            data_loader ():
+            optimizer ():
+            loss_provider ():
+            epoch ():
+
+        Returns:
+
+        """
 
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * 0.01)
         loop = tqdm(data_loader)
@@ -212,10 +252,13 @@ class STPhy(VideoPredictionModel):
             loop.set_postfix(loss=loss.item())
 
 
-    def get_moment_loss(self):
-        '''
+    def _get_moment_loss(self):
+        r"""
         Moment regularization
-        '''
+
+        Returns:
+
+        """
         loss = torch.tensor(0.0, device=self.device)
         k2m = K2M(self.phy_kernel_size).to(self.device)
         for b in range(0, self.phy_cell_list[0].input_dim):

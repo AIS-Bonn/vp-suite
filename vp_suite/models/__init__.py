@@ -1,3 +1,7 @@
+r"""
+This modules contains all usable models.
+"""
+
 from vp_suite.models.convlstm import ConvLSTM
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.models.phydnet import PhyDNet
@@ -17,5 +21,5 @@ MODEL_CLASSES = {
     "st_phy" : STPhy,
     "simplev1": SimpleV1,
     "simplev2": SimpleV2,
-}
+}  #: A dictionary of all models
 AVAILABLE_MODELS = MODEL_CLASSES.keys()
