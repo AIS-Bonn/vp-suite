@@ -9,7 +9,7 @@ import torch
 from torch import nn as nn
 import piqa
 
-from vp_suite.measure.base_measure import BaseMeasure
+from vp_suite.base.base_measure import BaseMeasure
 
 
 class MSE(BaseMeasure):

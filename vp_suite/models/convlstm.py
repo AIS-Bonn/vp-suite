@@ -4,7 +4,7 @@ from torchvision.transforms import functional as TF
 
 from vp_suite.models.model_blocks.recurrent import ConvLSTMCell
 from vp_suite.models.model_blocks.enc import Autoencoder
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VideoPredictionModel
 
 
 class ConvLSTM(VideoPredictionModel):

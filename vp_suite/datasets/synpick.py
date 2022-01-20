@@ -11,7 +11,7 @@ import torch
 from tqdm import tqdm
 
 from vp_suite.utils.utils import most
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 

@@ -1,6 +1,6 @@
 import torch
 from torch import nn as nn
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VideoPredictionModel
 
 
 class SimpleV1(VideoPredictionModel):

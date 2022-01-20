@@ -1,4 +1,4 @@
-from vp_suite.models.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VideoPredictionModel
 
 
 class CopyLastFrame(VideoPredictionModel):

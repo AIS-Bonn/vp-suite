@@ -1,4 +1,4 @@
-import sys, os
+import os
 from pathlib import Path
 
 import numpy as np
@@ -7,7 +7,7 @@ from tqdm import tqdm
 from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 class BAIRPushingDataset(BaseVPDataset):

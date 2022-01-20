@@ -2,13 +2,12 @@ from pathlib import Path
 
 import math
 import os
-import sys
 import numpy as np
 import torch
 from tqdm import tqdm
 from PIL import Image
 
-from vp_suite.dataset.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
 
 class MovingMNISTDataset(BaseVPDataset):

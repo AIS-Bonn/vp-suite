@@ -7,7 +7,7 @@ import torch
 import torchvision.transforms.functional as TF
 
 from vp_suite.measure.fvd._pytorch_i3d.pytorch_i3d import InceptionI3d
-from vp_suite.measure.base_measure import BaseMeasure
+from vp_suite.base.base_measure import BaseMeasure
 
 class FrechetVideoDistance(BaseMeasure):
     r"""
