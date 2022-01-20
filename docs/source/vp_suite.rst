@@ -12,7 +12,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   vp_suite.dataset
+   vp_suite.base
+   vp_suite.datasets
    vp_suite.measure
    vp_suite.models
    vp_suite.utils

@@ -147,13 +147,9 @@ python -m pytest --runslow --cov=vp_suite
 _Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
 Omit the `runslow` argument to speed up testing by removing the tests for the complete training/testing procedure._
 
-Updating the docs can be done like this:
-```
-cd docs/
-sphinx-apidoc -feMo ./source ../vp_suite
-make clean
-make html
-```
+#### API Documentation
+
+Updating the API documentation can be done by executing `build_docs.sh` from the `docs/` folder.
 
 ### Acknowledgements
 

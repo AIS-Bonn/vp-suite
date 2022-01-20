@@ -20,7 +20,6 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   vp_suite.models.base_model
    vp_suite.models.convlstm
    vp_suite.models.copy_last_frame
    vp_suite.models.lstm

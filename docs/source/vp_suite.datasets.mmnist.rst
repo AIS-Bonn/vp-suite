@@ -1,7 +1,7 @@
-vp\_suite.dataset.wrapper module
+vp\_suite.datasets.mmnist module
 ================================
 
-.. automodule:: vp_suite.dataset.wrapper
+.. automodule:: vp_suite.datasets.mmnist
    :members:
    :undoc-members:
    :show-inheritance:

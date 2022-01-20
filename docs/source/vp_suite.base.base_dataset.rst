@@ -1,7 +1,7 @@
-vp\_suite.models.base\_model module
+vp\_suite.base.base\_dataset module
 ===================================
 
-.. automodule:: vp_suite.models.base_model
+.. automodule:: vp_suite.base.base_dataset
    :members:
    :undoc-members:
    :show-inheritance:
