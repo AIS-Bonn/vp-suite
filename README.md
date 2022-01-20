@@ -142,31 +142,24 @@ Other kinds of contributions are also very welcome - just check the open issues 
 
 When submitting a merge request, please make sure all tests run through (execute from root folder):
 ```
-python -m pytest --runslow
+python -m pytest --runslow --cov=vp_suite
 ```
 _Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
 Omit the `runslow` argument to speed up testing by removing the tests for the complete training/testing procedure._
+
+Updating the docs can be done like this:
+```
+cd docs/
+sphinx-apidoc -feMo ./source ../vp_suite
+make clean
+make html
+```
 
 ### Acknowledgements
 
 Project structure is inspired by [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch).
 
 All other sources are acknowledged in the documentation of the respective point of usage (to the best of our knowledge).
-
-### Citing
-
-If you use this package/repository for your academic work, please consider citing it as follows:
-
-```
-@misc{vp_suite,
-  Author = {Boltres, Andreas},
-  Title = {vp-suite: A Framework for Training and Evaluating Video Prediction Models},
-  Year = {2022},
-  Publisher = {GitHub},
-  Journal = {GitHub repository},
-  Howpublished = {\url{https://github.com/Flunzmas/vp-suite}}
-}
-```
 
 ### License stuffs
 
