@@ -18,7 +18,6 @@ class DatasetWrapper:
         """
         super(DatasetWrapper, self).__init__()
 
-        assert split in self.ALLOWED_SPLITS, "TODO"
         if split == "train":
             train_data, val_data = dataset_class.get_train_val(img_processor, **dataset_kwargs)
             main_data = train_data.dataset if isinstance(train_data, Subset) else train_data
@@ -27,12 +26,14 @@ class DatasetWrapper:
                 "train": train_data,
                 "val": val_data
             }
-        else:
+        elif split == "test":
             test_data = dataset_class.get_test(img_processor, **dataset_kwargs)
             self.datasets = {
                 "main": test_data,
                 "test": test_data
             }
+        else:
+            raise ValueError(f"parameter {split} needs to be one of the following: {self.ALLOWED_SPLITS}")
         self.is_ready = False  # set to true after seq_len has been set (pre-requisite for training)
 
     def is_training_set(self):

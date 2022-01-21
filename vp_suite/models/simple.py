@@ -59,7 +59,8 @@ class SimpleV1(VideoPredictionModel):
         Returns:
 
         """
-        assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
+        if x.shape[2] != self.temporal_dim:
+            raise ValueError("invalid number of frames given")
         return self.cnn(x).squeeze(dim=2)  # [b, c, h, w]
 
     def forward(self, x, pred_length=1, **kwargs):
@@ -142,7 +143,8 @@ class SimpleV2(VideoPredictionModel):
         Returns:
 
         """
-        assert x.shape[2] == self.temporal_dim, "invalid number of frames given"
+        if x.shape[2] != self.temporal_dim:
+            raise ValueError("invalid number of frames given")
         last_frame = x[:, :, -1]  # [b, c, h, w]
         big_branch = self.big_branch(x).squeeze(2)  # [b, c, h, w]
         out = self.final_merge(torch.cat([big_branch, last_frame], dim=1))

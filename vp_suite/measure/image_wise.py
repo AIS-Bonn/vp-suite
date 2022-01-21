@@ -86,10 +86,10 @@ class LPIPS(BaseMeasure):
         self.criterion = piqa.lpips.LPIPS().to(device)
 
     def forward(self, pred, target):
+        if pred.shape[-3] != 3 or target.shape[-3] != 3:
+            raise ValueError("LPIPS needs 3-channel images with the channels at dim -3")
         pred = pred.reshape(-1, *pred.shape[-3:])  # [..., 3, h, w]
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
-        assert pred.shape[1] == 3, "pred channels != 3"
-        assert target.shape[1] == 3, "target channels != 3"
         pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return self.criterion(pred, target)  # scalar
@@ -108,10 +108,10 @@ class SSIM(BaseMeasure):
         self.criterion = piqa.ssim.SSIM().to(device)
 
     def forward(self, pred, target):
+        if pred.shape[-3] != 3 or target.shape[-3] != 3:
+            raise ValueError("LPIPS needs 3-channel images with the channels at dim -3")
         pred = pred.reshape(-1, *pred.shape[-3:])  # [..., 3, h, w]
         target = target.reshape(-1, *target.shape[-3:])  # [..., 3, h, w]
-        assert pred.shape[1] == 3, "pred channels != 3"
-        assert target.shape[1] == 3, "target channels != 3"
         pred = ((pred + 1) / 2).clamp_(min=0.0, max=1.0) # range: [0., 1.]
         target = ((target + 1) / 2).clamp_(min=0.0, max=1.0)  # range: [0., 1.]
         return 1.0 - self.criterion(pred, target)

@@ -38,8 +38,8 @@ class BaseVPDataset(Dataset):
         """
 
         super(BaseVPDataset, self).__init__()
-        assert split in self.VALID_SPLITS, \
-            f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}"
+        if split not in self.VALID_SPLITS:
+            raise ValueError(f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}")
         self.split = split
         self.seq_step = dataset_kwargs.get("seq_step", 1)
         self.data_dir = dataset_kwargs.get("data_dir", None)
@@ -90,15 +90,14 @@ class BaseVPDataset(Dataset):
             seq_step ():
         """
         total_frames = context_frames + pred_frames
+        seq_len = (total_frames - 1) * seq_step + 1
+        if self.max_seq_len < seq_len:
+            raise ValueError(f"Dataset '{self.NAME}' supports videos with up to {self.max_seq_len} frames, "
+                             f"which is exceeded by your configuration: "
+                             f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}")
         self.total_frames = total_frames
-        if seq_step is not None:
-            self.seq_step = seq_step
-        self.seq_len = (self.total_frames - 1) * self.seq_step + 1
-        assert self.max_seq_len >= self.seq_len, \
-            f"Dataset '{self.NAME}' supports videos with up to {self.max_seq_len} frames, " \
-            f"which is exceeded by your configuration: " \
-            f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {self.seq_step}}}"
-        self.frame_offsets = range(0, (context_frames + pred_frames) * self.seq_step, self.seq_step)
+        self.seq_len = seq_len
+        self.frame_offsets = range(0, (total_frames) * self.seq_step, self.seq_step)
         self._set_seq_len()
         self.ready_for_usage = True
 

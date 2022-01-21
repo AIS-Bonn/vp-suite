@@ -119,8 +119,8 @@ class SynpickVideoDataset(BaseVPDataset):
         Returns:
 
         """
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+        if not self.ready_for_usage:
+            raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
         i = self.valid_idx[i]  # only consider valid indices
         idx = range(i, i + self.seq_len, self.seq_step)  # create range of indices for frame sequence

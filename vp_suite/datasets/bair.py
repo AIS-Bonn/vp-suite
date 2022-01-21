@@ -62,8 +62,8 @@ class BAIRPushingDataset(BaseVPDataset):
         Returns:
 
         """
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+        if not self.ready_for_usage:
+            raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
         rgb = self.preprocess_img(np.load(self.obs_fps[i]))
         actions = torch.from_numpy(np.load(self.actions_fps[i])).float()

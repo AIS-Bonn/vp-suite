@@ -80,8 +80,8 @@ class KTHActionsDataset(BaseVPDataset):
         Returns:
 
         """
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+        if not self.ready_for_usage:
+            raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))

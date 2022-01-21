@@ -54,8 +54,8 @@ class MovingMNISTDataset(BaseVPDataset):
         Returns:
 
         """
-        assert self.ready_for_usage, \
-            "Dataset is not yet ready for usage (maybe you forgot to call set_seq_len())."
+        if not self.ready_for_usage:
+            raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
         rgb_raw = np.load(self.data_fps[i])  # [t', h, w]
         rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t', h, w, c]

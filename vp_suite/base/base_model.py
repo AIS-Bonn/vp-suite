@@ -32,13 +32,21 @@ class VideoPredictionModel(nn.Module):
         # set required parameters
         self.device = device
         for required_arg in self.REQUIRED_ARGS:
-            assert required_arg in model_args.keys(), f"ERROR: model {self.NAME} requires parameter '{required_arg}'"
-            setattr(self, required_arg, model_args[required_arg])
+            if required_arg not in model_args.keys():
+                raise ValueError(f"model {self.NAME} requires parameter '{required_arg}'")
+            required_val = model_args[required_arg]
+
+            # pre-setattr checks
+            if required_arg == "tensor_value_range":
+                if type(required_val) not in [tuple, list] or len(required_val) != 2:
+                    raise ValueError("value for argument 'tensor_value_range' needs to be tuple or list with 2 elems")
+
+            # set parameter
+            setattr(self, required_arg, required_val)
+
+            # post-setattr logic
             if required_arg == "img_shape":
                 self.img_h, self.img_w, self.img_c = self.img_shape
-            elif required_arg == "tensor_value_range":
-                assert isinstance(self.tensor_value_range, list) or isinstance(self.tensor_value_range, tuple)
-                assert len(self.tensor_value_range) == 2
 
         # set optional parameters
         self.action_conditional = model_args.get("action_conditional", False)

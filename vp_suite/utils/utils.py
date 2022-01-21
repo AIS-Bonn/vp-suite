@@ -63,13 +63,17 @@ def download_from_url(url: str, dst_path : str):
 def _check_optuna_config(optuna_cfg : dict):
     try:
         for parameter, p_dict in optuna_cfg.items():
-            assert isinstance(p_dict, dict)
+            if not isinstance(p_dict, dict):
+                raise ValueError
             if "choices" in p_dict.keys():
-                assert (isinstance(p_dict["choices"], list))
+                if not isinstance(p_dict["choices"], list):
+                    raise ValueError
             else:
-                assert {"type", "min", "max"}.issubset(set(p_dict.keys()))
-                assert p_dict["min"] <= p_dict["max"]
-                if p_dict["type"] == "float":
-                    assert p_dict.get("scale", '') in ["log", "uniform"]
-    except AssertionError:
-        print("ERROR: invalid optuna config")
+                if not {"type", "min", "max"}.issubset(set(p_dict.keys())):
+                    raise ValueError
+                if p_dict["min"] > p_dict["max"]:
+                    raise ValueError
+                if p_dict["type"] == "float" and p_dict.get("scale", '') not in ["log", "uniform"]:
+                    raise ValueError
+    except ValueError:
+        print("invalid optuna config")

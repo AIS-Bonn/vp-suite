@@ -130,8 +130,9 @@ class VPSuite:
         """
 
         # parameter processing
-        assert model_type in AVAILABLE_MODELS, f"ERROR: invalid model type specified! " \
-                                               f"Available model types: {AVAILABLE_MODELS}"
+        if model_type not in AVAILABLE_MODELS:
+            raise ValueError(f"ERROR: invalid model type specified! Available model types: {AVAILABLE_MODELS}")
+
         model_class = MODEL_CLASSES[model_type]
         for param in model_class.REQUIRED_ARGS:
             if param not in model_args.keys():
@@ -180,21 +181,21 @@ class VPSuite:
         Returns:
 
         """
-        assert len(self.models) > 0, "No model available. " \
-                                "Load a pretrained model or create a new instance before starting training or test runs"
-        if split == "train":
-            assert len(self.training_sets) > 0, "No training sets loaded. " \
-                                                "Load a dataset in training mode before starting training or test runs"
-        else:
-            assert len(self.test_sets) > 0, "No test sets loaded. " \
-                                                "Load a dataset in test mode before starting training or test runs"
-
+        if len(self.models) == 0:
+            raise RuntimeError("No model available. Load a pretrained model "
+                               "or create a new instance before starting training or test runs")
+        if split == "train" and len(self.training_sets) == 0:
+            raise ValueError("No training sets loaded. Load a dataset in training mode "
+                             "before starting training or test runs")
+        elif split == "test" and len(self.test_sets) == 0:
+            raise ValueError("No test sets loaded. Load a dataset in test mode "
+                             "before starting training or test runs")
         with open(str(self._DEFAULT_RUN_CONFIG.resolve()), 'r') as tc_file:
             run_config = json.load(tc_file)
 
         # update config
-        assert all([run_arg in run_config.keys() for run_arg in run_args.keys()]), \
-            f"Only the following run arguments are supported: {run_config.keys()}"
+        if not all([run_arg in run_config.keys() for run_arg in run_args.keys()]):
+            raise ValueError(f"Only the following run arguments are supported: {run_config.keys()}")
         run_config.update(run_args)
 
         # seed
@@ -224,7 +225,7 @@ class VPSuite:
         # prepare dataset
         dataset : DatasetWrapper = self.training_sets[-1]
         dataset.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
-        assert dataset.is_ready, "ERROR TODO"
+        assert dataset.is_ready, "dataset is not ready even though set_seq_len has just been called"
 
         # prepare model
         model = self.models[-1]
@@ -403,7 +404,7 @@ class VPSuite:
         test_sets : List[DatasetWrapper] = self.test_sets
         for test_set in test_sets:
             test_set.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
-            assert test_set.is_ready, "ERROR TODO"
+            assert test_set.is_ready, "test set is not ready even though set_seq_len has just been called"
 
         # compat-check run arguments against models and skip incompatible models
         test_models = []
@@ -450,15 +451,16 @@ class VPSuite:
         # PREPARATION
         test_data = dataset.test_data
         test_loader = DataLoader(test_data, batch_size=1, shuffle=True, num_workers=0)
-        iter_loader = iter(test_loader)
+        if len(test_loader) < 1:
+            raise RuntimeError("loaded dataset does not contain any data (len < 1)")
         test_mode = "brief" if brief_test else "full"
-        eval_length = 10 if test_mode == "brief" else len(test_loader)
-        assert eval_length > 0, "ERROR: length of test loader < 1 -> no evaluation possible"
+        eval_length = min(len(test_loader), 10) if test_mode == "brief" else len(test_loader)
 
         # assemble and save combined configuration
         config = {**run_config, **dataset.config, "device": self.device}
 
         # evaluation / metric calc.
+        iter_loader = iter(test_loader)
         with torch.no_grad():
             metric_provider = PredictionMetricProvider(config)
 
