@@ -236,7 +236,7 @@ def download_synpick(d_path_raw):
     Returns:
 
     """
-    raise NotImplementedError("ERROR: SynPick dataset is not yet downloadable! "
+    raise NotImplementedError("SynPick dataset is not yet downloadable! "
                               "Please context the paper authors to resolve this issue.")
 
 def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):

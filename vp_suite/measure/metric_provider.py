@@ -1,3 +1,5 @@
+import warnings
+
 from vp_suite.measure import METRIC_CLASSES
 
 class PredictionMetricProvider():
@@ -15,7 +17,7 @@ class PredictionMetricProvider():
         self.available_metrics = METRIC_CLASSES if config["metrics"] == "all" \
             else {k: METRIC_CLASSES[k] for k in config["metrics"]}
         if config["img_c"] not in [2, 3]:
-            print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
+            warnings.warn("'FVD' measure won't be used since image channels needs to be in [2, 3]")
             self.available_metrics.pop("fvd")
         self.metrics = {k: metric(device=self.device) for k, metric in self.available_metrics.items()}
 

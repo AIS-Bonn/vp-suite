@@ -56,7 +56,7 @@ class VideoPredictionModel(nn.Module):
             elif hasattr(self, model_arg):
                 setattr(self, model_arg, model_arg_val)
             else:
-                print(f"INFO: model_arg '{model_arg}' is not usable for init of model '{self.NAME}' -> skipping")
+                print(f"model_arg '{model_arg}' is not usable for init of model '{self.NAME}' -> skipping")
 
     @property
     def config(self):

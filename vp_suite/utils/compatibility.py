@@ -1,3 +1,5 @@
+import warnings
+
 from torch import nn as nn
 from torchvision import transforms as TF
 
@@ -68,8 +70,8 @@ def check_run_and_model_compat(model, run_config):
             raise ValueError(f"Action-conditionable model '{model.NAME}' {model_dir_str}"
                              f"was trained without using actions -> set 'use_actions' to False in test cfg!")
     elif run_ac:
-        print(f"WARNING: Model '{model.NAME}' {model_dir_str} can't handle actions"
-              f" -> Testing it without using the actions provided by the dataset")
+        warnings.warn(f"Model '{model.NAME}' {model_dir_str} can't handle actions "
+                      f"-> Testing it without using the actions provided by the dataset")
 
     # context frames and pred. horizon
     elif run_config["context_frames"] < model.min_context_frames:

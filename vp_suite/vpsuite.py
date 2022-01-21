@@ -1,4 +1,5 @@
 import random, json, os
+import warnings
 from typing import List, Dict, Any
 from pathlib import Path
 
@@ -99,7 +100,7 @@ class VPSuite:
         img_processor = ImgProcessor(value_min=value_min, value_max=value_max)
         dataset_class = DATASET_CLASSES[dataset]
         dataset = DatasetWrapper(dataset_class, img_processor, split, **dataset_kwargs)
-        print(f"INFO: loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
+        print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
         self.datasets.append(dataset)
 
@@ -131,21 +132,21 @@ class VPSuite:
 
         # parameter processing
         if model_type not in AVAILABLE_MODELS:
-            raise ValueError(f"ERROR: invalid model type specified! Available model types: {AVAILABLE_MODELS}")
+            raise ValueError(f"invalid model type specified! Available model types: {AVAILABLE_MODELS}")
 
         model_class = MODEL_CLASSES[model_type]
         for param in model_class.REQUIRED_ARGS:
             if param not in model_args.keys():
-                print(f"INFO: model parameter '{param}' not specified -> trying to take from last loaded dataset...")
+                print(f"model parameter '{param}' not specified -> trying to take from last loaded dataset...")
                 if len(self.datasets) < 1:
-                    raise ValueError(f"ERROR: no dataset loaded to take parameter '{param}' from")
+                    raise ValueError(f"no dataset loaded to take parameter '{param}' from")
                 param_val = self.datasets[-1].config.get(param, None)
                 if param_val is None:
-                    raise ValueError(f"ERROR: dataset '{self.datasets[-1].NAME}' doesn't provide parameter '{param}', "
+                    raise ValueError(f"dataset '{self.datasets[-1].NAME}' doesn't provide parameter '{param}', "
                                      f"so it has to be specified on model creation")
                 model_args.update({param: param_val})
         if action_conditional and not model_class.CAN_HANDLE_ACTIONS:
-            print("WARNING: specified model can't handle actions -> argument 'action_conditional' set to False")
+            warnings.warn("specified model can't handle actions -> argument 'action_conditional' set to False")
             action_conditional = False
         model_args.update(action_conditional=action_conditional)
 
@@ -165,7 +166,7 @@ class VPSuite:
         """
         ac_str = "(action-conditional)" if model.config["action_conditional"] else ""
         loaded_str = "loaded" if loaded else "created new"
-        print(f"INFO: {loaded_str} model '{model.NAME}' {ac_str}")
+        print(f"{loaded_str} model '{model.NAME}' {ac_str}")
         total_params = sum(p.numel() for p in model.parameters())
         trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
@@ -211,7 +212,7 @@ class VPSuite:
 
 # ===== TRAINING ================================================================
 
-    def _prepare_training(self, **training_kwargs):
+    def _prepare_training(self, dataset_idx, model_idx, **training_kwargs):
         r"""
         Prepares a single dataset and a single model for training.
         Args:
@@ -222,13 +223,15 @@ class VPSuite:
         """
         run_config = self._get_run_config("train", **training_kwargs)
 
+        try:
+            dataset : DatasetWrapper = self.training_sets[dataset_idx]
+            model : VideoPredictionModel = self.models[model_idx]
+        except IndexError:
+            raise ValueError("given indices for model and/or dataset are invalid")
+
         # prepare dataset
-        dataset : DatasetWrapper = self.training_sets[-1]
         dataset.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
         assert dataset.is_ready, "dataset is not ready even though set_seq_len has just been called"
-
-        # prepare model
-        model = self.models[-1]
 
         # compat checks: run <--> model; model <--> dataset
         check_run_and_model_compat(model, run_config)
@@ -236,7 +239,7 @@ class VPSuite:
 
         return model, dataset, run_config
 
-    def train(self, trial=None, **training_kwargs):
+    def train(self, trial=None, dataset_idx=-1, model_idx=-1, **training_kwargs):
         r"""
 
         Args:
@@ -247,7 +250,7 @@ class VPSuite:
 
         """
         # PREPARATION
-        model, dataset, run_config = self._prepare_training(**training_kwargs)
+        model, dataset, run_config = self._prepare_training(dataset_idx, model_idx, **training_kwargs)
         train_data, val_data = dataset.train_data, dataset.val_data
         train_loader = DataLoader(train_data, batch_size=run_config["batch_size"], shuffle=True, num_workers=4,
                                   drop_last=True)
@@ -267,8 +270,8 @@ class VPSuite:
             for param, p_dict in optuna_config.items():
                 if "choices" in p_dict.keys():
                     if param == "model_type":
-                        print(f"WARNING: hyperopt across model and dataset parameters is not yet supported "
-                              f"-> using {model.NAME}")
+                        warnings.warn(f"hyperopt across model and dataset parameters is not yet supported "
+                                      f"-> using {model.NAME}")
                     run_config[param] = trial.suggest_categorical(param, p_dict["choices"])
                 else:
                     suggest = trial.suggest_int if p_dict["type"] == "int" else trial.suggest_float
@@ -303,7 +306,7 @@ class VPSuite:
         # LOSSES AND MEASUREMENT
         loss_provider = PredictionLossProvider(config)
         if config['val_rec_criterion'] not in config['losses_and_scales']:
-            raise ValueError(f"ERROR: Validation criterion '{config['val_rec_criterion']}' has to be "
+            raise ValueError(f"Validation criterion '{config['val_rec_criterion']}' has to be "
                              f"one of the chosen losses: {list(config['losses_and_scales'].keys())}")
         if config["opt_direction"] == "maximize":
             def loss_improved(cur_loss, best_loss): return cur_loss > best_loss
@@ -360,7 +363,7 @@ class VPSuite:
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
 
-    def hyperopt(self, optuna_config=None, n_trials=30, **run_kwargs):
+    def hyperopt(self, optuna_config=None, n_trials=30, dataset_idx=-1, model_idx=-1, **run_kwargs):
         r"""
 
         Args:
@@ -380,7 +383,7 @@ class VPSuite:
             import optuna
         except ImportError:
             raise ImportError("Importing optuna failed -> install it or use the code without the 'use-optuna' flag.")
-        optuna_program = partial(self.train, **run_kwargs)
+        optuna_program = partial(self.train, dataset_idx=dataset_idx, model_idx=model_idx, **run_kwargs)
         study = optuna.create_study(direction=run_config["opt_direction"])
         study.optimize(optuna_program, n_trials=n_trials)
         print("\nHyperparameter optimization complete. Best performing parameters:")

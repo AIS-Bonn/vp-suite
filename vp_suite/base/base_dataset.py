@@ -45,7 +45,7 @@ class BaseVPDataset(Dataset):
         self.data_dir = dataset_kwargs.get("data_dir", None)
         if self.data_dir is None:
             if not self.default_available(self.split, img_processor, **dataset_kwargs):
-                print(f"INFO: downloading/preparing dataset '{self.NAME}' "
+                print(f"downloading/preparing dataset '{self.NAME}' "
                       f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
             self.data_dir = self.DEFAULT_DATA_DIR
@@ -200,7 +200,7 @@ class BaseVPDataset(Dataset):
             D_train = cls("train", img_processor, **dataset_args)
             D_val = cls("val", img_processor, **dataset_args)
         else:
-            raise ValueError(f"ERROR: parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
+            raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
         return D_train, D_val
 
     @classmethod

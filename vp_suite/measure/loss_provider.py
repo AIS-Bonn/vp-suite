@@ -1,3 +1,4 @@
+import warnings
 import torch
 from vp_suite.measure import LOSS_CLASSES
 
@@ -16,7 +17,7 @@ class PredictionLossProvider():
         self.device = config["device"]
         loss_scales = config["losses_and_scales"]
         if "fvd" in loss_scales.keys() and config["img_c"] not in [2, 3]:
-            print("WARNING: 'FVD' measure won't be used since image channels needs to be in [2, 3]")
+            warnings.warn("'FVD' measure won't be used since image channels needs to be in [2, 3]")
             loss_scales.pop("fvd")
         self.losses = {k: (LOSS_CLASSES[k](device=self.device), scale) for k, scale in loss_scales.items()}
 
