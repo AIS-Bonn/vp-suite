@@ -13,7 +13,7 @@ Welcome to vp-suite's documentation!
    readme
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
    :caption: API Reference
 
    vp_suite
