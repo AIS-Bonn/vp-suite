@@ -18,9 +18,9 @@ class MovingMNISTDataset(BaseVPDataset):
     NAME = "Moving MNIST"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
 
-    max_seq_len = 20  #: default MMNIST sequences span 20 frames
-    action_size = 0
-    frame_shape = (64, 64, 3)
+    MIN_SEQ_LEN = 20  #: default MMNIST sequences span 20 frames
+    ACTION_SIZE = 0
+    DEFAULT_FRAME_SHAPE = (64, 64, 3)
     train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):

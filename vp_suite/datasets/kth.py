@@ -24,9 +24,9 @@ class KTHActionsDataset(BaseVPDataset):
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: TODO
     SHORT_CLASSES = ['walking', 'running', 'jogging']  #: TODO
 
-    max_seq_len = 30
-    action_size = 0
-    frame_shape = (64, 64, 3)
+    MIN_SEQ_LEN = 30
+    ACTION_SIZE = 0
+    DEFAULT_FRAME_SHAPE = (64, 64, 3)
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         r"""

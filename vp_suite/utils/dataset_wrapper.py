@@ -104,7 +104,7 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets["main"].action_size
+        return self.datasets["main"].ACTION_SIZE
 
     @property
     def frame_shape(self):
@@ -113,7 +113,7 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets["main"].frame_shape
+        return self.datasets["main"].DEFAULT_FRAME_SHAPE
 
     @property
     def config(self):

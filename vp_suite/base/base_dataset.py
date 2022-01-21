@@ -2,6 +2,7 @@ import torch
 from torch.utils.data.dataset import Dataset
 from typing import TypedDict
 from copy import deepcopy
+from pathlib import Path
 
 from vp_suite.utils.img_processor import ImgProcessor
 
@@ -19,14 +20,13 @@ class BaseVPDataset(Dataset):
 
     """
 
-    NAME : str = NotImplemented  #: the dataset's name.
-    DEFAULT_DATA_DIR = NotImplemented  #: TODO
-    VALID_SPLITS = ["train", "test"]  #: TODO
-
-    max_seq_len = NotImplemented  #: TODO
-    action_size = NotImplemented  #: TODO
-    frame_shape = NotImplemented  #: TODO
-    train_keep_ratio = 0.8  #: TODO
+    NAME: str = NotImplemented  #: the dataset's name.
+    DEFAULT_DATA_DIR: Path = NotImplemented  #: the default save location of the dataset files.
+    VALID_SPLITS = ["train", "test"]  #: the valid arguments for specifying splits.
+    MIN_SEQ_LEN: int = NotImplemented  #: TODO
+    ACTION_SIZE: int = NotImplemented  #: TODO
+    DEFAULT_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
+    train_keep_ratio: float = 0.8  #: TODO
 
     def __init__(self, split, img_processor, **dataset_kwargs):
         r"""
@@ -42,7 +42,7 @@ class BaseVPDataset(Dataset):
             raise ValueError(f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}")
         self.split = split
         self.seq_step = dataset_kwargs.get("seq_step", 1)
-        self.data_dir = dataset_kwargs.get("data_dir", None)
+        self.data_dir : Path = dataset_kwargs.get("data_dir", None)
         if self.data_dir is None:
             if not self.default_available(self.split, img_processor, **dataset_kwargs):
                 print(f"downloading/preparing dataset '{self.NAME}' "
@@ -59,17 +59,17 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
-        img_h, img_w, img_c = self.frame_shape
+        img_h, img_w, img_c = self.DEFAULT_FRAME_SHAPE
         base_config = {
-            "action_size": self.action_size,
+            "action_size": self.ACTION_SIZE,
             "img_h": img_h,
             "img_w": img_w,
             "img_c": img_c,
-            "img_shape": self.frame_shape,
+            "img_shape": self.DEFAULT_FRAME_SHAPE,
             "tensor_value_range": [self.img_processor.value_min, self.img_processor.value_max],
-            "supports_actions": self.action_size > 0,
-            "max_seq_len": self.max_seq_len,
-            "frame_shape": self.frame_shape,
+            "supports_actions": self.ACTION_SIZE > 0,
+            "max_seq_len": self.MIN_SEQ_LEN,
+            "frame_shape": self.DEFAULT_FRAME_SHAPE,
             "train_keep_ratio": self.train_keep_ratio
         }
         return {**base_config, **self._config()}
@@ -91,8 +91,8 @@ class BaseVPDataset(Dataset):
         """
         total_frames = context_frames + pred_frames
         seq_len = (total_frames - 1) * seq_step + 1
-        if self.max_seq_len < seq_len:
-            raise ValueError(f"Dataset '{self.NAME}' supports videos with up to {self.max_seq_len} frames, "
+        if self.MIN_SEQ_LEN < seq_len:
+            raise ValueError(f"Dataset '{self.NAME}' supports videos with up to {self.MIN_SEQ_LEN} frames, "
                              f"which is exceeded by your configuration: "
                              f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}")
         self.total_frames = total_frames

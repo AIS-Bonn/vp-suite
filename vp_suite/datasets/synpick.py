@@ -25,9 +25,9 @@ class SynpickVideoDataset(BaseVPDataset):
     VALID_SPLITS = ["train", "val", "test"]
     SKIP_FIRST_N = 72  #: TODO
 
-    max_seq_len = 90  #: a trajectory in the SynPick dataset is at least 90 frames
-    action_size = 3
-    frame_shape = (135, 240, 3)
+    MIN_SEQ_LEN = 90  #: a trajectory in the SynPick dataset is at least 90 frames
+    ACTION_SIZE = 3
+    DEFAULT_FRAME_SHAPE = (135, 240, 3)
     train_keep_ratio = 0.9
 
     def __init__(self, split, img_processor, **dataset_kwargs):
