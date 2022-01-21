@@ -157,7 +157,8 @@ Updating the API documentation can be done by executing `build_docs.sh` from the
 
 ### Acknowledgements
 
-Project structure is inspired by [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch).
+- Project structure is inspired by [segmentation_models.pytorch](https://github.com/qubvel/segmentation_models.pytorch).
+- Sphinx-autodoc templates are inspired by the [QNET](https://github.com/mabuchilab/QNET) repository.
 
 All other sources are acknowledged in the documentation of the respective point of usage (to the best of our knowledge).
 
