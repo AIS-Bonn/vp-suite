@@ -14,7 +14,11 @@ Furthermore, while many contributors nowadays do share their code, seemingly min
 
 This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.
 
-### Installation (required: Python >= 3.8)
+### Installation
+
+**Requirements**: 
+- `python >= 3.6` (code is tested with version `3.8`)
+- `pip`
 
 From PyPi: 
 ```

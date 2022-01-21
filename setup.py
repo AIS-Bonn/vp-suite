@@ -55,7 +55,7 @@ setup(
     long_description_content_type="text/markdown",
     zip_safe=False,
     keywords=["deep learning", "pytorch", "AI", "video prediction"],
-    python_requires=">=3.8",
+    python_requires=">=3.6",
     setup_requires=[],
     install_requires=_load_requirements(str(here)),
     project_urls={
@@ -70,7 +70,5 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
     ],
 )
