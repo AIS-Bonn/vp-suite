@@ -20,7 +20,7 @@ class BAIRPushingDataset(BaseVPDataset):
 
     MIN_SEQ_LEN = 30  #: a trajectory in the BAIR robot pushing dataset is 30 timesteps
     ACTION_SIZE = 4
-    DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    DATASET_FRAME_SHAPE = (64, 64, 3)
     train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):

@@ -27,7 +27,7 @@ class SynpickVideoDataset(BaseVPDataset):
 
     MIN_SEQ_LEN = 90  #: a trajectory in the SynPick dataset is at least 90 frames
     ACTION_SIZE = 3
-    DEFAULT_FRAME_SHAPE = (135, 240, 3)
+    DATASET_FRAME_SHAPE = (135, 240, 3)
     train_keep_ratio = 0.9
 
     def __init__(self, split, img_processor, **dataset_kwargs):

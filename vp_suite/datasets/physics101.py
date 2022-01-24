@@ -10,7 +10,7 @@ from pathlib import Path
 
 from vp_suite.base.base_dataset import BaseVPDataset, VPData
 import vp_suite.constants as constants
-
+from vp_suite.utils.utils import set_from_kwarg, read_mp4
 
 class CropUpperRight(torch.nn.Module):
     def __init__(self, w):
@@ -34,7 +34,7 @@ class Phys101(BaseVPDataset):
     TRAIN_TEST_SEED = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
     ACTION_SIZE = 0  #: No actions given
-    DEFAULT_FRAME_SHAPE = (1920, 1080, 3) # for cams without depth information
+    DATASET_FRAME_SHAPE = (1920, 1080, 3) # for cams without depth information
     DEFAULT_CAMERA = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
     DEFAULT_SUBSEQ = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
 
@@ -48,20 +48,10 @@ class Phys101(BaseVPDataset):
         """
         super(Phys101, self).__init__(split, img_processor, **dataset_kwargs)
 
-        camera = dataset_kwargs.get("camera", self.DEFAULT_CAMERA)
-        if camera not in self.AVAILABLE_CAMERAS:
-            raise ValueError(f"invalid value provided for parameter '{camera}'")
-        self.camera = camera
-
-        subseq = dataset_kwargs.get("subseq", self.DEFAULT_SUBSEQ)
-        if subseq not in self.AVAILABLE_SUBSEQ:
-            raise ValueError(f"invalid value provided for parameter '{subseq}'")
-        self.subseq = subseq
-
-        train_test_seed = dataset_kwargs.get("train_test_seed", self.TRAIN_TEST_SEED)
-        if not isinstance(train_test_seed, bool):
-            raise ValueError(f"invalid value provided for parameter '{train_test_seed}'")
-        self.train_test_seed = train_test_seed
+        # set attributes
+        set_from_kwarg(self, "camera", self.DEFAULT_CAMERA, dataset_kwargs, choices=self.AVAILABLE_CAMERAS)
+        set_from_kwarg(self, "subseq", self.DEFAULT_SUBSEQ, dataset_kwargs, choices=self.AVAILABLE_SUBSEQ)
+        set_from_kwarg(self, "train_test_seed", self.TRAIN_TEST_SEED, dataset_kwargs)
 
         # get video filepaths for train/val or test
         self.vid_filepaths: [Path] = sorted(list(self.data_dir.rglob(f"**/{self.camera}.mp4")))
@@ -86,7 +76,7 @@ class Phys101(BaseVPDataset):
 
         """
         # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
-        vid = read_video(str(self.vid_filepaths[i].resolve()), pts_unit='sec')[0]
+        vid = read_mp4(self.vid_filepaths[i])  # [T, h, w, c]
         if self.seq_step > 1:
             vid = vid[::self.seq_step]  # [t, h, w, c]
 
@@ -100,7 +90,6 @@ class Phys101(BaseVPDataset):
 
         vid = self.transformations(vid.permute(0,3,1,2)) / 255.  # [t, c, h, w], value range = [0.0, 1.0] TODO
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
-
 
         data = { "frames": vid, "actions": actions }
         return data

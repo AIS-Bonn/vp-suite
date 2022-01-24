@@ -7,19 +7,18 @@ class DatasetWrapper:
 
     ALLOWED_SPLITS = ["train", "test"]  #: TODO
 
-    def __init__(self, dataset_class, img_processor, split, **dataset_kwargs):
+    def __init__(self, dataset_class, split, **dataset_kwargs):
         r"""
 
         Args:
             dataset_class ():
-            img_processor ():
             split ():
             **dataset_kwargs ():
         """
         super(DatasetWrapper, self).__init__()
 
         if split == "train":
-            train_data, val_data = dataset_class.get_train_val(img_processor, **dataset_kwargs)
+            train_data, val_data = dataset_class.get_train_val(**dataset_kwargs)
             main_data = train_data.dataset if isinstance(train_data, Subset) else train_data
             self.datasets = {
                 "main": main_data,
@@ -27,7 +26,7 @@ class DatasetWrapper:
                 "val": val_data
             }
         elif split == "test":
-            test_data = dataset_class.get_test(img_processor, **dataset_kwargs)
+            test_data = dataset_class.get_test(**dataset_kwargs)
             self.datasets = {
                 "main": test_data,
                 "test": test_data
@@ -113,7 +112,7 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets["main"].DEFAULT_FRAME_SHAPE
+        return self.datasets["main"].DATASET_FRAME_SHAPE
 
     @property
     def config(self):
@@ -123,15 +122,6 @@ class DatasetWrapper:
 
         """
         return self.datasets["main"].config
-
-    @property
-    def img_processor(self):
-        r"""
-
-        Returns:
-
-        """
-        return self.datasets["main"].img_processor
 
     def set_seq_len(self, context_frames, pred_frames, seq_step):
         r"""

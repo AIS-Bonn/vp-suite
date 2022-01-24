@@ -20,7 +20,7 @@ class MovingMNISTDataset(BaseVPDataset):
 
     MIN_SEQ_LEN = 20  #: default MMNIST sequences span 20 frames
     ACTION_SIZE = 0
-    DEFAULT_FRAME_SHAPE = (64, 64, 3)
+    DATASET_FRAME_SHAPE = (64, 64, 3)
     train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
     def __init__(self, split, img_processor, **dataset_kwargs):

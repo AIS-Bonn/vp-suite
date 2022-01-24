@@ -1,10 +1,23 @@
-import torch
-from torch.utils.data.dataset import Dataset
 from typing import TypedDict
 from copy import deepcopy
 from pathlib import Path
 
-from vp_suite.utils.img_processor import ImgProcessor
+import numpy as np
+import torch
+import torch.nn as nn
+import torchvision.transforms as TF
+from torch.utils.data.dataset import Dataset
+
+from vp_suite.utils.utils import set_from_kwarg
+
+
+CROPS = [TF.CenterCrop, TF.RandomCrop]
+SHAPE_PRESERVING_AUGMENTATIONS = [
+    TF.RandomErasing, TF.Normalize, TF.RandomEqualize, TF.RandomAutocontrast, TF.RandomAdjustSharpness,
+    TF.RandomSolarize, TF.RandomPosterize, TF.RandomInvert, TF.GaussianBlur, TF.RandomVerticalFlip,
+    TF.RandomRotation, TF.RandomHorizontalFlip, TF.RandomGrayscale, TF.Grayscale, TF.ColorJitter,
+]
+
 
 class VPData(TypedDict):
     r"""TODO
@@ -12,6 +25,7 @@ class VPData(TypedDict):
     """
     frames: torch.Tensor  #: shape: [t, c, h, w]
     actions: torch.Tensor  #: shape: [t, a]
+
 
 class BaseVPDataset(Dataset):
     r"""
@@ -25,31 +39,79 @@ class BaseVPDataset(Dataset):
     VALID_SPLITS = ["train", "test"]  #: the valid arguments for specifying splits.
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
-    DEFAULT_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
-    train_keep_ratio: float = 0.8  #: TODO
+    DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    output_frame_shape: (int, int, int) = NotImplemented  #: TODO
+    train_keep_ratio: float = 0.8  #: TODO
+    crop: nn.Module = None  #: TODO
+    transforms: list = []  #: TODO
+    split = None  #: TODO
+    seq_step = 1  #: TODO
+    data_dir = None  #: TODO
+    value_range_min = 0.0  #: TODO
+    value_range_max = 1.0  #: TODO
+
+
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
 
         super(BaseVPDataset, self).__init__()
+
         if split not in self.VALID_SPLITS:
             raise ValueError(f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}")
         self.split = split
-        self.seq_step = dataset_kwargs.get("seq_step", 1)
-        self.data_dir : Path = dataset_kwargs.get("data_dir", None)
+
+        set_from_kwarg(self, "seq_step", self.seq_step, dataset_kwargs)
+        self.data_dir : Path = dataset_kwargs.get("data_dir", self.data_dir)
         if self.data_dir is None:
-            if not self.default_available(self.split, img_processor, **dataset_kwargs):
+            if not self.default_available(self.split, **dataset_kwargs):
                 print(f"downloading/preparing dataset '{self.NAME}' "
                       f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
             self.data_dir = self.DEFAULT_DATA_DIR
-        self.img_processor : ImgProcessor = img_processor
+
+        # TRANSFORMS AND AUGMENTATIONS: crop -> resize -> augment
+        crop = dataset_kwargs.get("crop", None)
+        if crop is not None:
+            if type(crop) not in CROPS:
+                raise ValueError(f"for the parameter 'crop', only the following transforms are allowed: {CROPS}")
+            self.transforms.append(crop)
+
+        # resize (also sets output_frame_shape)
+        img_size = dataset_kwargs.get("img_size", None)
+        h, w, c = self.DATASET_FRAME_SHAPE
+        if img_size is None:
+            h_, w_ = h, w
+        elif isinstance(img_size, int):
+            h_, w_ = img_size, img_size
+        elif (isinstance(img_size, list) or isinstance(img_size, tuple)) and len(img_size) == 2:
+            h_, w_ = img_size
+        else:
+            raise ValueError(f"invalid img size provided, expected either None, int or a two-element list/tuple")
+        self.output_frame_shape = c, h_, w_
+        if h != self.output_frame_shape[1] or w != self.output_frame_shape[2]:
+            self.transforms.append(TF.Resize(size=self.output_frame_shape[1:]))
+
+        # other augmentations
+        augmentations = dataset_kwargs.get("augmentations", [])
+        for aug in augmentations:
+            if type(aug) not in SHAPE_PRESERVING_AUGMENTATIONS:
+                raise ValueError(f"within the parameter 'augmentations', "
+                                 f"only the following transformations are allowed: {SHAPE_PRESERVING_AUGMENTATIONS}")
+            self.transforms.append(aug)
+
+        self.transform = nn.Sequential(*self.transforms)
+
+        # scaling
+        set_from_kwarg(self, "value_range_min", self.value_range_min, dataset_kwargs)
+        set_from_kwarg(self, "value_range_max", self.value_range_max, dataset_kwargs)
+
+        # FINALIZE
         self.ready_for_usage = False  # becomes True once sequence length has been set
 
     @property
@@ -59,18 +121,26 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
-        img_h, img_w, img_c = self.DEFAULT_FRAME_SHAPE
+        img_c, img_h, img_w = self.output_frame_shape
         base_config = {
+            "name": self.NAME,
+            "default_data_dir": self.DEFAULT_DATA_DIR,
+            "valid_splits": self.VALID_SPLITS,
+            "min_seq_len": self.MIN_SEQ_LEN,
             "action_size": self.ACTION_SIZE,
+            "dataset_frame_shape": self.DATASET_FRAME_SHAPE,
+            "img_shape": self.output_frame_shape,
             "img_h": img_h,
             "img_w": img_w,
             "img_c": img_c,
-            "img_shape": self.DEFAULT_FRAME_SHAPE,
-            "tensor_value_range": [self.img_processor.value_min, self.img_processor.value_max],
+            "train_keep_ratio": self.train_keep_ratio,
+            "transforms": self.transforms,
+            "split": self.split,
+            "seq_step": self.seq_step,
+            "data_dir": self.data_dir,
+            "value_range_min": self.value_range_min,
+            "value_range_max": self.value_range_max,
             "supports_actions": self.ACTION_SIZE > 0,
-            "max_seq_len": self.MIN_SEQ_LEN,
-            "frame_shape": self.DEFAULT_FRAME_SHAPE,
-            "train_keep_ratio": self.train_keep_ratio
         }
         return {**base_config, **self._config()}
 
@@ -126,29 +196,81 @@ class BaseVPDataset(Dataset):
         """
         raise NotImplementedError
 
-    def preprocess_img(self, img):
+    def preprocess_img(self, x, transform=True):
         r"""
 
         Args:
-            img ():
+            x ():
+            transform ():
 
         Returns:
 
         """
-        return self.img_processor.preprocess_img(img)
 
-    def postprocess_img(self, img):
-        r"""
+        # conversion to torch float of range [0.0, 1.0]
+        if isinstance(x, np.ndarray):
+            if x.dtype == np.uint16:
+                x = x.astype(np.float32) / ((1 << 16) - 1)
+            elif x.dtype == np.uint8:
+                x = x.astype(np.float32) / ((1 << 8) - 1)
+            elif x.dtype == np.float:
+                pass
+            else:
+                raise ValueError(f"if providing numpy arrays, only dtypes "
+                                 f"np.uint8, np.float and np.uint16 are supported (given: {x.dtype})")
+            x = torch.from_numpy(x)
+        elif torch.is_tensor(x):
+            if x.dtype == torch.uint8:
+                x = x.float() / ((1 << 8) - 1)
+            elif x.dtype == torch.double:
+                x = x.float()
+            else:
+                raise ValueError(f"if providing pytorch tensors, only dtypes "
+                                 f"torch.uint8, torch.float and torch.double are supported (given: {x.dtype})")
+        if not torch.is_tensor(x):
+            raise ValueError(f"expected input to be either a numpy array or a PyTorch tensor")
 
-        Args:
-            img ():
+        # assuming shape = [..., h, w(, c)], putting channel dim at index -3
+        if x.ndim < 2:
+            raise ValueError(f"expected at least two dimensions for input image")
+        elif x.ndim == 2:
+            x = x.unsqueeze(dim=0)
+        else:
+            permutation = list(range(x.ndim - 3)) + [-1, -3, -2]
+            x = x.permute(permutation)
 
-        Returns:
+        # scale
+        if self.value_range_min != 0.0 or self.value_range_max != 1.0:
+            x *= self.value_range_max - self.value_range_min  # [0, max_val - min_val]
+            x += self.value_range_min  # [min_val, max_val]
 
-        """
-        return self.img_processor.postprocess_img(img)
+        # crop -> resize -> augment
+        if transform:
+            x = self.transform(x)
+        return x
 
-    def default_available(self, split, img_processor, **dataset_kwargs):
+    def postprocess_img(self, x):
+        '''
+        Converts a normalized tensor of an image to a denormalized numpy array.
+        Input: torch.float, shape: [..., c, h, w], range (approx.): [min_val, max_val]
+        Output: np.uint8, shape: [..., h, w, c], range: [0, 255]
+        '''
+
+        # assuming shape = [..., c, h, w] -> [..., h, w, c]
+        if x.ndim < 3:
+            raise ValueError(f"expected at least three dimensions for input image")
+        else:
+            permutation = list(range(x.ndim - 3)) + [-2, -1, -3]
+            x = x.permute(permutation)
+
+        x -= self.value_range_min  # ~[0, max_val - min_val]
+        x /= self.value_range_max - self.value_range_min  # ~[0, 1]
+        x *= 255.  # ~[0, 255]
+        x = torch.clamp(x, 0., 255.)
+        x = x.cpu().numpy().astype('uint8')
+        return x
+
+    def default_available(self, split, **dataset_kwargs):
         r"""
         Tries to load a dataset and a datapoint using the default data_dir value.
         If this succeeds, then we can safely use the default data dir,
@@ -156,7 +278,6 @@ class BaseVPDataset(Dataset):
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
 
         Returns:
@@ -165,7 +286,7 @@ class BaseVPDataset(Dataset):
         try:
             kwargs_ = deepcopy(dataset_kwargs)
             kwargs_.update({"data_dir": self.DEFAULT_DATA_DIR})
-            default_ = self.__class__(split, img_processor, **kwargs_)
+            default_ = self.__class__(split, **kwargs_)
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
         except (FileNotFoundError, ValueError):  # TODO other exceptions?
@@ -181,53 +302,50 @@ class BaseVPDataset(Dataset):
         raise NotImplementedError
 
     @classmethod
-    def get_train_val(cls, img_processor, **dataset_args):
+    def get_train_val(cls, **dataset_args):
         r"""
 
         Args:
-            img_processor ():
             **dataset_args ():
 
         Returns:
 
         """
         if cls.VALID_SPLITS == ["train", "test"]:
-            D_main = cls("train", img_processor, **dataset_args)
+            D_main = cls("train", **dataset_args)
             len_train = int(len(D_main) * cls.train_keep_ratio)
             len_val = len(D_main) - len_train
             D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
         elif cls.VALID_SPLITS == ["train", "val", "test"]:
-            D_train = cls("train", img_processor, **dataset_args)
-            D_val = cls("val", img_processor, **dataset_args)
+            D_train = cls("train", **dataset_args)
+            D_val = cls("val", **dataset_args)
         else:
             raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
         return D_train, D_val
 
     @classmethod
-    def get_test(cls, img_processor, **dataset_args):
+    def get_test(cls, **dataset_args):
         r"""
 
         Args:
-            img_processor ():
             **dataset_args ():
 
         Returns:
 
         """
-        D_test = cls("test", img_processor, **dataset_args)
+        D_test = cls("test", **dataset_args)
         return D_test
 
     @classmethod
-    def get_train_val_test(cls, img_processor, **dataset_args):
+    def get_train_val_test(cls, **dataset_args):
         r"""
 
         Args:
-            img_processor ():
             **dataset_args ():
 
         Returns:
 
         """
-        D_train, D_val = cls.get_train_val(img_processor, **dataset_args)
-        D_test = cls.get_test(img_processor, **dataset_args)
+        D_train, D_val = cls.get_train_val(**dataset_args)
+        D_test = cls.get_test(**dataset_args)
         return D_train, D_val, D_test

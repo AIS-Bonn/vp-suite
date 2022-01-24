@@ -21,7 +21,6 @@ from vp_suite.measure.loss_provider import PredictionLossProvider
 from vp_suite.measure.metric_provider import PredictionMetricProvider
 from vp_suite.utils.visualization import visualize_vid
 from vp_suite.utils.utils import timestamp
-from vp_suite.utils.img_processor import ImgProcessor
 from vp_suite.utils.compatibility import check_model_and_data_compat, check_run_and_model_compat
 
 
@@ -84,7 +83,7 @@ class VPSuite:
         """
         self.models : List[VideoPredictionModel] = []
 
-    def load_dataset(self, dataset="MM", split="train", value_min=0.0, value_max=1.0, **dataset_kwargs):
+    def load_dataset(self, dataset="MM", split="train", **dataset_kwargs):
         r"""
 
         Args:
@@ -97,9 +96,8 @@ class VPSuite:
         Returns:
 
         """
-        img_processor = ImgProcessor(value_min=value_min, value_max=value_max)
         dataset_class = DATASET_CLASSES[dataset]
-        dataset = DatasetWrapper(dataset_class, img_processor, split, **dataset_kwargs)
+        dataset = DatasetWrapper(dataset_class, split, **dataset_kwargs)
         print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
         self.datasets.append(dataset)
@@ -172,7 +170,7 @@ class VPSuite:
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
         self.models.append(model)
 
-    def _get_run_config(self, split="train", **run_args):
+    def _prepare_run(self, split="train", **run_args):
         r"""
 
         Args:
@@ -221,7 +219,7 @@ class VPSuite:
         Returns:
 
         """
-        run_config = self._get_run_config("train", **training_kwargs)
+        run_config = self._prepare_run("train", **training_kwargs)
 
         try:
             dataset : DatasetWrapper = self.training_sets[dataset_idx]
@@ -345,7 +343,7 @@ class VPSuite:
                 vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
                 vis_out_path.mkdir()
                 visualize_vid(val_data, config["context_frames"], config["pred_frames"], model,
-                              config["device"], vis_out_path, dataset.img_processor, num_vis=10)
+                              config["device"], vis_out_path, num_vis=10)
 
                 if not config["no_wandb"]:
                     vid_filenames = sorted(os.listdir(str(vis_out_path)))
@@ -376,7 +374,7 @@ class VPSuite:
         """
         from functools import partial
         from vp_suite.utils.utils import _check_optuna_config
-        run_config = self._get_run_config(**run_kwargs)
+        run_config = self._prepare_run(**run_kwargs)
         _check_optuna_config(optuna_config)
         run_config["optuna"] = optuna_config
         try:
@@ -401,7 +399,7 @@ class VPSuite:
         Returns:
 
         """
-        run_config = self._get_run_config("test", **run_kwargs)
+        run_config = self._prepare_run("test", **run_kwargs)
 
         # prepare datasets for testing
         test_sets : List[DatasetWrapper] = self.test_sets
@@ -495,13 +493,12 @@ class VPSuite:
                 vis_out_dir = Path(model.model_dir) / f"vis_{timestamp('test')}"
                 vis_out_dir.mkdir()
                 visualize_vid(test_data, config["context_frames"], config["pred_frames"],
-                              model, config["device"], vis_out_dir, dataset.img_processor, vis_idx=vis_idx)
+                              model, config["device"], vis_out_dir, vis_idx=vis_idx)
 
         # log or display metrics
         if eval_length > 0:
             wandb_full_suffix = f"{test_mode} test"
             for i, (model, _, _, model_metrics_per_dp) in enumerate(model_info_list):
-
                 # model_metrics_per_dp: list of N lists of F metric dicts (called D).
                 # each D_{n, f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
                 # -> Aggregate these metrics over all n, keeping the specific metrics/prediction horizons separate

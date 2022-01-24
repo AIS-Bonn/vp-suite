@@ -3,8 +3,11 @@ from typing import List
 from datetime import datetime
 import subprocess
 import shlex
+from pathlib import Path
 
 from tqdm import tqdm
+import cv2
+import numpy as np
 
 
 def most(l: List[bool], factor=0.67):
@@ -77,3 +80,42 @@ def _check_optuna_config(optuna_cfg : dict):
                     raise ValueError
     except ValueError:
         print("invalid optuna config")
+
+def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, choices=None):
+    if required and attr_name not in kwarg_dict.keys():
+        raise ValueError(f"missing required parameter '{attr_name}'")
+
+    # check type fit
+    attr_val = kwarg_dict.get(attr_name, attr_default)
+    if not isinstance(attr_val, type(attr_default)):
+        raise ValueError(f"mismatching types for parameter '{attr_name}'")
+
+    # if choices are given, check if val matches choice
+    if choices is not None:
+        # If multiple args are given, check each one of them
+        if isinstance(attr_val, list) and not isinstance(choices, list):
+            for i, val_ in enumerate(attr_val):
+                if val_ not in choices:
+                    raise ValueError(f"entry {i} of parameter '{attr_name}' is not "
+                                     f"one of the acceptable choices ({choices})")
+        # else, check if single argument is valid choice
+        elif attr_val not in choices:
+            raise ValueError(f"parameter '{attr_name}' is not one of the acceptable choices ({choices})")
+    setattr(obj, attr_name, attr_val)
+
+def read_mp4(filepath: Path):
+    fp = str(filepath.resolve())
+    cap = cv2.VideoCapture()
+    if not cap.isOpened():
+        raise ValueError(f"opening MP4 file '{fp}' failed")
+
+    frames = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            frames.append(frame)
+        else:
+            break
+
+    frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
+    return np.stack(frames, axis=0)   # [t, h, w, c]
