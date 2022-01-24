@@ -14,24 +14,23 @@ class BAIRPushingDataset(BaseVPDataset):
     r"""
 
     """
-
     NAME = "BAIR robot pushing"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
-
     MIN_SEQ_LEN = 30  #: a trajectory in the BAIR robot pushing dataset is 30 timesteps
     ACTION_SIZE = 4
     DATASET_FRAME_SHAPE = (64, 64, 3)
+
     train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
-        super(BAIRPushingDataset, self).__init__(split, img_processor, **dataset_kwargs)
+        super(BAIRPushingDataset, self).__init__(split, **dataset_kwargs)
+        self.NON_CONFIG_VARS.extend(["obs_ids", "actions_ids", "obs_fps", "actions_fps"])
 
         self.data_dir = str((Path(self.data_dir) / "softmotion30_44k" / split).resolve())
         self.obs_ids = [fn for fn in sorted(os.listdir(self.data_dir)) if str(fn).endswith("obs.npy")]
@@ -65,10 +64,11 @@ class BAIRPushingDataset(BaseVPDataset):
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
-        rgb = self.preprocess_img(np.load(self.obs_fps[i]))
-        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
+        rgb_raw = np.load(self.obs_fps[i])
+        rgb_raw = rgb_raw[:self.seq_len:self.seq_step]
+        rgb = self.preprocess(rgb_raw)  # [t, c, h, w]
 
-        rgb = rgb[:self.seq_len:self.seq_step]  # [t, c, h, w]
+        actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
         actions = actions[:self.seq_len:self.seq_step]  # [t, a]
 
         data = { "frames": rgb, "actions": actions }

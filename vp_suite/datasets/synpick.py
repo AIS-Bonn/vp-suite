@@ -24,21 +24,21 @@ class SynpickVideoDataset(BaseVPDataset):
     DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
     SKIP_FIRST_N = 72  #: TODO
-
     MIN_SEQ_LEN = 90  #: a trajectory in the SynPick dataset is at least 90 frames
     ACTION_SIZE = 3
     DATASET_FRAME_SHAPE = (135, 240, 3)
+
     train_keep_ratio = 0.9
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
-        super(SynpickVideoDataset, self).__init__(split, img_processor, **dataset_kwargs)
+        super(SynpickVideoDataset, self).__init__(split, **dataset_kwargs)
+        self.NON_CONFIG_VARS.extend(["all_idx", "valid_idx", "image_ids", "image_fps", "gripper_pos", "total_len"])
 
         self.data_dir = str((Path(self.data_dir) / "processed" / split).resolve())
         images_dir = os.path.join(self.data_dir, 'rgb')
@@ -57,16 +57,6 @@ class SynpickVideoDataset(BaseVPDataset):
             gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
             self.gripper_pos[ep] = gripper_pos
         self.total_len = len(self.image_ids)
-
-    def _config(self):
-        r"""
-
-        Returns:
-
-        """
-        return {
-            "skip_first_n": self.SKIP_FIRST_N
-        }
 
     def _set_seq_len(self):
         r"""
@@ -131,8 +121,8 @@ class SynpickVideoDataset(BaseVPDataset):
         actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # [t, a] sequence length is one less!
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
-        imgs = [self.preprocess_img(img) for img in imgs_]
-        rgb = torch.stack(imgs, dim=0)  # [t, c, h, w]
+        rgb = torch.stack(imgs_, dim=0)  # [t, h, w, c]
+        rgb = self.preprocess(rgb)
 
         data = { "frames": rgb, "actions": actions }
         return data

@@ -23,30 +23,23 @@ class KTHActionsDataset(BaseVPDataset):
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: TODO
     SHORT_CLASSES = ['walking', 'running', 'jogging']  #: TODO
-
     MIN_SEQ_LEN = 30
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
-        super(KTHActionsDataset, self).__init__(split, img_processor, **dataset_kwargs)
+        super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
+        self.NON_CONFIG_VARS.extend(["data"])
 
         self.data_dir = str((Path(self.data_dir) / "processed").resolve())
-        torchfile_name = f'{self.split}_meta{self.output_frame_shape[0]}x{self.output_frame_shape[1]}.t7'
+        torchfile_name = f'{self.split}_meta{self.img_shape[0]}x{self.img_shape[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
-
-    def _config(self):
-        return {
-            "classes": self.CLASSES,
-            "short_classes": self.SHORT_CLASSES
-        }
 
     def get_from_idx(self, i):
         r"""
@@ -85,7 +78,7 @@ class KTHActionsDataset(BaseVPDataset):
 
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))
-        frames = np.zeros((self.seq_len, *self.output_frame_shape))
+        frames = np.zeros((self.seq_len, *self.img_shape))
         first_frame = 0 if len(seq) <= self.seq_len else random.randint(0, len(seq) - self.seq_len)
         last_frame = len(seq) - 1 if len(seq) <= self.seq_len else first_frame + self.seq_len - 1
         for i in range(first_frame, last_frame + 1):
@@ -94,7 +87,7 @@ class KTHActionsDataset(BaseVPDataset):
         for i in range(last_frame + 1, self.seq_len):  # fill short sequences with repeated last frames
             frames[i] = frames[last_frame]
 
-        rgb = self.preprocess_img(np.array(frames))  # [t, c, h, w]
+        rgb = self.preprocess(np.array(frames))  # [t, c, h, w]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
         data = { "frames": rgb, "actions": actions }
@@ -119,5 +112,7 @@ class KTHActionsDataset(BaseVPDataset):
         """
         from vp_suite.utils.utils import run_command
         import vp_suite.constants as constants
-        run_command(f"{(constants.PKG_RESOURCES / 'download_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}", print_to_console=False)
-        run_command(f"{(constants.PKG_RESOURCES / 'convert_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}", print_to_console=False)
+        run_command(f"{(constants.PKG_RESOURCES / 'download_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}",
+                    print_to_console=False)
+        run_command(f"{(constants.PKG_RESOURCES / 'convert_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}",
+                    print_to_console=False)

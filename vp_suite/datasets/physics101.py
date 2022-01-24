@@ -30,7 +30,6 @@ class Phys101(BaseVPDataset):
     AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #, "Kinect_FullDepth_1", "Kinect_RGB-D_1"]
     AVAILABLE_SUBSEQ = ["start", "middle", "end"]
     TRAIN_TO_TEST_RATIO = 0.8
-
     TRAIN_TEST_SEED = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
     ACTION_SIZE = 0  #: No actions given
@@ -38,15 +37,15 @@ class Phys101(BaseVPDataset):
     DEFAULT_CAMERA = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
     DEFAULT_SUBSEQ = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
-        super(Phys101, self).__init__(split, img_processor, **dataset_kwargs)
+        super(Phys101, self).__init__(split, **dataset_kwargs)
+        self.NON_CONFIG_VARS.extend(["vid_filepaths"])
 
         # set attributes
         set_from_kwarg(self, "camera", self.DEFAULT_CAMERA, dataset_kwargs, choices=self.AVAILABLE_CAMERAS)
@@ -54,17 +53,13 @@ class Phys101(BaseVPDataset):
         set_from_kwarg(self, "train_test_seed", self.TRAIN_TEST_SEED, dataset_kwargs)
 
         # get video filepaths for train/val or test
-        self.vid_filepaths: [Path] = sorted(list(self.data_dir.rglob(f"**/{self.camera}.mp4")))
+        self.vid_filepaths: [Path] = sorted(list(Path(self.data_dir).rglob(f"**/{self.camera}.mp4")))
         random.Random(self.train_test_seed).shuffle(self.vid_filepaths)
         slice_idx = int(len(self.vid_filepaths) * self.TRAIN_TO_TEST_RATIO)
         if self.split == "train":
             self.vid_filepaths = self.vid_filepaths[:slice_idx]
         else:
             self.vid_filepaths = self.vid_filepaths[slice_idx:]
-
-    def _config(self):
-        raise NotImplementedError
-
 
     def __getitem__(self, i) -> VPData:
         r"""
@@ -88,7 +83,7 @@ class Phys101(BaseVPDataset):
             frame_offset = (vid.shape[0] - self.total_frames) // 2
             vid = vid[frame_offset : frame_offset+self.total_frames]
 
-        vid = self.transformations(vid.permute(0,3,1,2)) / 255.  # [t, c, h, w], value range = [0.0, 1.0] TODO
+        vid = self.preprocess(vid)
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
         data = { "frames": vid, "actions": actions }

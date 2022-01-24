@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Union
 from copy import deepcopy
 from pathlib import Path
 
@@ -40,16 +40,17 @@ class BaseVPDataset(Dataset):
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
+    NON_CONFIG_VARS = ["NON_CONFIG_VARS", "transform", "ready_for_usage", "total_frames", "seq_len", "frame_offsets"]
 
-    output_frame_shape: (int, int, int) = NotImplemented  #: TODO
+    img_shape: (int, int, int) = NotImplemented  #: TODO
     train_keep_ratio: float = 0.8  #: TODO
     crop: nn.Module = None  #: TODO
     transforms: list = []  #: TODO
-    split = None  #: TODO
-    seq_step = 1  #: TODO
-    data_dir = None  #: TODO
-    value_range_min = 0.0  #: TODO
-    value_range_max = 1.0  #: TODO
+    split: str = None  #: TODO
+    seq_step: int = 1  #: TODO
+    data_dir: str = None  #: TODO
+    value_range_min: float = 0.0  #: TODO
+    value_range_max: float = 1.0  #: TODO
 
 
     def __init__(self, split, **dataset_kwargs):
@@ -67,13 +68,13 @@ class BaseVPDataset(Dataset):
         self.split = split
 
         set_from_kwarg(self, "seq_step", self.seq_step, dataset_kwargs)
-        self.data_dir : Path = dataset_kwargs.get("data_dir", self.data_dir)
+        self.data_dir = dataset_kwargs.get("data_dir", self.data_dir)
         if self.data_dir is None:
             if not self.default_available(self.split, **dataset_kwargs):
                 print(f"downloading/preparing dataset '{self.NAME}' "
                       f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
                 self.download_and_prepare_dataset()
-            self.data_dir = self.DEFAULT_DATA_DIR
+            self.data_dir = str(self.DEFAULT_DATA_DIR.resolve())
 
         # TRANSFORMS AND AUGMENTATIONS: crop -> resize -> augment
         crop = dataset_kwargs.get("crop", None)
@@ -93,9 +94,9 @@ class BaseVPDataset(Dataset):
             h_, w_ = img_size
         else:
             raise ValueError(f"invalid img size provided, expected either None, int or a two-element list/tuple")
-        self.output_frame_shape = c, h_, w_
-        if h != self.output_frame_shape[1] or w != self.output_frame_shape[2]:
-            self.transforms.append(TF.Resize(size=self.output_frame_shape[1:]))
+        self.img_shape = c, h_, w_
+        if h != self.img_shape[1] or w != self.img_shape[2]:
+            self.transforms.append(TF.Resize(size=self.img_shape[1:]))
 
         # other augmentations
         augmentations = dataset_kwargs.get("augmentations", [])
@@ -121,31 +122,22 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
-        img_c, img_h, img_w = self.output_frame_shape
-        base_config = {
-            "name": self.NAME,
-            "default_data_dir": self.DEFAULT_DATA_DIR,
-            "valid_splits": self.VALID_SPLITS,
-            "min_seq_len": self.MIN_SEQ_LEN,
-            "action_size": self.ACTION_SIZE,
-            "dataset_frame_shape": self.DATASET_FRAME_SHAPE,
-            "img_shape": self.output_frame_shape,
+        base_config = vars(self)
+        for k in self.NON_CONFIG_VARS:
+            base_config.pop(k, None)
+        img_c, img_h, img_w = self.img_shape
+        extra_config = {
             "img_h": img_h,
             "img_w": img_w,
             "img_c": img_c,
-            "train_keep_ratio": self.train_keep_ratio,
-            "transforms": self.transforms,
-            "split": self.split,
-            "seq_step": self.seq_step,
-            "data_dir": self.data_dir,
-            "value_range_min": self.value_range_min,
-            "value_range_max": self.value_range_max,
+            "action_size": self.ACTION_SIZE,
             "supports_actions": self.ACTION_SIZE > 0,
+            "tensor_value_range": [self.value_range_min, self.value_range_max],
         }
-        return {**base_config, **self._config()}
+        return {**base_config, **extra_config, **self._config()}
 
     def _config(self):
-        r"""Dataset-specific config
+        r"""Dataset-specific config that is not covered by the vars() call
         """
         return {}
 
@@ -196,7 +188,7 @@ class BaseVPDataset(Dataset):
         """
         raise NotImplementedError
 
-    def preprocess_img(self, x, transform=True):
+    def preprocess(self, x: Union[np.ndarray, torch.Tensor], transform: bool=True):
         r"""
 
         Args:
@@ -249,7 +241,7 @@ class BaseVPDataset(Dataset):
             x = self.transform(x)
         return x
 
-    def postprocess_img(self, x):
+    def postprocess(self, x):
         '''
         Converts a normalized tensor of an image to a denormalized numpy array.
         Input: torch.float, shape: [..., c, h, w], range (approx.): [min_val, max_val]

@@ -17,21 +17,21 @@ class MovingMNISTDataset(BaseVPDataset):
 
     NAME = "Moving MNIST"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
-
     MIN_SEQ_LEN = 20  #: default MMNIST sequences span 20 frames
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
+
     train_keep_ratio = 0.96  #: big dataset -> val can be smaller
 
-    def __init__(self, split, img_processor, **dataset_kwargs):
+    def __init__(self, split, **dataset_kwargs):
         r"""
 
         Args:
             split ():
-            img_processor ():
             **dataset_kwargs ():
         """
-        super(MovingMNISTDataset, self).__init__(split, img_processor, **dataset_kwargs)
+        super(MovingMNISTDataset, self).__init__(split, **dataset_kwargs)
+        self.NON_CONFIG_VARS.extend(["data_ids", "data_fps"])
 
         self.data_dir = str((Path(self.data_dir) / split).resolve())
         self.data_ids = sorted(os.listdir(self.data_dir))
@@ -59,8 +59,9 @@ class MovingMNISTDataset(BaseVPDataset):
 
         rgb_raw = np.load(self.data_fps[i])  # [t', h, w]
         rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t', h, w, c]
-        rgb = self.preprocess_img(rgb_raw)
-        rgb = rgb[:self.seq_len:self.seq_step]  # [t, c, h, w]
+        rgb_raw = rgb_raw[:self.seq_len:self.seq_step]  # [t, h, w, c]
+        rgb = self.preprocess(rgb_raw)
+
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
         data = { "frames": rgb, "actions": actions }

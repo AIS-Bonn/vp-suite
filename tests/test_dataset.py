@@ -5,11 +5,10 @@ from vp_suite.utils.dataset_wrapper import DatasetWrapper
 @pytest.mark.parametrize('dataset_str', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
 def test_dataset(dataset_str):
 
-    img_processor = ImgProcessor(value_min=0.0, value_max=1.0)
     dataset_class = DATASET_CLASSES[dataset_str]
-    train_wrapper = DatasetWrapper(dataset_class, img_processor, "train")
+    train_wrapper = DatasetWrapper(dataset_class, "train")
     train_wrapper.set_seq_len(1, 1, 1)
-    test_wrapper = DatasetWrapper(dataset_class, img_processor, "test")
+    test_wrapper = DatasetWrapper(dataset_class, "test")
     test_wrapper.set_seq_len(1, 1, 1)
     assert train_wrapper.frame_shape == test_wrapper.frame_shape
     assert train_wrapper.action_size == test_wrapper.action_size
