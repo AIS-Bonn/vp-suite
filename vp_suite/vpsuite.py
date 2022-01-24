@@ -361,7 +361,7 @@ class VPSuite:
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
 
-    def hyperopt(self, optuna_config=None, n_trials=30, dataset_idx=-1, model_idx=-1, **run_kwargs):
+    def hyperopt(self, optuna_config, n_trials=30, dataset_idx=-1, model_idx=-1, **run_kwargs):
         r"""
 
         Args:

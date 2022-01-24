@@ -35,10 +35,11 @@ class KTHActionsDataset(BaseVPDataset):
             **dataset_kwargs ():
         """
         super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
+        print(self.ready_for_usage)
         self.NON_CONFIG_VARS.extend(["data"])
 
         self.data_dir = str((Path(self.data_dir) / "processed").resolve())
-        torchfile_name = f'{self.split}_meta{self.img_shape[0]}x{self.img_shape[1]}.t7'
+        torchfile_name = f'{self.split}_meta{self.DATASET_FRAME_SHAPE[0]}x{self.DATASET_FRAME_SHAPE[1]}.t7'
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
 
     def get_from_idx(self, i):
@@ -78,7 +79,7 @@ class KTHActionsDataset(BaseVPDataset):
 
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))
-        frames = np.zeros((self.seq_len, *self.img_shape))
+        frames = np.zeros((self.seq_len, *self.DATASET_FRAME_SHAPE))
         first_frame = 0 if len(seq) <= self.seq_len else random.randint(0, len(seq) - self.seq_len)
         last_frame = len(seq) - 1 if len(seq) <= self.seq_len else first_frame + self.seq_len - 1
         for i in range(first_frame, last_frame + 1):

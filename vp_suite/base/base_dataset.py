@@ -281,7 +281,7 @@ class BaseVPDataset(Dataset):
             default_ = self.__class__(split, **kwargs_)
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
-        except (FileNotFoundError, ValueError):  # TODO other exceptions?
+        except (FileNotFoundError, ValueError) as e:  # TODO other exceptions?
             return False
         return True
 

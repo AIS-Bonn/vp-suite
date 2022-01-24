@@ -64,6 +64,7 @@ def download_from_url(url: str, dst_path : str):
         urlretrieve(url, dst_path, reporthook=t.update_to)
 
 def _check_optuna_config(optuna_cfg : dict):
+
     try:
         for parameter, p_dict in optuna_cfg.items():
             if not isinstance(p_dict, dict):
@@ -105,7 +106,7 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
 
 def read_mp4(filepath: Path):
     fp = str(filepath.resolve())
-    cap = cv2.VideoCapture()
+    cap = cv2.VideoCapture(fp)
     if not cap.isOpened():
         raise ValueError(f"opening MP4 file '{fp}' failed")
 

@@ -121,7 +121,7 @@ class SynpickVideoDataset(BaseVPDataset):
         actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # [t, a] sequence length is one less!
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
-        rgb = torch.stack(imgs_, dim=0)  # [t, h, w, c]
+        rgb = np.stack(imgs_, axis=0)  # [t, h, w, c]
         rgb = self.preprocess(rgb)
 
         data = { "frames": rgb, "actions": actions }

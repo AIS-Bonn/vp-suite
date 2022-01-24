@@ -33,7 +33,7 @@ class Physics101Dataset(BaseVPDataset):
     TRAIN_TEST_SEED = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
     ACTION_SIZE = 0  #: No actions given
-    DATASET_FRAME_SHAPE = (1080, 1920, 3) # for cams without depth information
+    DATASET_FRAME_SHAPE = (1920, 1080, 3) # for cams without depth information
     DEFAULT_CAMERA = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
     DEFAULT_SUBSEQ = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
 
@@ -97,26 +97,18 @@ class Physics101Dataset(BaseVPDataset):
         """
         return len(self.vid_filepaths)
 
-    def download_and_prepare_dataset(self):
-        r"""
+    def _prepare_human36m(data_dir, out_dir):
+        person_dirs = sorted(os.listdir(os.path.join(data_dir, "subject")))
+        person_dirs = [os.path.join(data_dir, "subject", pd, "Videos") for pd in person_dirs]
+        files = sorted([os.path.join(pd, fn) for pd in person_dirs
+                        for fn in os.listdir(pd) if str(fn).endswith(".mp4")])
+        for fp in tqdm(files):
+            relative_fp = Path(fp).relative_to(Path(data_dir))
+            out_path = Path(out_dir) / relative_fp
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with VideoFileClip(fp, audio=False, target_resolution=(64, 64), resize_algorithm="bilinear") as clip:
+                clip.write_videofile(os.path.join(out_dir, relative_fp), audio=False, codec="mpeg4", logger=None)
 
-        Returns:
-
-        """
-        d_path = self.DEFAULT_DATA_DIR
-        d_path.mkdir(parents=True, exist_ok=True)
-        vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))
-        if len(vid_filepaths) == 0:  # no data available
-            tar_fname = "phys101_v1.0.tar"
-            tar_path = str(d_path / tar_fname)
-            if not os.path.exists(tar_path):
-                URL = f"http://phys101.csail.mit.edu/data/{tar_fname}"
-                from vp_suite.utils.utils import download_from_url
-                download_from_url(URL, tar_path)
-
-            print("Extracting data...")
-            import tarfile
-            tar = tarfile.open(tar_path)
-            tar.extractall(d_path)
-            tar.close()
-            os.remove(tar_path)
+    def prepare_human36m(data_dir, out_dir):
+        _prepare_human36m(os.path.join(data_dir, "training"), os.path.join(out_dir, "training"))
+        _prepare_human36m(os.path.join(data_dir, "testing"), os.path.join(out_dir, "testing"))

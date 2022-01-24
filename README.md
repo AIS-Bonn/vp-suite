@@ -101,7 +101,7 @@ suite.create_model(model_type="lstm")  # select model of choice
 with open(str((PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
     optuna_cfg = json.load(cfg_file)
 # optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
-suite.hyperopt(optuna_cfg, trials=30, epochs=10)
+suite.hyperopt(optuna_cfg, n_trials=30, epochs=10)
 ```
 This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to the console.
 
