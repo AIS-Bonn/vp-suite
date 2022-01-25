@@ -12,25 +12,14 @@ from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_mp4
 
-class CropUpperRight(torch.nn.Module):
-    def __init__(self, w):
-        super(CropUpperRight, self).__init__()
-        self.w = w
 
-    def forward(self, img):
-        return img[:, :, :self.w, -self.w:]
-
-
-class Physics101Dataset(VPDataset):
+class Human36MDataset(VPDataset):
     r"""
 
     """
-    NAME = "Physics 101"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "phys101"
-    AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #, "Kinect_FullDepth_1", "Kinect_RGB-D_1"]
-    AVAILABLE_SUBSEQ = ["start", "middle", "end"]
+    NAME = "Human 3.6M"
+    DEFAULT_DATA_DIR = constants.DATA_PATH / "human36m"
     TRAIN_TO_TEST_RATIO = 0.8
-    TRAIN_TEST_SEED = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
     ACTION_SIZE = 0  #: No actions given
     DATASET_FRAME_SHAPE = (1920, 1080, 3) # for cams without depth information
@@ -44,7 +33,7 @@ class Physics101Dataset(VPDataset):
             split ():
             **dataset_kwargs ():
         """
-        super(Physics101Dataset, self).__init__(split, **dataset_kwargs)
+        super(Human36MDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["vid_filepaths"])
 
         # set attributes
