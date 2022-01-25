@@ -4,14 +4,14 @@ import torch.cuda
 from vp_suite.models import MODEL_CLASSES
 from vp_suite.base.base_model import VideoPredictionModel
 
-IMG_SHAPE = (64, 64, 3)
+IMG_SHAPE = (3, 64, 64)
 ACTION_SIZE = 3
 TEMPORAL_DIM = 3
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # model input shapes
 b = 2  # batch_size
-h, w, c = IMG_SHAPE
+c, h, w = IMG_SHAPE
 p = 5  # pred_frames
 
 @pytest.mark.parametrize('model_key', MODEL_CLASSES.keys(), ids=[v.NAME for v in MODEL_CLASSES.values()])
