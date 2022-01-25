@@ -35,7 +35,6 @@ class KTHActionsDataset(BaseVPDataset):
             **dataset_kwargs ():
         """
         super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
-        print(self.ready_for_usage)
         self.NON_CONFIG_VARS.extend(["data"])
 
         self.data_dir = str((Path(self.data_dir) / "processed").resolve())

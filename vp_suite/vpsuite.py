@@ -101,6 +101,7 @@ class VPSuite:
         print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
         self.datasets.append(dataset)
+        print(dataset.config)
 
     def load_model(self, model_dir, ckpt_name="best_model.pth"):
         r"""

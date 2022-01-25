@@ -1,14 +1,15 @@
 from typing import TypedDict, Union
 from copy import deepcopy
+from inspect import currentframe
 from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as TF
-from torch.utils.data.dataset import Dataset
+from torch.utils.data.dataset import Dataset, Subset
 
-from vp_suite.utils.utils import set_from_kwarg
+from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
 
 
 CROPS = [TF.CenterCrop, TF.RandomCrop]
@@ -40,7 +41,8 @@ class BaseVPDataset(Dataset):
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
-    NON_CONFIG_VARS = ["NON_CONFIG_VARS", "transform", "ready_for_usage", "total_frames", "seq_len", "frame_offsets"]
+    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "transform", "_ready_for_usage", "total_frames",
+                       "seq_len", "frame_offsets"]
 
     img_shape: (int, int, int) = NotImplemented  #: TODO
     train_keep_ratio: float = 0.8  #: TODO
@@ -113,7 +115,18 @@ class BaseVPDataset(Dataset):
         set_from_kwarg(self, "value_range_max", self.value_range_max, dataset_kwargs)
 
         # FINALIZE
-        self.ready_for_usage = False  # becomes True once sequence length has been set
+        self._ready_for_usage = False  # becomes True once sequence length has been set
+
+    @property
+    def ready_for_usage(self):
+        r"""
+
+        Returns:
+
+        """
+        if isinstance(self, Subset):
+            return self.dataset._ready_for_usage
+        return self._ready_for_usage
 
     @property
     def config(self):
@@ -122,9 +135,10 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
-        base_config = vars(self)
+
+        attr_dict = get_public_attrs(self, "config")
         for k in self.NON_CONFIG_VARS:
-            base_config.pop(k, None)
+            attr_dict.pop(k, None)
         img_c, img_h, img_w = self.img_shape
         extra_config = {
             "img_h": img_h,
@@ -134,7 +148,7 @@ class BaseVPDataset(Dataset):
             "supports_actions": self.ACTION_SIZE > 0,
             "tensor_value_range": [self.value_range_min, self.value_range_max],
         }
-        return {**base_config, **extra_config, **self._config()}
+        return {**attr_dict, **extra_config, **self._config()}
 
     def _config(self):
         r"""Dataset-specific config that is not covered by the vars() call
@@ -161,7 +175,7 @@ class BaseVPDataset(Dataset):
         self.seq_len = seq_len
         self.frame_offsets = range(0, (total_frames) * self.seq_step, self.seq_step)
         self._set_seq_len()
-        self.ready_for_usage = True
+        self._ready_for_usage = True
 
     def _set_seq_len(self):
         r"""Optional logic for datasets with specific logic
@@ -303,16 +317,16 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
+        assert cls.VALID_SPLITS == ["train", "test"] or cls.VALID_SPLITS == ["train", "val", "test"], \
+            f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured"
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", **dataset_args)
             len_train = int(len(D_main) * cls.train_keep_ratio)
             len_val = len(D_main) - len_train
             D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
-        elif cls.VALID_SPLITS == ["train", "val", "test"]:
+        else:
             D_train = cls("train", **dataset_args)
             D_val = cls("val", **dataset_args)
-        else:
-            raise ValueError(f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured")
         return D_train, D_val
 
     @classmethod

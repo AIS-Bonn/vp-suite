@@ -58,7 +58,10 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets.get("train", None)
+        train_data = self.datasets.get("train", None)
+        if train_data is None:
+            raise KeyError(f"dataset '{self.NAME}' does not contain training data")
+        return train_data
 
     @property
     def val_data(self):
@@ -67,7 +70,10 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets.get("val", None)
+        val_data = self.datasets.get("val", None)
+        if val_data is None:
+            raise KeyError(f"dataset '{self.NAME}' does not contain validation data")
+        return val_data
 
     @property
     def test_data(self):
@@ -76,7 +82,10 @@ class DatasetWrapper:
         Returns:
 
         """
-        return self.datasets.get("test", None)
+        test_data = self.datasets.get("test", None)
+        if test_data is None:
+            raise KeyError(f"dataset '{self.NAME}' does not contain test data")
+        return test_data
 
     @property
     def NAME(self):
@@ -137,6 +146,6 @@ class DatasetWrapper:
         self.datasets["main"].set_seq_len(context_frames, pred_frames, seq_step)
 
         # set the seq_len for val_data as well if it's a separate dataset
-        if self.is_training_set() and not getattr(self.val_data, "ready_for_usage", True):
+        if self.is_training_set() and not self.val_data.ready_for_usage:
             self.val_data.set_seq_len(context_frames, pred_frames, seq_step)
         self.is_ready = True

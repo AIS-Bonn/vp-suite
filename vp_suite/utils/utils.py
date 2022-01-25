@@ -3,6 +3,7 @@ from typing import List
 from datetime import datetime
 import subprocess
 import shlex
+import inspect
 from pathlib import Path
 
 from tqdm import tqdm
@@ -120,3 +121,24 @@ def read_mp4(filepath: Path):
 
     frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
     return np.stack(frames, axis=0)   # [t, h, w, c]
+
+def get_public_attrs(obj, calling_fn_name: str):
+    r"""
+    Similar to inspect.getmembers()
+
+    Args:
+        obj ():
+        calling_fn_name ():
+
+    Returns:
+
+    """
+    attr_dict = dict()
+    instance_names = set(dir(obj))
+    instance_names = [n for n in instance_names if not n.startswith("_")]  # remove private fields and dunders
+    instance_names.remove(calling_fn_name)  # remove name of calling function to avoid recursion
+    for name in instance_names:
+        value = getattr(obj, name)
+        if not inspect.isroutine(value):  # remove routines
+            attr_dict[name] = value
+    return attr_dict
