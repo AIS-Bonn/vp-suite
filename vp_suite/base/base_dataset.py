@@ -1,6 +1,5 @@
 from typing import TypedDict, Union
 from copy import deepcopy
-from inspect import currentframe
 from pathlib import Path
 
 import numpy as np
@@ -41,19 +40,17 @@ class BaseVPDataset(Dataset):
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
-    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "transform", "_ready_for_usage", "total_frames",
-                       "seq_len", "frame_offsets"]
+    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "_ready_for_usage", "ready_for_usage",
+                       "total_frames", "seq_len", "frame_offsets"]  #: TODO
 
     img_shape: (int, int, int) = NotImplemented  #: TODO
     train_keep_ratio: float = 0.8  #: TODO
-    crop: nn.Module = None  #: TODO
-    transforms: list = []  #: TODO
+    transform: nn.Module = None  #: TODO
     split: str = None  #: TODO
     seq_step: int = 1  #: TODO
     data_dir: str = None  #: TODO
     value_range_min: float = 0.0  #: TODO
     value_range_max: float = 1.0  #: TODO
-
 
     def __init__(self, split, **dataset_kwargs):
         r"""
@@ -78,12 +75,19 @@ class BaseVPDataset(Dataset):
                 self.download_and_prepare_dataset()
             self.data_dir = str(self.DEFAULT_DATA_DIR.resolve())
 
-        # TRANSFORMS AND AUGMENTATIONS: crop -> resize -> augment
+        # DATA PREPROCESSING: convert -> permute -> scale -> crop -> resize -> augment
+        transforms = []
+
+        # scale
+        set_from_kwarg(self, "value_range_min", self.value_range_min, dataset_kwargs)
+        set_from_kwarg(self, "value_range_max", self.value_range_max, dataset_kwargs)
+
+        # crop
         crop = dataset_kwargs.get("crop", None)
         if crop is not None:
             if type(crop) not in CROPS:
                 raise ValueError(f"for the parameter 'crop', only the following transforms are allowed: {CROPS}")
-            self.transforms.append(crop)
+            transforms.append(crop)
 
         # resize (also sets output_frame_shape)
         img_size = dataset_kwargs.get("img_size", None)
@@ -98,23 +102,18 @@ class BaseVPDataset(Dataset):
             raise ValueError(f"invalid img size provided, expected either None, int or a two-element list/tuple")
         self.img_shape = c, h_, w_
         if h != self.img_shape[1] or w != self.img_shape[2]:
-            self.transforms.append(TF.Resize(size=self.img_shape[1:]))
+            transforms.append(TF.Resize(size=self.img_shape[1:]))
 
-        # other augmentations
+        # augment
         augmentations = dataset_kwargs.get("augmentations", [])
         for aug in augmentations:
             if type(aug) not in SHAPE_PRESERVING_AUGMENTATIONS:
                 raise ValueError(f"within the parameter 'augmentations', "
                                  f"only the following transformations are allowed: {SHAPE_PRESERVING_AUGMENTATIONS}")
-            self.transforms.append(aug)
-
-        self.transform = nn.Sequential(*self.transforms)
-
-        # scaling
-        set_from_kwarg(self, "value_range_min", self.value_range_min, dataset_kwargs)
-        set_from_kwarg(self, "value_range_max", self.value_range_max, dataset_kwargs)
+            transforms.append(aug)
 
         # FINALIZE
+        self.transform = nn.Identity if len(transforms) == 0 else nn.Sequential(*transforms)
         self._ready_for_usage = False  # becomes True once sequence length has been set
 
     @property
@@ -135,7 +134,6 @@ class BaseVPDataset(Dataset):
         Returns:
 
         """
-
         attr_dict = get_public_attrs(self, "config")
         for k in self.NON_CONFIG_VARS:
             attr_dict.pop(k, None)
@@ -148,6 +146,7 @@ class BaseVPDataset(Dataset):
             "supports_actions": self.ACTION_SIZE > 0,
             "tensor_value_range": [self.value_range_min, self.value_range_max],
         }
+
         return {**attr_dict, **extra_config, **self._config()}
 
     def _config(self):
@@ -204,6 +203,7 @@ class BaseVPDataset(Dataset):
 
     def preprocess(self, x: Union[np.ndarray, torch.Tensor], transform: bool=True):
         r"""
+        convert -> permute -> scale -> crop -> resize -> augment
 
         Args:
             x ():
