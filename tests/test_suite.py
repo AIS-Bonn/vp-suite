@@ -4,6 +4,8 @@ import pytest
 from vp_suite import VPSuite
 import vp_suite.constants as constants
 
+import torchvision.transforms as TF
+
 """
 These tests run on the simplest models and datasets to speed up things, as here it is about testing the VP suite itself.
 The testing of all models and datasets is done in test_models.py and test_datasets.py.
@@ -56,7 +58,8 @@ def test_full_testing_single_dataset_single_model():
 def test_brief_testing_multi_dataset_multi_model():
     suite = VPSuite()
     suite.load_dataset(dataset=dataset1, split="test")
-    suite.load_dataset(dataset=dataset2, split="test")
+    crop = TF.RandomCrop(size=1024)
+    suite.load_dataset(dataset=dataset2, split="test", crop=crop, img_size=(64, 64))
     suite.create_model(model_type=model1)
     suite.create_model(model_type=model2, temporal_dim=3)
     suite.test(brief_test=True, context_frames=4, pred_frames=6, no_wandb=True)

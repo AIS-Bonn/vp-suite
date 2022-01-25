@@ -202,7 +202,7 @@ class SynpickVideoDataset(VPDataset):
         self.DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
         d_path_processed = self.DEFAULT_DATA_DIR / "processed"
         d_path_raw = self.DEFAULT_DATA_DIR / "raw"
-        seed = 42inp
+        seed = 42
         resize_ratio = 0.125  # yields imgs of size [135, 240]
 
         if not os.path.exists(str(d_path_raw)):

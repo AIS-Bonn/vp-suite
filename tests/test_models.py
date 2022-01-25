@@ -31,6 +31,8 @@ def test_models_without_actions(model_key):
     pred_1 = model.pred_1(x)
     pred_5, _ = model(x, pred_length=p)
 
+    print(x.shape, pred_1.shape, pred_5.shape)
+
     assert pred_1.shape == (b, c, h, w)
     assert pred_5.shape == (b, 5, c, h, w)
 
@@ -53,7 +55,7 @@ def test_models_with_actions(model_key):
     pred_1 = model.pred_1(x, actions=a)
     pred_5, _ = model(x, pred_length=p, actions=a)
 
-    print(pred_1.shape, pred_5.shape)
+    print(x.shape, pred_1.shape, pred_5.shape)
 
     assert pred_1.shape == (b, c, h, w)
     assert pred_5.shape == (b, 5, c, h, w)

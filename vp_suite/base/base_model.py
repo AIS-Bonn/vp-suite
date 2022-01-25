@@ -46,7 +46,7 @@ class VideoPredictionModel(nn.Module):
 
             # post-setattr logic
             if required_arg == "img_shape":
-                self.img_h, self.img_w, self.img_c = self.img_shape
+                self.img_c, self.img_h, self.img_w = self.img_shape
 
         # set optional parameters
         self.action_conditional = model_args.get("action_conditional", False)

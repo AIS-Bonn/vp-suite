@@ -33,8 +33,7 @@ class PhyDNet(VideoPredictionModel):
         super(PhyDNet, self).__init__(device, **model_args)
 
         self.criterion = MSE(self.device)
-        img_shape_ = self.img_c, self.img_h, self.img_w
-        self.encoder = EncoderRNN(img_shape_, self.phy_cell_channels, self.phy_kernel_size,
+        self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,
                                   self.action_conditional, self.action_size, self.device)
         self.constraints = torch.zeros((self.phy_cell_channels, *self.phy_kernel_size), device=self.device)
         ind = 0

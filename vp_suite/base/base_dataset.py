@@ -219,12 +219,12 @@ class VPDataset(Dataset):
                 x = x.astype(np.float32) / ((1 << 16) - 1)
             elif x.dtype == np.uint8:
                 x = x.astype(np.float32) / ((1 << 8) - 1)
-            elif x.dtype == np.float:
+            elif x.dtype == float:
                 pass
             else:
                 raise ValueError(f"if providing numpy arrays, only dtypes "
                                  f"np.uint8, np.float and np.uint16 are supported (given: {x.dtype})")
-            x = torch.from_numpy(x)
+            x = torch.from_numpy(x).float()
         elif torch.is_tensor(x):
             if x.dtype == torch.uint8:
                 x = x.float() / ((1 << 8) - 1)
@@ -233,7 +233,7 @@ class VPDataset(Dataset):
             else:
                 raise ValueError(f"if providing pytorch tensors, only dtypes "
                                  f"torch.uint8, torch.float and torch.double are supported (given: {x.dtype})")
-        if not torch.is_tensor(x):
+        else:
             raise ValueError(f"expected input to be either a numpy array or a PyTorch tensor")
 
         # assuming shape = [..., h, w(, c)], putting channel dim at index -3
