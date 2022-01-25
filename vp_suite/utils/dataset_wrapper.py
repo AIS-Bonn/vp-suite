@@ -35,6 +35,12 @@ class DatasetWrapper:
             raise ValueError(f"parameter {split} needs to be one of the following: {self.ALLOWED_SPLITS}")
         self.is_ready = False  # set to true after seq_len has been set (pre-requisite for training)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"DatasetWrapper[{self.NAME}](datasets={self.datasets}, is_ready={self.is_ready})"
+
     def is_training_set(self):
         r"""
 
@@ -115,13 +121,13 @@ class DatasetWrapper:
         return self.datasets["main"].ACTION_SIZE
 
     @property
-    def frame_shape(self):
+    def img_shape(self):
         r"""
 
         Returns:
 
         """
-        return self.datasets["main"].DATASET_FRAME_SHAPE
+        return self.datasets["main"].img_shape
 
     @property
     def config(self):

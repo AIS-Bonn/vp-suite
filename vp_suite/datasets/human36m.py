@@ -8,7 +8,7 @@ import torchvision.transforms as TF
 from torchvision.io import read_video
 from pathlib import Path
 
-from vp_suite.base.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_mp4
 
@@ -21,7 +21,7 @@ class CropUpperRight(torch.nn.Module):
         return img[:, :, :self.w, -self.w:]
 
 
-class Physics101Dataset(BaseVPDataset):
+class Physics101Dataset(VPDataset):
     r"""
 
     """

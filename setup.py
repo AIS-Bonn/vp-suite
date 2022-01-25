@@ -5,6 +5,7 @@ from typing import List
 from setuptools import find_packages, setup
 
 here = Path(__file__).parent
+docs = here / "docs"
 long_description = (here / 'README.md').read_text()
 
 def _load_py_module(fname, pkg="vp_suite"):
@@ -58,6 +59,10 @@ setup(
     python_requires=">=3.6",
     setup_requires=[],
     install_requires=_load_requirements(str(here)),
+    extras_require={
+        'dev': [ 'pytest', 'pytest-cov' ],
+        'doc': _load_requirements(str(docs)),
+    },
     project_urls={
         "Documentation": about.__docs_url__,
         "Source": about.__source_url__,

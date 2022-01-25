@@ -30,6 +30,13 @@ From source:
 pip install git+https://github.com/Flunzmas/vp-suite.git
 ```
 
+If you want to contribute:
+```
+git clone https://github.com/Flunzmas/vp-suite.git
+cd vp-suite
+pip install -e .[dev,doc]
+```
+
 ### Usage
 
 When using this package, a folder `vp-suite` is created in your current working directory/current path 

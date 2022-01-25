@@ -11,11 +11,11 @@ import torch
 from tqdm import tqdm
 
 from vp_suite.utils.utils import most
-from vp_suite.base.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 
 
-class SynpickVideoDataset(BaseVPDataset):
+class SynpickVideoDataset(VPDataset):
     r"""
 
     """
@@ -207,12 +207,10 @@ class SynpickVideoDataset(BaseVPDataset):
 
         if not os.path.exists(str(d_path_raw)):
             print("downloading SynPick (might take a while)...")
-            d_path_raw.mkdir(parents=True)
             download_synpick(d_path_raw)
 
-        if not os.path.exists(str(d_path_processed)):
+        elif not os.path.exists(str(d_path_processed)):
             print("preparing trajectory files...")
-            d_path_processed.mkdir(parents=True)
             prepare_synpick(d_path_raw, d_path_processed, seed, resize_ratio, self.TRAIN_KEEP_RATIO)
 
 # === SynPick data preparation tools ===========================================
@@ -227,7 +225,8 @@ def download_synpick(d_path_raw):
 
     """
     raise NotImplementedError("SynPick dataset is not yet downloadable! "
-                              "Please context the paper authors to resolve this issue.")
+                              "Please contact the paper authors to resolve this issue.")
+    # d_path_raw.mkdir(parents=True)
 
 def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
     r"""

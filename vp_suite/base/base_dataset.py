@@ -1,4 +1,4 @@
-from typing import TypedDict, Union
+from typing import TypedDict, Union, Sequence, Optional, Generator, List
 from copy import deepcopy
 from pathlib import Path
 
@@ -6,7 +6,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as TF
-from torch.utils.data.dataset import Dataset, Subset
+from torch import randperm, default_generator
+from torch._utils import _accumulate
+from torch.utils.data import Subset
+from torch.utils.data.dataset import Dataset
 
 from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
 
@@ -27,7 +30,15 @@ class VPData(TypedDict):
     actions: torch.Tensor  #: shape: [t, a]
 
 
-class BaseVPDataset(Dataset):
+class VPSubset(Subset):
+    r"""
+    TODO
+    """
+    def __getattr__(self, item):
+        return getattr(self.dataset, item)
+
+
+class VPDataset(Dataset):
     r"""
 
     Attributes:
@@ -40,7 +51,7 @@ class BaseVPDataset(Dataset):
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
-    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "_ready_for_usage", "ready_for_usage",
+    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "ready_for_usage",
                        "total_frames", "seq_len", "frame_offsets"]  #: TODO
 
     img_shape: (int, int, int) = NotImplemented  #: TODO
@@ -60,7 +71,7 @@ class BaseVPDataset(Dataset):
             **dataset_kwargs ():
         """
 
-        super(BaseVPDataset, self).__init__()
+        super(VPDataset, self).__init__()
 
         if split not in self.VALID_SPLITS:
             raise ValueError(f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}")
@@ -89,7 +100,7 @@ class BaseVPDataset(Dataset):
                 raise ValueError(f"for the parameter 'crop', only the following transforms are allowed: {CROPS}")
             transforms.append(crop)
 
-        # resize (also sets output_frame_shape)
+        # resize (also sets img_shape)
         img_size = dataset_kwargs.get("img_size", None)
         h, w, c = self.DATASET_FRAME_SHAPE
         if img_size is None:
@@ -113,19 +124,8 @@ class BaseVPDataset(Dataset):
             transforms.append(aug)
 
         # FINALIZE
-        self.transform = nn.Identity if len(transforms) == 0 else nn.Sequential(*transforms)
-        self._ready_for_usage = False  # becomes True once sequence length has been set
-
-    @property
-    def ready_for_usage(self):
-        r"""
-
-        Returns:
-
-        """
-        if isinstance(self, Subset):
-            return self.dataset._ready_for_usage
-        return self._ready_for_usage
+        self.transform = nn.Identity() if len(transforms) == 0 else nn.Sequential(*transforms)
+        self.ready_for_usage = False  # becomes True once sequence length has been set
 
     @property
     def config(self):
@@ -174,7 +174,7 @@ class BaseVPDataset(Dataset):
         self.seq_len = seq_len
         self.frame_offsets = range(0, (total_frames) * self.seq_step, self.seq_step)
         self._set_seq_len()
-        self._ready_for_usage = True
+        self.ready_for_usage = True
 
     def _set_seq_len(self):
         r"""Optional logic for datasets with specific logic
@@ -207,7 +207,7 @@ class BaseVPDataset(Dataset):
 
         Args:
             x ():
-            transform ():
+            transform (bool):
 
         Returns:
 
@@ -295,7 +295,7 @@ class BaseVPDataset(Dataset):
             default_ = self.__class__(split, **kwargs_)
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
-        except (FileNotFoundError, ValueError) as e:  # TODO other exceptions?
+        except (FileNotFoundError, ValueError, IndexError) as e:  # TODO other exceptions?
             return False
         return True
 
@@ -321,9 +321,10 @@ class BaseVPDataset(Dataset):
             f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured"
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", **dataset_args)
-            len_train = int(len(D_main) * cls.train_keep_ratio)
-            len_val = len(D_main) - len_train
-            D_train, D_val = torch.utils.data.random_split(D_main, [len_train, len_val])
+            len_main = len(D_main)
+            len_train = int(len_main * cls.train_keep_ratio)
+            len_val = len_main - len_train
+            D_train, D_val = _random_split(D_main, [len_train, len_val])
         else:
             D_train = cls("train", **dataset_args)
             D_val = cls("val", **dataset_args)
@@ -355,3 +356,25 @@ class BaseVPDataset(Dataset):
         D_train, D_val = cls.get_train_val(**dataset_args)
         D_test = cls.get_test(**dataset_args)
         return D_train, D_val, D_test
+
+
+def _random_split(dataset: VPDataset, lengths: Sequence[int],
+                  generator: Optional[Generator] = default_generator) -> List[VPSubset]:
+    r"""
+    Custom implementation of torch.utils.data.random_split that returns SubsetWrappers.
+
+    Randomly split a dataset into non-overlapping new datasets of given lengths.
+    Optionally fix the generator for reproducible results.
+
+    Args:
+        dataset (Dataset): Dataset to be split
+        lengths (sequence): lengths of splits to be produced
+        generator (Generator): Generator used for the random permutation.
+    """
+    # Cannot verify that dataset is Sized
+    if sum(lengths) != len(dataset):
+        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+
+    indices = randperm(sum(lengths), generator=generator).tolist()
+    return [VPSubset(dataset, indices[offset - length: offset])
+            for offset, length in zip(_accumulate(lengths), lengths)]

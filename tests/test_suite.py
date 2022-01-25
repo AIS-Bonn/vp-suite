@@ -10,7 +10,7 @@ The testing of all models and datasets is done in test_models.py and test_datase
 """
 
 dataset1 = "KTH"
-dataset2 = "MM"
+dataset2 = "P101"
 model1 = "non_conv"
 model2 = "simplev1"
 

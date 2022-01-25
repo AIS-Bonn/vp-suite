@@ -7,10 +7,10 @@ import torch
 from tqdm import tqdm
 from PIL import Image
 
-from vp_suite.base.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 
-class MovingMNISTDataset(BaseVPDataset):
+class MovingMNISTDataset(VPDataset):
     r"""
 
     """

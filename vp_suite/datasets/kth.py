@@ -6,10 +6,10 @@ import imageio
 import torchfile
 from pathlib import Path
 
-from vp_suite.base.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 
-class KTHActionsDataset(BaseVPDataset):
+class KTHActionsDataset(VPDataset):
     r"""
 
     Code by Angel Villar-Corrales, modified.

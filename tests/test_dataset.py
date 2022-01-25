@@ -10,7 +10,7 @@ def test_dataset(dataset_str):
     train_wrapper.set_seq_len(1, 1, 1)
     test_wrapper = DatasetWrapper(dataset_class, "test")
     test_wrapper.set_seq_len(1, 1, 1)
-    assert train_wrapper.frame_shape == test_wrapper.frame_shape
+    assert train_wrapper.img_shape == test_wrapper.img_shape
     assert train_wrapper.action_size == test_wrapper.action_size
     assert set(train_wrapper.datasets.keys()) == {"main", "train", "val"}
     assert set(test_wrapper.datasets.keys()) == {"main", "test"}
@@ -19,7 +19,6 @@ def test_dataset(dataset_str):
     for ex_ in example_data:
         assert isinstance(ex_, dict)
         assert set(ex_.keys()) == {"frames", "actions"}
-        assert ex_["frames"].shape[1] == train_wrapper.frame_shape[-1]
-        assert ex_["frames"].shape[2:] == train_wrapper.frame_shape[:2]
+        assert ex_["frames"].shape[-3:] == train_wrapper.img_shape
         if train_wrapper.action_size > 0:
             assert ex_["actions"].shape[-1] == train_wrapper.action_size

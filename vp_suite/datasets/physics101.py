@@ -8,7 +8,7 @@ import torchvision.transforms as TF
 from torchvision.io import read_video
 from pathlib import Path
 
-from vp_suite.base.base_dataset import BaseVPDataset, VPData
+from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_mp4
 
@@ -21,7 +21,7 @@ class CropUpperRight(torch.nn.Module):
         return img[:, :, :self.w, -self.w:]
 
 
-class Physics101Dataset(BaseVPDataset):
+class Physics101Dataset(VPDataset):
     r"""
 
     """
@@ -106,10 +106,10 @@ class Physics101Dataset(BaseVPDataset):
         d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))
-        if len(vid_filepaths) == 0:  # no data available
+        if len(vid_filepaths) == 0:  # no data available -> unpack tar
             tar_fname = "phys101_v1.0.tar"
             tar_path = str(d_path / tar_fname)
-            if not os.path.exists(tar_path):
+            if not os.path.exists(tar_path):  # no tar available -> download it
                 URL = f"http://phys101.csail.mit.edu/data/{tar_fname}"
                 from vp_suite.utils.utils import download_from_url
                 download_from_url(URL, tar_path)
