@@ -1,5 +1,5 @@
 import sys
-from typing import List
+from typing import List, Union
 from datetime import datetime
 import subprocess
 import shlex
@@ -93,6 +93,7 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
         raise ValueError(f"mismatching types for parameter '{attr_name}'")
 
     # if choices are given, check if val matches choice
+    # TODO check logic
     if choices is not None:
         # If multiple args are given, check each one of them
         if isinstance(attr_val, list) and not isinstance(choices, list):
@@ -105,8 +106,9 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
             raise ValueError(f"parameter '{attr_name}' is not one of the acceptable choices ({choices})")
     setattr(obj, attr_name, attr_val)
 
-def read_mp4(filepath: Path):
-    fp = str(filepath.resolve())
+def read_mp4(filepath: Union[Path, str]):
+    if isinstance(filepath, Path):
+        fp = str(filepath.resolve())
     cap = cv2.VideoCapture(fp)
     if not cap.isOpened():
         raise ValueError(f"opening MP4 file '{fp}' failed")

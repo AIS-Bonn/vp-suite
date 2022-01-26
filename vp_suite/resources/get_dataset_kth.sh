@@ -1,5 +1,10 @@
 #!/bin/bash
+
 TARGET_DIR=$1
+CLASSES="boxing handclapping handwaving jogging running walking"
+IMG_SIZE=64
+
+### DOWNLOAD ###
 if [ -z $TARGET_DIR ]
 then
   echo "Must specify target directory"
@@ -19,5 +24,13 @@ else
     unzip $TARGET_DIR/raw/"$c".zip -d $TARGET_DIR/raw/$c
     rm $TARGET_DIR/raw/"$c".zip
   done
-
 fi
+
+### CONVERT ###
+for class in $CLASSES; do
+	for fname in $TARGET_DIR/raw/$class/*; do
+		fname="$(basename -- $fname)"
+		mkdir -p $TARGET_DIR/processed/$class/${fname:0:-11}
+		ffmpeg -i $TARGET_DIR/raw/$class/${fname} -r 25 -f image2 -s ${IMG_SIZE}x${IMG_SIZE} $TARGET_DIR/processed/$class/${fname:0:-11}/image-%03d_${IMG_SIZE}x${IMG_SIZE}.png
+	done
+done
