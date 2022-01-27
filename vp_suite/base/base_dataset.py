@@ -51,7 +51,7 @@ class VPDataset(Dataset):
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
-    NON_CONFIG_VARS = ["functions", "NON_CONFIG_VARS", "ready_for_usage",
+    NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "ready_for_usage",
                        "total_frames", "seq_len", "frame_offsets"]  #: TODO
 
     img_shape: (int, int, int) = NotImplemented  #: TODO
@@ -172,7 +172,8 @@ class VPDataset(Dataset):
                              f"{{context frames: {context_frames}, pred frames: {pred_frames}, seq step: {seq_step}}}")
         self.total_frames = total_frames
         self.seq_len = seq_len
-        self.frame_offsets = range(0, (total_frames) * self.seq_step, self.seq_step)
+        self.seq_step = seq_step
+        self.frame_offsets = range(0, (total_frames) * seq_step, seq_step)
         self._set_seq_len()
         self.ready_for_usage = True
 
@@ -296,7 +297,7 @@ class VPDataset(Dataset):
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
         except (FileNotFoundError, ValueError, IndexError) as e:  # TODO other exceptions?
-            return False
+            raise e
         return True
 
     def download_and_prepare_dataset(self):
@@ -319,6 +320,8 @@ class VPDataset(Dataset):
         """
         assert cls.VALID_SPLITS == ["train", "test"] or cls.VALID_SPLITS == ["train", "val", "test"], \
             f"parameter 'VALID_SPLITS' of dataset class '{cls.__name__}' is ill-configured"
+
+        # CAUTION: datasets that need set_seq_len to be ready can't be split using _random_split()
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", **dataset_args)
             len_main = len(D_main)

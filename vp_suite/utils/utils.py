@@ -9,6 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 import cv2
 import numpy as np
+from torchvision.io import read_video
 
 
 def most(l: List[bool], factor=0.67):
@@ -84,6 +85,7 @@ def _check_optuna_config(optuna_cfg : dict):
         print("invalid optuna config")
 
 def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, choices=None):
+
     if required and attr_name not in kwarg_dict.keys():
         raise ValueError(f"missing required parameter '{attr_name}'")
 
@@ -93,10 +95,9 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
         raise ValueError(f"mismatching types for parameter '{attr_name}'")
 
     # if choices are given, check if val matches choice
-    # TODO check logic
     if choices is not None:
         # If multiple args are given, check each one of them
-        if isinstance(attr_val, list) and not isinstance(choices, list):
+        if isinstance(attr_val, list):
             for i, val_ in enumerate(attr_val):
                 if val_ not in choices:
                     raise ValueError(f"entry {i} of parameter '{attr_name}' is not "
@@ -104,25 +105,43 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
         # else, check if single argument is valid choice
         elif attr_val not in choices:
             raise ValueError(f"parameter '{attr_name}' is not one of the acceptable choices ({choices})")
+
     setattr(obj, attr_name, attr_val)
 
-def read_mp4(filepath: Union[Path, str]):
-    if isinstance(filepath, Path):
-        fp = str(filepath.resolve())
+def read_mp4(fp: Union[Path, str], img_size:(int, int)=None,
+             start_index=0, num_frames=-1):
+
+    if isinstance(fp, Path):
+        fp = str(fp.resolve())
     cap = cv2.VideoCapture(fp)
     if not cap.isOpened():
         raise ValueError(f"opening MP4 file '{fp}' failed")
 
-    frames = []
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            frames.append(frame)
-        else:
-            break
+    all_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    num_frames = num_frames if num_frames > 0 else (all_frames - start_index)
+    if start_index + num_frames > all_frames:
+        raise ValueError(f"invalid parameters for start index ({start_index}) and frames ({num_frames}) "
+                         f"because they exceed the video's total frame count ({all_frames})")
 
-    frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
-    return np.stack(frames, axis=0)   # [t, h, w, c]
+    collected_frames = []
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_index)
+    for _ in range(num_frames):
+        _, frame = cap.read()
+        collected_frames.append(frame)
+    cap.release()
+
+    if img_size is not None:
+        h, w = img_size
+        collected_frames = [cv2.resize(frame, (w, h)) for frame in collected_frames]
+    collected_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in collected_frames]
+    return np.stack(collected_frames, axis=0)   # [t, h, w, c]
+
+def get_frame_count(fp: Union[Path, str]):
+    if isinstance(fp, Path):
+        fp = str(fp.resolve())
+    cap = cv2.VideoCapture(fp)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    return length
 
 def get_public_attrs(obj, calling_fn_name: str):
     r"""
