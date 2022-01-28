@@ -110,7 +110,8 @@ class KTHActionsDataset(VPDataset):
         Returns:
 
         """
-        from vp_suite.utils.utils import run_command
+        from vp_suite.utils.utils import run_shell_command
         import vp_suite.constants as constants
-        get_kth_command = f"{(constants.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} {self.DEFAULT_DATA_DIR}"
-        run_command(get_kth_command, print_to_console=False)
+        get_kth_command = f"{(constants.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} " \
+                          f"{str(self.DEFAULT_DATA_DIR.resolve())}"
+        run_shell_command(get_kth_command)

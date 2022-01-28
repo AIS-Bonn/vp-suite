@@ -59,7 +59,7 @@ echo "\nunpacking training dataset..."
 FLIST="${TARGET_DIR}/training/subject/s*/*.tgz"
 SUBJECTS="1 5 6 7 8 9 11"
 for file in $FLIST; do
-  tar -zxvf $file
+  tar -zxf $file
 done
 rm -r ${TARGET_DIR}/training/subject/*
 for subject in $SUBJECTS; do
@@ -71,7 +71,7 @@ echo "\nunpacking testing dataset..."
 FLIST="${TARGET_DIR}/testing/subject/s*/*.tgz"
 SUBJECTS="1 7 8 9"
 for file in $FLIST; do
-  tar -zxvf $file
+  tar -zxf $file
 done
 rm -r ${TARGET_DIR}/testing/subject/*
 for subject in $SUBJECTS; do

@@ -55,7 +55,7 @@ class VPDataset(Dataset):
                        "total_frames", "seq_len", "frame_offsets"]  #: TODO
 
     img_shape: (int, int, int) = NotImplemented  #: TODO
-    train_keep_ratio: float = 0.8  #: TODO
+    train_to_val_ratio: float = 0.8  #: The ratio of files that will be training data (rest will be validation data)
     transform: nn.Module = None  #: TODO
     split: str = None  #: TODO
     seq_step: int = 1  #: TODO
@@ -297,7 +297,7 @@ class VPDataset(Dataset):
             default_.set_seq_len(1, 1, 1)
             _ = default_[0]
         except (FileNotFoundError, ValueError, IndexError) as e:  # TODO other exceptions?
-            raise e
+            return False
         return True
 
     def download_and_prepare_dataset(self):
@@ -325,7 +325,7 @@ class VPDataset(Dataset):
         if cls.VALID_SPLITS == ["train", "test"]:
             D_main = cls("train", **dataset_args)
             len_main = len(D_main)
-            len_train = int(len_main * cls.train_keep_ratio)
+            len_train = int(len_main * cls.train_to_val_ratio)
             len_val = len_main - len_train
             D_train, D_val = _random_split(D_main, [len_train, len_val])
         else:

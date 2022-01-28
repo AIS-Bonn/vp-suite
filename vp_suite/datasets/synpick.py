@@ -28,7 +28,7 @@ class SynpickVideoDataset(VPDataset):
     ACTION_SIZE = 3
     DATASET_FRAME_SHAPE = (135, 240, 3)
 
-    train_keep_ratio = 0.9
+    train_to_val_ratio = 0.9
 
     def __init__(self, split, **dataset_kwargs):
         r"""
@@ -211,7 +211,7 @@ class SynpickVideoDataset(VPDataset):
 
         elif not os.path.exists(str(d_path_processed)):
             print("preparing trajectory files...")
-            prepare_synpick(d_path_raw, d_path_processed, seed, resize_ratio, self.TRAIN_KEEP_RATIO)
+            prepare_synpick(d_path_raw, d_path_processed, seed, resize_ratio, self.train_to_val_ratio)
 
 # === SynPick data preparation tools ===========================================
 
@@ -228,7 +228,7 @@ def download_synpick(d_path_raw):
                               "Please contact the paper authors to resolve this issue.")
     # d_path_raw.mkdir(parents=True)
 
-def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
+def prepare_synpick(in_path, out_path, seed, resize_ratio, train_to_val_ratio):
     r"""
 
     Args:
@@ -236,7 +236,7 @@ def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
         out_path ():
         seed ():
         resize_ratio ():
-        train_keep_ratio ():
+        train_to_val_ratio ():
 
     Returns:
 
@@ -253,7 +253,7 @@ def prepare_synpick(in_path, out_path, seed, resize_ratio, train_keep_ratio):
     num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
     train_eps = [i for i in range(num_ep)]
     random.shuffle(train_eps)
-    cut = int(num_ep * train_keep_ratio)
+    cut = int(num_ep * train_to_val_ratio)
     train_eps = train_eps[:cut]
 
     # split rgb files into train and val by episode number only , as we need contiguous motions for video
@@ -308,11 +308,11 @@ def copy_synpick_imgs(all_fps, out_path, resize_ratio):
     for fps, op in zip(all_fps, all_out_paths):
         for fp in tqdm(fps, postfix=op.parent.stem + "/" + op.stem):
             fp = Path(fp)
-            img = cv2.imread(str(fp.absolute()), cv2.IMREAD_COLOR if "jpg" in fp.suffix else cv2.IMREAD_GRAYSCALE)
+            img = cv2.imread(str(fp.resolve()), cv2.IMREAD_COLOR if "jpg" in fp.suffix else cv2.IMREAD_GRAYSCALE)
             resized_img = cv2.resize(img, None, fx=resize_ratio, fy=resize_ratio, interpolation=cv2.INTER_AREA)
             ep_number = ''.join(filter(str.isdigit, fp.parent.parent.stem)).zfill(6)
             out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
-            cv2.imwrite(str((op / out_fp).absolute()), resized_img)
+            cv2.imwrite(str((op / out_fp).resolve()), resized_img)
 
 def copy_synpick_scene_gts(all_fps, out_path):
     r"""

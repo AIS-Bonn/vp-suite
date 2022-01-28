@@ -29,13 +29,14 @@ class Physics101Dataset(VPDataset):
     DEFAULT_DATA_DIR = constants.DATA_PATH / "phys101"
     AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #, "Kinect_FullDepth_1", "Kinect_RGB-D_1"]
     AVAILABLE_SUBSEQ = ["start", "middle", "end"]
-    TRAIN_TO_TEST_RATIO = 0.8
-    TRAIN_TEST_SEED = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
     ACTION_SIZE = 0  #: No actions given
     DATASET_FRAME_SHAPE = (1080, 1920, 3) # for cams without depth information
-    DEFAULT_CAMERA = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
-    DEFAULT_SUBSEQ = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
+
+    camera = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
+    subseq = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
+    trainval_to_test_ratio = 0.8
+    trainval_test_seed = 1612  #: The seed to separate training data from test data; Value from the 'Noether Networks' code
 
     def __init__(self, split, **dataset_kwargs):
         r"""
@@ -45,17 +46,17 @@ class Physics101Dataset(VPDataset):
             **dataset_kwargs ():
         """
         super(Physics101Dataset, self).__init__(split, **dataset_kwargs)
-        self.NON_CONFIG_VARS.extend(["vid_filepaths"])
+        self.NON_CONFIG_VARS.extend(["AVAILABLE_CAMERAS", "AVAILABLE_SUBSEQ", "vid_filepaths"])
 
         # set attributes
-        set_from_kwarg(self, "camera", self.DEFAULT_CAMERA, dataset_kwargs, choices=self.AVAILABLE_CAMERAS)
-        set_from_kwarg(self, "subseq", self.DEFAULT_SUBSEQ, dataset_kwargs, choices=self.AVAILABLE_SUBSEQ)
-        set_from_kwarg(self, "train_test_seed", self.TRAIN_TEST_SEED, dataset_kwargs)
+        set_from_kwarg(self, "camera", self.camera, dataset_kwargs, choices=self.AVAILABLE_CAMERAS)
+        set_from_kwarg(self, "subseq", self.subseq, dataset_kwargs, choices=self.AVAILABLE_SUBSEQ)
+        set_from_kwarg(self, "train_test_seed", self.trainval_test_seed, dataset_kwargs)
 
         # get video filepaths for train/val or test
         self.vid_filepaths: [Path] = sorted(list(Path(self.data_dir).rglob(f"**/{self.camera}.mp4")))
-        random.Random(self.train_test_seed).shuffle(self.vid_filepaths)
-        slice_idx = int(len(self.vid_filepaths) * self.TRAIN_TO_TEST_RATIO)
+        random.Random(self.trainval_test_seed).shuffle(self.vid_filepaths)
+        slice_idx = int(len(self.vid_filepaths) * self.trainval_to_test_ratio)
         if self.split == "train":
             self.vid_filepaths = self.vid_filepaths[:slice_idx]
         else:

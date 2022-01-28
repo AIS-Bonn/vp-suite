@@ -21,7 +21,7 @@ class MovingMNISTDataset(VPDataset):
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
-    train_keep_ratio = 0.96  #: big dataset -> val can be smaller
+    train_to_val_ratio = 0.96  #: big dataset -> val can be smaller
 
     def __init__(self, split, **dataset_kwargs):
         r"""

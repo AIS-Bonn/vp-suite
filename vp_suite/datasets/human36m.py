@@ -1,14 +1,10 @@
 import os
 import json
 import random
-import numpy as np
-import torch
-import imageio
-import torchfile
-from tqdm import tqdm
-import torchvision.transforms as TF
-from torchvision.io import read_video
 from pathlib import Path
+
+import torch
+from tqdm import tqdm
 
 from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
@@ -31,7 +27,7 @@ class Human36MDataset(VPDataset):
                      'Posing', 'Purchases', 'Sitting', 'SittingDown', 'Smoking', 'TakingPhoto',
                      'Waiting', 'WalkDog', 'WalkTogether', 'Walking', 'WalkingDog']
 
-    train_keep_ratio = 0.96  #: big dataset -> val can be smaller
+    train_to_val_ratio = 0.96  #: big dataset -> val can be smaller
     train_val_seed = 1234
     scenarios = None
 
@@ -43,7 +39,7 @@ class Human36MDataset(VPDataset):
             **dataset_kwargs ():
         """
         super(Human36MDataset, self).__init__(split, **dataset_kwargs)
-        self.NON_CONFIG_VARS.extend(["vid_frame_counts", "vid_filepaths_with_frame_index",
+        self.NON_CONFIG_VARS.extend(["sequences", "sequences_with_frame_index",
                                      "ALL_SCENARIOS"])
 
         # set attributes
@@ -51,26 +47,26 @@ class Human36MDataset(VPDataset):
         set_from_kwarg(self, "train_val_seed", self.train_val_seed, dataset_kwargs)
 
         # get video filepaths for train, val or test
-        split_ing = "testing" if split == "test" else "training"
+        split_ing = "testing" if self.split == "test" else "training"
         self.data_dir = str((Path(self.data_dir) / (split_ing)).resolve())
         with open(os.path.join(self.data_dir, "frame_counts.json"), "r") as frame_counts_file:
-            self.vid_frame_counts = json.load(frame_counts_file)
+            self.sequences = json.load(frame_counts_file)
 
         # remove all videos that don't correspond to one of the selected scenarios
-        self.vid_frame_counts = {vfp: f for vfp, f in self.vid_frame_counts.items()
-                                 if vfp.split("/")[-1].split(".")[0].split(" ")[0] in self.scenarios}
+        self.sequences = {vfp: f for vfp, f in self.sequences.items()
+                          if vfp.split("/")[-1].split(".")[0].split(" ")[0] in self.scenarios}
 
         # if creating training or test set, random-permute and slice
-        if split in ["train", "val"]:
-            vfc_list = list(self.vid_frame_counts.items())
-            slice_idx = int(len(vfc_list) * self.train_keep_ratio)
+        if self.split in ["train", "val"]:
+            vfc_list = list(self.sequences.items())
+            slice_idx = int(len(vfc_list) * self.train_to_val_ratio)
             random.Random(self.train_val_seed).shuffle(vfc_list)
-            if split == "train":
-                self.vid_frame_counts = dict(vfc_list[:slice_idx])
+            if self.split == "train":
+                self.sequences = dict(vfc_list[:slice_idx])
             else:
-                self.vid_frame_counts = dict(vfc_list[slice_idx:])
+                self.sequences = dict(vfc_list[slice_idx:])
 
-        self.vid_filepaths_with_frame_index = []  # mock value, must not be used for iteration till sequence length is set
+        self.sequences_with_frame_index = []  # mock value, must not be used for iteration till sequence length is set
 
     def _set_seq_len(self):
         r"""
@@ -79,12 +75,12 @@ class Human36MDataset(VPDataset):
         Returns:
 
         """
-        for vfp, frame_count in self.vid_frame_counts.items():
+        for vfp, frame_count in self.sequences.items():
             valid_idx = range(self.SKIP_FIRST_N,
                               frame_count - self.seq_len + 1,
                               self.seq_len + self.seq_step - 1)
             for idx in valid_idx:
-                self.vid_filepaths_with_frame_index.append((vfp, idx))
+                self.sequences_with_frame_index.append((vfp, idx))
 
     def __getitem__(self, i) -> VPData:
         r"""
@@ -95,12 +91,11 @@ class Human36MDataset(VPDataset):
         Returns:
 
         """
-        # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
-        vid_fp, start_idx = self.vid_filepaths_with_frame_index[i]
+        vid_fp, start_idx = self.sequences_with_frame_index[i]
         vid = read_mp4(vid_fp, img_size=self.img_shape[1:],
                        start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
         vid = vid[::self.seq_step]  # [t, h, w, c]
-        vid = self.preprocess(vid)
+        vid = self.preprocess(vid)  # [t, c, h, w]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
         data = { "frames": vid, "actions": actions }
@@ -112,7 +107,7 @@ class Human36MDataset(VPDataset):
         Returns:
 
         """
-        return len(self.vid_filepaths_with_frame_index)
+        return len(self.sequences_with_frame_index)
 
     def download_and_prepare_dataset(self):
         r"""
@@ -124,11 +119,11 @@ class Human36MDataset(VPDataset):
         d_path.mkdir(parents=True, exist_ok=True)
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))
         if len(vid_filepaths) == 0:  # no data available -> download data and unpack
-            from vp_suite.utils.utils import run_command
+            from vp_suite.utils.utils import run_shell_command
             import vp_suite.constants as constants
-            print("Downloading and extracting Human 3.6M - Videos...")
+            print(f"Downloading and extracting {self.NAME} - Videos...")
             prep_script = (constants.PKG_RESOURCES / 'get_dataset_human36m.sh').resolve()
-            run_command(f"{prep_script} {self.DEFAULT_DATA_DIR}", print_to_console=True)
+            run_shell_command(f"{prep_script} {self.DEFAULT_DATA_DIR}")
 
         # open all videos to get their frame counts (speeds up dataset creation later)
         print(f"Analyzing video frame counts...")
