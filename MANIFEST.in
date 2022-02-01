@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
 include requirements.txt
+include docs/requirements.txt
 
 recursive-include vp_suite/resources *
