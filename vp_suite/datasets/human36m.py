@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
-from vp_suite.utils.utils import set_from_kwarg, get_frame_count, read_mp4
+from vp_suite.utils.utils import set_from_kwarg, get_frame_count, read_video
 
 
 class Human36MDataset(VPDataset):
@@ -92,13 +92,13 @@ class Human36MDataset(VPDataset):
 
         """
         vid_fp, start_idx = self.sequences_with_frame_index[i]
-        vid = read_mp4(vid_fp, img_size=self.img_shape[1:],
-                       start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
+        vid = read_video(vid_fp, img_size=self.img_shape[1:],
+                         start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
         vid = vid[::self.seq_step]  # [t, h, w, c]
         vid = self.preprocess(vid)  # [t, c, h, w]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = { "frames": vid, "actions": actions }
+        data = {"frames": vid, "actions": actions}
         return data
 
     def __len__(self):

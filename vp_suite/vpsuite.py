@@ -373,9 +373,9 @@ class VPSuite:
 
         """
         from functools import partial
-        from vp_suite.utils.utils import _check_optuna_config
+        from vp_suite.utils.utils import check_optuna_config
         run_config = self._prepare_run(**run_kwargs)
-        _check_optuna_config(optuna_config)
+        check_optuna_config(optuna_config)
         run_config["optuna"] = optuna_config
         try:
             import optuna

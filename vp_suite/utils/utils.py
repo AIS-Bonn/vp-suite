@@ -9,7 +9,6 @@ from pathlib import Path
 from tqdm import tqdm
 import cv2
 import numpy as np
-from torchvision.io import read_video
 
 
 def most(l: List[bool], factor=0.67):
@@ -18,14 +17,17 @@ def most(l: List[bool], factor=0.67):
     '''
     return sum(l) >= factor * len(l)
 
+
 def timestamp(program):
     """ Obtains a timestamp of the current system time in a human-readable way """
 
     timestamp = str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
     return f"{program}_{timestamp}"
 
+
 def run_shell_command(command):
     subprocess.check_call(command, shell=True)
+
 
 class TqdmUpTo(tqdm):
     """Alternative Class-based version of the above.
@@ -47,6 +49,7 @@ class TqdmUpTo(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)  # will also set self.n = b * bsize
 
+
 def download_from_url(url: str, dst_path : str):
     if sys.version_info[0] == 2:
         from urllib import urlretrieve
@@ -57,7 +60,8 @@ def download_from_url(url: str, dst_path : str):
     with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=filename) as t:
         urlretrieve(url, dst_path, reporthook=t.update_to)
 
-def _check_optuna_config(optuna_cfg : dict):
+
+def check_optuna_config(optuna_cfg : dict):
 
     try:
         for parameter, p_dict in optuna_cfg.items():
@@ -75,6 +79,7 @@ def _check_optuna_config(optuna_cfg : dict):
                     raise ValueError
     except ValueError:
         print("invalid optuna config")
+
 
 def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, choices=None):
 
@@ -100,8 +105,9 @@ def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, cho
 
     setattr(obj, attr_name, attr_val)
 
-def read_mp4(fp: Union[Path, str], img_size:(int, int)=None,
-             start_index=0, num_frames=-1):
+
+def read_video(fp: Union[Path, str], img_size: (int, int) = None,
+               start_index=0, num_frames=-1):
 
     if isinstance(fp, Path):
         fp = str(fp.resolve())
@@ -128,12 +134,14 @@ def read_mp4(fp: Union[Path, str], img_size:(int, int)=None,
     collected_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in collected_frames]
     return np.stack(collected_frames, axis=0)   # [t, h, w, c]
 
+
 def get_frame_count(fp: Union[Path, str]):
     if isinstance(fp, Path):
         fp = str(fp.resolve())
     cap = cv2.VideoCapture(fp)
     length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     return length
+
 
 def get_public_attrs(obj, calling_fn_name: str):
     r"""

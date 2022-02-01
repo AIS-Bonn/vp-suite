@@ -20,16 +20,11 @@ class KITTIRawDataset(VPDataset):
     MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest)
     ACTION_SIZE = 0  #: No actions given
     DATASET_FRAME_SHAPE = (375, 1242, 3)
-    FPS = 10
-    AVAILABLE_CAMERAS = ['image_00',  # greyscale left
-                         'image_01',  # greyscale right
-                         'image_02',  # color left
-                         'image_03']  # color right
-
-    # TODO from here
+    FPS = 10  #: TODO
+    AVAILABLE_CAMERAS = [f"image_{i:02d}" for i in range(4)]  #: cameras: [greyscale_left, greyscale_right, color_left, color_right]
 
     camera = "image_02"  #: TODO
-    trainval_to_test_ratio = 0.8
+    trainval_to_test_ratio = 0.8  #: TODO
     train_to_val_ratio = 0.9  #: big dataset -> val can be smaller
     trainval_test_seed = 1612  #: The seed to separate training data from test data; Taken from the Noether Networks code
     train_val_seed = 1234  #: The seed to separate training/validation data from the previously split training data
@@ -49,12 +44,12 @@ class KITTIRawDataset(VPDataset):
         set_from_kwarg(self, "camera", self.camera, dataset_kwargs)
         set_from_kwarg(self, "trainval_to_test_ratio", self.trainval_to_test_ratio, dataset_kwargs)
         set_from_kwarg(self, "train_to_val_ratio", self.train_to_val_ratio, dataset_kwargs)
-        set_from_kwarg(self, "train_test_seed", self.train_val_seed, dataset_kwargs)
+        set_from_kwarg(self, "trainval_test_seed", self.trainval_test_seed, dataset_kwargs)
         set_from_kwarg(self, "train_val_seed", self.train_val_seed, dataset_kwargs)
 
         # get video filepaths
         dd = Path(self.data_dir)
-        sequence_dirs = [sub for dir in dd.iterdir() for sub in dir.iterdir() if dd.is_dir() and sub.is_dir()]
+        sequence_dirs = [sub for d in dd.iterdir() for sub in d.iterdir() if dd.is_dir() and sub.is_dir()]
         if len(sequence_dirs) < 3:
             raise ValueError(f"Dataset {self.NAME}: found less than 3 sequences "
                              f"-> can't split dataset -> can't use it")
@@ -89,7 +84,7 @@ class KITTIRawDataset(VPDataset):
         """
         for sequence_path, frame_count in self.sequences:
             valid_start_idx = range(0, frame_count - self.seq_len + 1,
-                              self.seq_len + self.seq_step - 1)
+                                    self.seq_len + self.seq_step - 1)
             for idx in valid_start_idx:
                 self.sequences_with_frame_index.append((sequence_path, idx))
 
@@ -110,7 +105,7 @@ class KITTIRawDataset(VPDataset):
         vid = self.preprocess(vid)  # [t, *self.img_shape]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = { "frames": vid, "actions": actions }
+        data = {"frames": vid, "actions": actions}
         return data
 
     def __len__(self):
@@ -129,10 +124,12 @@ class KITTIRawDataset(VPDataset):
         """
         d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
-        try:  # to find images in the data folder
+
+        # download and extract sequences if we can't find them in our folder yet
+        try:
             _ = next(d_path.rglob(f"**/*.png"))
             print(f"Found image data in {str(d_path.resolve())} -> Won't download {self.NAME}")
-        except StopIteration:  # no data available -> download data and unpack
+        except StopIteration:
             from vp_suite.utils.utils import run_shell_command
             import vp_suite.constants as constants
             prep_script = (constants.PKG_RESOURCES / 'get_dataset_kitti_raw.sh').resolve()

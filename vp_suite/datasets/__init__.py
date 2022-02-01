@@ -9,6 +9,7 @@ from vp_suite.datasets.synpick import SynpickVideoDataset
 from vp_suite.datasets.physics101 import Physics101Dataset
 from vp_suite.datasets.human36m import Human36MDataset
 from vp_suite.datasets.kitti_raw import KITTIRawDataset
+from vp_suite.datasets.caltech_pedestrian import CaltechPedestrianDataset
 
 DATASET_CLASSES = {
     "MM": MovingMNISTDataset,
@@ -18,5 +19,6 @@ DATASET_CLASSES = {
     "P101": Physics101Dataset,
     "H36M": Human36MDataset,
     "KITTI": KITTIRawDataset,
+    "CP": CaltechPedestrianDataset,
 }  #: a mapping of all the datasets available for use.
 AVAILABLE_DATASETS = DATASET_CLASSES.keys()

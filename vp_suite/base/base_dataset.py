@@ -50,7 +50,7 @@ class VPDataset(Dataset):
     VALID_SPLITS = ["train", "test"]  #: the valid arguments for specifying splits.
     MIN_SEQ_LEN: int = NotImplemented  #: TODO
     ACTION_SIZE: int = NotImplemented  #: TODO
-    DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: TODO
+    DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: shape of a single frame in the dataset (height, width, channels)
     NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "ready_for_usage",
                        "total_frames", "seq_len", "frame_offsets"]  #: TODO
 

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
-from vp_suite.utils.utils import set_from_kwarg, read_mp4
+from vp_suite.utils.utils import set_from_kwarg, read_video
 
 class CropUpperRight(torch.nn.Module):
     def __init__(self, w):
@@ -72,7 +72,7 @@ class Physics101Dataset(VPDataset):
 
         """
         # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
-        vid = read_mp4(self.vid_filepaths[i])  # [T, h, w, c]
+        vid = read_video(self.vid_filepaths[i])  # [T, h, w, c]
         if self.seq_step > 1:
             vid = vid[::self.seq_step]  # [t, h, w, c]
 
