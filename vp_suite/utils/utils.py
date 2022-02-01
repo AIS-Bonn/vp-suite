@@ -117,8 +117,10 @@ def read_video(fp: Union[Path, str], img_size: (int, int) = None,
 
     collected_frames = []
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_index)
-    for _ in range(num_frames):
-        _, frame = cap.read()
+    while num_frames < 0 or len(collected_frames) < num_frames:
+        ret, frame = cap.read()
+        if not ret:
+            break
         collected_frames.append(frame)
     cap.release()
 
