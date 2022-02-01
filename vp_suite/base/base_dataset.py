@@ -300,7 +300,8 @@ class VPDataset(Dataset):
             return False
         return True
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
         Downloads the specific dataset, prepares it for the video prediction task (if needed)
         and stores it in a default location in the 'data/' folder.

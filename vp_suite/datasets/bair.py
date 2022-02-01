@@ -74,14 +74,15 @@ class BAIRPushingDataset(VPDataset):
         data = { "frames": rgb, "actions": actions }
         return data
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
 
         Returns:
 
         """
 
-        d_path = self.DEFAULT_DATA_DIR
+        d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         ds_path = d_path / "softmotion30_44k"
         if not os.path.exists(str(ds_path)):

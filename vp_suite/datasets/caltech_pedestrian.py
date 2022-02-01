@@ -57,7 +57,7 @@ class CaltechPedestrianDataset(VPDataset):
             if len(sequences) < 2:
                 raise ValueError(f"Dataset {self.NAME}: didn't find enough train/val sequences "
                                  f"-> can't use dataset")
-            slice_idx = max(1, int(len(sequences) * self.trainval_to_test_ratio))
+            slice_idx = max(1, int(len(sequences) * self.train_to_val_ratio))
             random.Random(self.train_val_seed).shuffle(sequences)
             if self.split == "train":
                 sequences = sequences[:slice_idx]
@@ -106,24 +106,25 @@ class CaltechPedestrianDataset(VPDataset):
         """
         return len(self.sequences_with_frame_index)
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
 
         Returns:
 
         """
-        d_path = self.DEFAULT_DATA_DIR
+        d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
 
         # download and extract sequences if we can't find them in our folder yet
         try:
             _ = next(d_path.rglob(f"**/*.seq"))
-            print(f"Found sequence data in {str(d_path.resolve())} -> Won't download {self.NAME}")
+            print(f"Found sequence data in {str(d_path.resolve())} -> Won't download {cls.NAME}")
         except StopIteration:
             from vp_suite.utils.utils import run_shell_command
             import vp_suite.constants as constants
             prep_script = (constants.PKG_RESOURCES / 'get_dataset_caltech_pedestrian.sh').resolve()
-            run_shell_command(f"{prep_script} {self.DEFAULT_DATA_DIR}")
+            run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")
 
         # pre-count frames of all sequences if not yet done so (makes data fetching faster later on)
         frame_count_path = d_path / "frame_counts.json"

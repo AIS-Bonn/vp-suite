@@ -152,6 +152,6 @@ class DatasetWrapper:
         self.datasets["main"].set_seq_len(context_frames, pred_frames, seq_step)
 
         # set the seq_len for val_data as well if it's a separate dataset
-        if self.is_training_set() and not self.val_data.ready_for_usage:
+        if self.is_training_set() and not isinstance(self.val_data, Subset):
             self.val_data.set_seq_len(context_frames, pred_frames, seq_step)
         self.is_ready = True

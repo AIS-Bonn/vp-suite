@@ -115,12 +115,6 @@ def read_video(fp: Union[Path, str], img_size: (int, int) = None,
     if not cap.isOpened():
         raise ValueError(f"opening MP4 file '{fp}' failed")
 
-    all_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    num_frames = num_frames if num_frames > 0 else (all_frames - start_index)
-    if start_index + num_frames > all_frames:
-        raise ValueError(f"invalid parameters for start index ({start_index}) and frames ({num_frames}) "
-                         f"because they exceed the video's total frame count ({all_frames})")
-
     collected_frames = []
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_index)
     for _ in range(num_frames):

@@ -101,7 +101,8 @@ class KTHActionsDataset(VPDataset):
         """
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
 
         Downloads and parepares the KTH datasets, using bash scripts from https://github.com/edenton/svg
@@ -113,5 +114,5 @@ class KTHActionsDataset(VPDataset):
         from vp_suite.utils.utils import run_shell_command
         import vp_suite.constants as constants
         get_kth_command = f"{(constants.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} " \
-                          f"{str(self.DEFAULT_DATA_DIR.resolve())}"
+                          f"{str(cls.DEFAULT_DATA_DIR.resolve())}"
         run_shell_command(get_kth_command)

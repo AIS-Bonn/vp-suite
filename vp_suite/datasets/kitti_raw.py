@@ -116,21 +116,22 @@ class KITTIRawDataset(VPDataset):
         """
         return len(self.sequences_with_frame_index)
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
 
         Returns:
 
         """
-        d_path = self.DEFAULT_DATA_DIR
+        d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
 
         # download and extract sequences if we can't find them in our folder yet
         try:
             _ = next(d_path.rglob(f"**/*.png"))
-            print(f"Found image data in {str(d_path.resolve())} -> Won't download {self.NAME}")
+            print(f"Found image data in {str(d_path.resolve())} -> Won't download {cls.NAME}")
         except StopIteration:
             from vp_suite.utils.utils import run_shell_command
             import vp_suite.constants as constants
             prep_script = (constants.PKG_RESOURCES / 'get_dataset_kitti_raw.sh').resolve()
-            run_shell_command(f"{prep_script} {self.DEFAULT_DATA_DIR}")
+            run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")

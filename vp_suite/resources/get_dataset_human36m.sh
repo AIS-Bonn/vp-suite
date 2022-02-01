@@ -9,6 +9,14 @@ if [ -z $TARGET_DIR ]; then
   exit 1
 fi
 
+if [ ! -d "${TARGET_DIR}/training" ]; then
+  mkdir -p "${TARGET_DIR}/training"
+fi
+
+if [ ! -d "${TARGET_DIR}/testing" ]; then
+  mkdir -p "${TARGET_DIR}/testing"
+fi
+
 BASEURL='http://vision.imar.ro/human3.6m/filebrowser.php?download=1&filepath='
 DATATYPE="Videos"
 
@@ -18,62 +26,57 @@ read -s -t 300 -p "Enter password: " password
 
 # prep
 rm -f cookies.txt checklogin.php
-wget --no-check-certificate --keep-session-cookies --save-cookies cookies.txt\
- --post-data username=${username}\&password=${password}\
- https://vision.imar.ro/human3.6m/checklogin.php
+wget --no-check-certificate --keep-session-cookies --save-cookies cookies.txt \
+  --post-data username=${username}\&password=${password} \
+  https://vision.imar.ro/human3.6m/checklogin.php
 
-# Download Training dataset by subject
-TRAIN_SUBJECTS="1,1 6,5 7,6 2,7 3,8 4,9 5,11"
-for subject in $TRAIN_SUBJECTS; do
-  IFS=',' read -a subj <<< "${subject}"
-  fdir=$TARGET_DIR/training/subject/s${subj[1]}/
-  mkdir -p $fdir
-  fname_url="&filename=SubjectSpecific_${subj[0]}.tgz&downloadname=S${subj[1]}"
-  src="${BASEURL}${DATATYPE}${fname_url}"
-  dst="${fdir}${DATATYPE}.tgz"
-  echo $dst
-  if [ ! -f $dst ]; then
-    wget --no-check-certificate --load-cookies cookies.txt $src -O $dst
+# first index specifies download index, second index specifies actual subject id.
+# NOTE: "testing,4,10" is omitted since for subject 10, no videos are available
+SUBJECTS=(
+  "training,1,1"
+  "training,6,5"
+  "training,7,6"
+  "training,2,7"
+  "training,3,8"
+  "training,4,9"
+  "training,5,11"
+  "testing,1,2"
+  "testing,2,3"
+  "testing,3,4"
+  #"testing,4,10"
+)
+
+# download dataset by subject
+for subject in "${SUBJECTS[@]}"; do
+  IFS=',' read -a subj <<<"${subject}"
+  is_test=""
+  if [ "${subj[0]}" == "testing" ]; then
+    is_test="Rest"
   fi
-done
-
-# Download Testing dataset by subject
-TEST_SUBJECTS="1,2 2,3 3,4 4,10"
-for subject in $TEST_SUBJECTS; do
-  IFS=',' read -a subj <<< "${subject}"
-  fdir=$TARGET_DIR/testing/subject/s${subj[1]}/
-  mkdir -p $fdir
-  fname_url="&filename=SubjectSpecific_${subj[0]}.tgz&downloadname=S${subj[1]}"
-  src="${BASEURL}${DATATYPE}${fname_url}"
-  dst="${fdir}${DATATYPE}.tgz"
-  if [ ! -f $dst ]; then
-    wget --no-check-certificate --load-cookies cookies.txt $src -O $dst
+  tar_url="&filename=SubjectSpecific${is_test}_${subj[1]}.tgz&downloadname=S${subj[2]}"
+  src="${BASEURL}${DATATYPE}${tar_url}"
+  dst="${TARGET_DIR}/${subj[0]}/subject/s${subj[2]}"
+  mkdir -p "${dst}"
+  dst_tar="${dst}/${DATATYPE}.tgz"
+  if [ ! -f "${dst}" ]; then
+    wget --no-check-certificate --load-cookies cookies.txt "${src}" -O "${dst_tar}"
   fi
 done
 
 rm cookies.txt checklogin.php
 
-### UNPACK DATASET ###
-# training dataset
-echo "\nunpacking training dataset..."
-FLIST="${TARGET_DIR}/training/subject/s*/*.tgz"
-SUBJECTS="1 5 6 7 8 9 11"
-for file in $FLIST; do
-  tar -zxf $file
-done
-rm -r ${TARGET_DIR}/training/subject/*
-for subject in $SUBJECTS; do
-  mv -f S${subject} ${TARGET_DIR}/training/subject/
-done
-
-# unpack testing dataset
-echo "\nunpacking testing dataset..."
-FLIST="${TARGET_DIR}/testing/subject/s*/*.tgz"
-SUBJECTS="1 7 8 9"
-for file in $FLIST; do
-  tar -zxf $file
-done
-rm -r ${TARGET_DIR}/testing/subject/*
-for subject in $SUBJECTS; do
-  mv -f S${subject} ${TARGET_DIR}/testing/subject/
+# unpack training dataset by subject
+TAR_FILES="${TARGET_DIR}/*/subject/s*/${DATATYPE}.tgz"
+for tar_file in $TAR_FILES; do
+  tar_dir="$(dirname "${tar_file}")"
+  if [ ! -d "${tar_dir}/${DATATYPE}" ]; then
+    echo "unpacking ${tar_file} to ${tar_dir}"
+    tar -zxf "${tar_file}" -C "${tar_dir}"
+  fi
+  S_dir="${tar_dir}/S*"
+  for S_d in ${S_dir}; do
+    mv "${S_d}/${DATATYPE}" "${tar_dir}"
+    rm -r "${S_d}"
+  done
+  rm "${tar_file}"
 done

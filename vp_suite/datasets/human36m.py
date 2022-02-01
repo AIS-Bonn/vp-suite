@@ -109,21 +109,22 @@ class Human36MDataset(VPDataset):
         """
         return len(self.sequences_with_frame_index)
 
-    def download_and_prepare_dataset(self):
+    @classmethod
+    def download_and_prepare_dataset(cls):
         r"""
 
         Returns:
 
         """
-        d_path = self.DEFAULT_DATA_DIR
+        d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))
         if len(vid_filepaths) == 0:  # no data available -> download data and unpack
             from vp_suite.utils.utils import run_shell_command
             import vp_suite.constants as constants
-            print(f"Downloading and extracting {self.NAME} - Videos...")
+            print(f"Downloading and extracting {cls.NAME} - Videos...")
             prep_script = (constants.PKG_RESOURCES / 'get_dataset_human36m.sh').resolve()
-            run_shell_command(f"{prep_script} {self.DEFAULT_DATA_DIR}")
+            run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")
 
         # open all videos to get their frame counts (speeds up dataset creation later)
         print(f"Analyzing video frame counts...")

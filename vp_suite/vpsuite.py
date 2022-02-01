@@ -83,7 +83,7 @@ class VPSuite:
         """
         self.models : List[VideoPredictionModel] = []
 
-    def load_dataset(self, dataset="MM", split="train", **dataset_kwargs):
+    def load_dataset(self, dataset, split="train", **dataset_kwargs):
         r"""
 
         Args:
@@ -101,6 +101,10 @@ class VPSuite:
         print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
         self.datasets.append(dataset)
+
+    def download_dataset(self, dataset):
+        dataset_class = DATASET_CLASSES[dataset]
+        dataset_class.download_and_prepare_dataset()
 
     def load_model(self, model_dir, ckpt_name="best_model.pth"):
         r"""
