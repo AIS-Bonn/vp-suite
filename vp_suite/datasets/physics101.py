@@ -72,7 +72,7 @@ class Physics101Dataset(VPDataset):
 
         """
         # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
-        vid = read_video(self.vid_filepaths[i])  # [T, h, w, c]
+        vid = read_video(self.vid_filepaths[i], num_frames=self.total_frames)  # [T, h, w, c]
         if self.seq_step > 1:
             vid = vid[::self.seq_step]  # [t, h, w, c]
 
