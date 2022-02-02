@@ -1,0 +1,9 @@
+Model,Abbreviation,Reference,Matches Reference?
+CopyLastFrame,``”copy”``,,
+UNet3D,``”unet”``,,
+ConvLSTM,``”lstm”``,https://arxiv.org/abs/1506.04214,No
+LSTM,``”non_conv”``,,
+PhyDNet,``”phy”``,https://arxiv.org/abs/2003.01460,No
+STPhy,``”st_phy”``,,
+SimpleV1,``”simplev1”``,,
+SimpleV2,``”simplev2”``,,

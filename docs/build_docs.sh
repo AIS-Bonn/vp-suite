@@ -9,7 +9,7 @@ fi
 # remove old api docs
 mv source/index.rst source/index
 mv source/readme.rst source/readme
-rm -f source/*.rst
+rm -f source/vp_suite*.rst
 mv source/index source/index.rst
 mv source/readme source/readme.rst
 

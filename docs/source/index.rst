@@ -12,11 +12,22 @@ Welcome to vp-suite's documentation!
 
    readme
 
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Feature Overview
+
+   available_models
+   available_datasets
+   available_measures
+
+
 .. toctree::
    :maxdepth: 1
    :caption: API Reference
 
    vp_suite
+
 
 Indices and tables
 ==================
