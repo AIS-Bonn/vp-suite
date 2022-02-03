@@ -9,6 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 import cv2
 import numpy as np
+import torch.nn as nn
 
 
 def most(l: List[bool], factor=0.67):
@@ -81,15 +82,24 @@ def check_optuna_config(optuna_cfg : dict):
         print("invalid optuna config")
 
 
-def set_from_kwarg(obj, attr_name, attr_default, kwarg_dict, required=False, choices=None):
+def set_from_kwarg(obj, kwarg_dict, attr_name, default=None, required=False, choices=None, skip_unusable=False):
 
+    # required parameter?
     if required and attr_name not in kwarg_dict.keys():
-        raise ValueError(f"missing required parameter '{attr_name}'")
+        raise ValueError(f"missing required parameter '{attr_name}' for object '{obj.__class__}'")
+
+    # skip if not existant in obj?
+    if skip_unusable and not hasattr(obj, attr_name):
+        print(f"parameter '{attr_name}' is not usable for init of object '{obj.__class__}' -> skipping")
+
+    # get default if available
+    if default is None and hasattr(obj, attr_name):
+        default = getattr(obj, attr_name)
 
     # check type fit
-    attr_val = kwarg_dict.get(attr_name, attr_default)
-    if not isinstance(attr_val, type(attr_default)):
-        raise ValueError(f"mismatching types for parameter '{attr_name}'")
+    attr_val = kwarg_dict.get(attr_name, default)
+    if default is not None and not isinstance(attr_val, type(default)):
+        raise ValueError(f"mismatching types for parameter '{attr_name}' for object '{obj.__class__}'")
 
     # if choices are given, check if val matches choice
     if choices is not None:
@@ -139,13 +149,15 @@ def get_frame_count(fp: Union[Path, str]):
     return length
 
 
-def get_public_attrs(obj, calling_fn_name: str):
+def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, no_modules: bool = False):
     r"""
     Similar to inspect.getmembers()
 
     Args:
         obj ():
-        calling_fn_name ():
+        calling_method (str):
+        non_config_vars([str]):
+        no_modules(bool):
 
     Returns:
 
@@ -153,9 +165,14 @@ def get_public_attrs(obj, calling_fn_name: str):
     attr_dict = dict()
     instance_names = set(dir(obj))
     instance_names = [n for n in instance_names if not n.startswith("_")]  # remove private fields and dunders
-    instance_names.remove(calling_fn_name)  # remove name of calling function to avoid recursion
+    instance_names.remove(calling_method)  # remove name of calling method to avoid recursion
     for name in instance_names:
         value = getattr(obj, name)
-        if not inspect.isroutine(value):  # remove routines
-            attr_dict[name] = value
+        if inspect.isroutine(value):  # disregard routines
+            continue
+        if no_modules and isinstance(value, nn.Module):  # disregard nn.Module objects if specified
+            continue
+        attr_dict[name] = value
+    for k in (non_config_vars or []):  # remove non-config vars, if any
+        attr_dict.pop(k, None)
     return attr_dict

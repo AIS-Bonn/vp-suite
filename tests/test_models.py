@@ -26,7 +26,7 @@ def test_models_without_actions(model_key):
         "tensor_value_range": [0.0, 1.0]
     }
     model : VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
-    t = 3 # model.min_context_frames
+    t = 3 # model.MIN_CONTEXT_FRAMES
     x = torch.randn(b, t, c, h, w, device=DEVICE)
     pred_1 = model.pred_1(x)
     pred_5, _ = model(x, pred_length=p)
@@ -49,7 +49,7 @@ def test_models_with_actions(model_key):
         "tensor_value_range": [0.0, 1.0]
     }
     model : VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
-    t = 3 # model.min_context_frames
+    t = 3 # model.MIN_CONTEXT_FRAMES
     x = torch.randn(b, t, c, h, w, device=DEVICE)
     a = torch.randn(b, t+p, ACTION_SIZE, device=DEVICE)
     pred_1 = model.pred_1(x, actions=a)

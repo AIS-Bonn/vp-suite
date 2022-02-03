@@ -59,15 +59,6 @@ class ConvLSTM(VideoPredictionModel):
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.action_size * self.enc_h * self.enc_w)
 
-    def _config(self):
-        return {
-            "lstm_kernel_size": self.lstm_kernel_size,
-            "lstm_num_layers": self.lstm_num_layers,
-            "lstm_channels": self.lstm_channels,
-            "encoding_channels": self.encoding_channels,
-            "decoding_channels": self.decoding_channels
-        }
-
     def pred_1(self, x, **kwargs):
         r"""
 

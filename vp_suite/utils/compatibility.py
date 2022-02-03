@@ -74,7 +74,7 @@ def check_run_and_model_compat(model, run_config):
                       f"-> Testing it without using the actions provided by the dataset")
 
     # context frames and pred. horizon
-    elif run_config["context_frames"] < model.min_context_frames:
+    elif run_config["context_frames"] < model.MIN_CONTEXT_FRAMES:
         raise ValueError(f"Model '{model.NAME}' {model_dir_str} needs at least "
-                         f"{model.min_context_frames} context frames as it uses temporal convolution "
+                         f"{model.MIN_CONTEXT_FRAMES} context frames as it uses temporal convolution "
                          f"with said number as kernel size")

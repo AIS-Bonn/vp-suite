@@ -42,8 +42,8 @@ class Human36MDataset(VPDataset):
                                      "ALL_SCENARIOS"])
 
         # set attributes
-        set_from_kwarg(self, "scenarios", self.ALL_SCENARIOS, dataset_kwargs, choices=self.ALL_SCENARIOS)
-        set_from_kwarg(self, "train_val_seed", self.train_val_seed, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "scenarios", default=self.ALL_SCENARIOS, choices=self.ALL_SCENARIOS)
+        set_from_kwarg(self, dataset_kwargs, "train_val_seed")
 
         # get video filepaths for train, val or test
         split_ing = "testing" if self.split == "test" else "training"

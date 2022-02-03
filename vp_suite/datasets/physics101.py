@@ -42,9 +42,9 @@ class Physics101Dataset(VPDataset):
         self.NON_CONFIG_VARS.extend(["AVAILABLE_CAMERAS", "AVAILABLE_SUBSEQ", "vid_filepaths"])
 
         # set attributes
-        set_from_kwarg(self, "camera", self.camera, dataset_kwargs, choices=self.AVAILABLE_CAMERAS)
-        set_from_kwarg(self, "subseq", self.subseq, dataset_kwargs, choices=self.AVAILABLE_SUBSEQ)
-        set_from_kwarg(self, "train_test_seed", self.trainval_test_seed, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "camera", choices=self.AVAILABLE_CAMERAS)
+        set_from_kwarg(self, dataset_kwargs, "subseq", choices=self.AVAILABLE_SUBSEQ)
+        set_from_kwarg(self, dataset_kwargs, "trainval_test_seed")
 
         # get video filepaths for train/val or test
         self.vid_filepaths: [Path] = sorted(list(Path(self.data_dir).rglob(f"**/{self.camera}.mp4")))

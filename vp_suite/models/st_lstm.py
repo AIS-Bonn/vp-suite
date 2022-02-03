@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 from vp_suite.base.base_model import VideoPredictionModel
 from vp_suite.models.model_blocks.enc import Autoencoder
-from vp_suite.models.model_blocks.st_lstm import STLSTMCell, ActionConditionalSTLSTMCell
+from vp_suite.models.model_blocks.predrnn import SpatioTemporalLSTMCell, ActionConditionalSpatioTemporalLSTMCell
 
 
 class STLSTM(VideoPredictionModel):
@@ -35,10 +35,10 @@ class STLSTM(VideoPredictionModel):
         self.num_hidden = [self.enc_channels] * self.num_layers
         self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, device)
         _, _, self.enc_h, self.enc_w = self.autoencoder.encoded_shape
-        self.recurrent_cell = STLSTMCell
+        self.recurrent_cell = SpatioTemporalLSTMCell
 
         if self.action_conditional:
-            self.recurrent_cell = ActionConditionalSTLSTMCell
+            self.recurrent_cell = ActionConditionalSpatioTemporalLSTMCell
             self.action_inflate = nn.Linear(in_features=self.action_size,
                                             out_features=self.inflated_action_dim * self.enc_h * self.enc_w,
                                             bias=False)
@@ -57,15 +57,6 @@ class STLSTM(VideoPredictionModel):
         # shared adapter
         adapter_num_hidden = self.num_hidden[0]
         self.adapter = nn.Conv2d(adapter_num_hidden, adapter_num_hidden, 1, stride=1, padding=0, bias=False)
-
-    def _config(self):
-        return {
-            "enc_channels": self.enc_channels,
-            "num_layers": self.num_layers,
-            "reconstruction_loss_scale": self.reconstruction_loss_scale,
-            "decoupling_loss_scale": self.decoupling_loss_scale,
-            "inflated_action_dim": self.inflated_action_dim
-        }
 
     def pred_1(self, x, **kwargs):
         r"""

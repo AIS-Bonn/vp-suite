@@ -24,7 +24,7 @@ class SimpleV1(VideoPredictionModel):
         """
         super(SimpleV1, self).__init__(device, **model_kwargs)
 
-        self.min_context_frames = self.temporal_dim
+        self.MIN_CONTEXT_FRAMES = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.cnn = nn.Conv3d(self.img_c, self.img_c, kernel_size=(self.temporal_dim, 5, 5),
                              stride=(1, 1, 1), padding=(0, 2, 2), bias=False)
@@ -40,14 +40,6 @@ class SimpleV1(VideoPredictionModel):
         for i in range(self.img_c):
             clf_weights[i, i, -1, 2, 2] = 1.0
         self.cnn.weight.data = clf_weights
-
-    def _config(self):
-        r"""
-
-        Returns:
-
-        """
-        return {"temporal_dim": self.temporal_dim}
 
     def pred_1(self, x, **kwargs):
         r"""
@@ -95,12 +87,6 @@ class SimpleV2(VideoPredictionModel):
     hidden_channels = 64  #: TODO
     temporal_dim = None  #: TODO
 
-    def _config(self):
-        return {
-            "temporal_dim": self.temporal_dim,
-            "hidden_channels": self.hidden_channels
-        }
-
     def __init__(self, device, **model_kwargs):
         r"""
 
@@ -110,7 +96,7 @@ class SimpleV2(VideoPredictionModel):
         """
         super(SimpleV2, self).__init__(device, **model_kwargs)
 
-        self.min_context_frames = self.temporal_dim
+        self.MIN_CONTEXT_FRAMES = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
         self.big_branch = nn.Sequential(
             nn.Conv3d(self.img_c, self.hidden_channels, (self.temporal_dim, 5, 5), (1, 1, 1), (0, 2, 2), bias=False),

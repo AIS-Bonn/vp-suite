@@ -1,147 +1,151 @@
 import torch
 import torch.nn as nn
+from torch.utils.data.dataloader import DataLoader
+from torch.optim.optimizer import Optimizer
 from tqdm import tqdm
+from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
+from vp_suite.measure.loss_provider import PredictionLossProvider
+from vp_suite.base.base_dataset import VPData
+
 
 class VideoPredictionModel(nn.Module):
     r"""
-
+    The base class for all video prediction models. Each model ought to provide two forward pass/prediction methods
+    (the default :meth:`self.forward()` method and :meth:`pred_1()`, which predicts a single frame) as well as two
+    utility methods (:meth:`train_iter()` for a single training epoch on a given dataset loader and, analogously,
+    :meth:`eval_iter()` for a single epoch of validation iteration).
     """
+    NON_CONFIG_VARS = ["functions", "REQUIRED_ARGS"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
 
-    # model-specific constants
-    NAME = None  #: The model's name
-    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]  #: TODO
-    CAN_HANDLE_ACTIONS = False  #: Whether the model can handle actions or not
-    TRAINABLE = True  #: Whether the model is trainable or not
+    # MODEL CONSTANTS
+    NAME = None  #: The model's name.
+    REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]  #: The attributes that the model creator needs to supply when creating the model.
+    CAN_HANDLE_ACTIONS = False  #: Whether the model can handle actions or not.
+    TRAINABLE = True  #: Whether the model is trainable or not.
+    MIN_CONTEXT_FRAMES = 1  #: Minimum number of context frames required for the model to work. By default, models will be able to deal with any number of context frames.
 
-    # model hyperparameters
-    min_context_frames = 1  # : Minimum number of context frames required for the model to work. Be default models
-    # will be able to deal with arbitrarily many context frames.
-    action_conditional = None  #: TODO
-    model_dir = None  #: specifies save location of model
-    tensor_value_range = None  #: TODO
+    # model hyper-parameters
+    model_dir = None  #: The save location of model.
+    img_shape = None  # The expected shape of the image inputs.
+    action_size = None  #: The expected dimensionality of the action inputs.
+    action_conditional = False  #: True if this model is leveraging input actions for the predictions, False otherwise.
+    tensor_value_range = None  #: The expected value range of the input tensors.
 
-    def __init__(self, device="cpu", **model_kwargs):
+    def __init__(self, device: str, **model_kwargs):
         r"""
+        Initializes the model by first setting all model hyperparameters, attributes and the like.
+        Then, the model-specific init will actually create the model from the given hyperparameters
 
         Args:
-            device ():
-            **model_kwargs ():
+            device (str): The device identifier for the module.
+            **model_kwargs (Any): Model arguments such as hyperparameters, input shapes etc.
         """
         super(VideoPredictionModel, self).__init__()
 
         # set required parameters
         self.device = device
         for required_arg in self.REQUIRED_ARGS:
-            if required_arg not in model_kwargs.keys():
-                raise ValueError(f"model {self.NAME} requires parameter '{required_arg}'")
-            required_val = model_kwargs[required_arg]
 
             # pre-setattr checks
             if required_arg == "tensor_value_range":
+                required_val = model_kwargs.get(required_arg, (0, 0))
                 if type(required_val) not in [tuple, list] or len(required_val) != 2:
                     raise ValueError("value for argument 'tensor_value_range' needs to be tuple or list with 2 elems")
 
             # set parameter
-            setattr(self, required_arg, required_val)
+            set_from_kwarg(self, model_kwargs, required_arg, required=True)
 
             # post-setattr logic
             if required_arg == "img_shape":
                 self.img_c, self.img_h, self.img_w = self.img_shape
 
         # set optional parameters
-        self.action_conditional = model_kwargs.get("action_conditional", False)
-        for model_arg, model_arg_val in model_kwargs.items():
-            if model_arg in self.REQUIRED_ARGS:
-                continue  # skip required args as they have been set up already
-            elif hasattr(self, model_arg):
-                setattr(self, model_arg, model_arg_val)
-            else:
-                print(f"model_arg '{model_arg}' is not usable for init of model '{self.NAME}' -> skipping")
+        optional_args = [arg for arg in model_kwargs.keys() if arg not in self.REQUIRED_ARGS]
+        for model_arg in optional_args:
+            set_from_kwarg(self, model_kwargs, model_arg)
 
     @property
     def config(self):
         r"""
-
-        Returns:
-
+        Returns: A dictionary containing the complete model configuration, including common attributes
+        as well as model-specific attributes.
         """
-        model_config = {
-            "model_dir": self.model_dir,
-            "min_context_frames": self.min_context_frames,
-            "img_shape": self.img_shape,
-            "action_size": self.action_size,
-            "action_conditional": self.action_conditional,
-            "tensor_value_range": self.tensor_value_range
+        attr_dict = get_public_attrs(self, "config", non_config_vars=self.NON_CONFIG_VARS, no_modules=True)
+        img_c, img_h, img_w = self.img_shape
+        extra_config = {
+            "img_h": img_h,
+            "img_w": img_w,
+            "img_c": img_c,
         }
-        return {**model_config, **self._config()}
+        return {**attr_dict, **extra_config}
 
-    def _config(self):
-        r""" Model-specific config
-        """
-        return dict()
-
-    def pred_1(self, x, **kwargs):
-        r"""Predicts a single frame
-        input: T frames: [b, T, c, h, w]
-        output: single frame: [b, c, h, w]
+    def pred_1(self, x: torch.Tensor, **kwargs):
+        r"""
+        Given an input sequence of t frames, predicts one single frame into the future.
 
         Args:
-            x ():
-            **kwargs ():
+            x (torch.Tensor): A batch of `b` sequences of `t` input frames as a tensor of shape [b, t, c, h, w].
+            **kwargs (Any): Optional input parameters such as actions.
 
-        Returns:
+        Returns: A single frame as a tensor of shape [b, c, h, w].
 
         """
         raise NotImplementedError
 
-    def forward(self, x, pred_length=1, **kwargs):
-        r""" Predicts pred_length frames into the future.
-        # input: T frames: [b, T, c, h, w]
-        # output: pred_length (P) frames: [b, P, c, h, w]
+    def forward(self, x: torch.Tensor, pred_length: int = 1, **kwargs):
+        r"""
+        Given an input sequence of t frames, predicts `pred_length` (`p`) frames into the future.
 
         Args:
-            x ():
-            pred_length ():
+            x (torch.Tensor): A batch of `b` sequences of `t` input frames as a tensor of shape [b, t, c, h, w].
+            pred_length (int): The number of frames to predict into the future.
             **kwargs ():
 
-        Returns:
+        Returns: A batch of sequences of `p` predicted frames as a tensor of shape [b, p, c, h, w].
 
         """
-        preds = []
+        predictions = []
         for i in range(pred_length):
             pred = self.pred_1(x, **kwargs).unsqueeze(dim=1)
-            preds.append(pred)
+            predictions.append(pred)
             x = torch.cat([x, pred], dim=1)
 
-        pred = torch.cat(preds, dim=1)
+        pred = torch.cat(predictions, dim=1)
         return pred, None
 
-    def train_iter(self, config, loader, optimizer, loss_provider, epoch):
-        r"""Default training iteration
+    def _fwd_from_data(self, data: VPData, config: dict):
+        r"""
+        Extracts inputs and targets from a data blob
+        and executes a forward pass to obtain predictions and losses.
+        """
+        img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
+        input = img_data[:, :config["context_frames"]]
+        targets = img_data[:, config["context_frames"]
+                              : config["context_frames"] + config["pred_frames"]]
+        actions = data["actions"].to(
+            config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
+
+        # fwd
+        predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
+        return predictions, targets, model_losses
+
+    def train_iter(self, config: dict, loader: DataLoader, optimizer: Optimizer,
+                   loss_provider: PredictionLossProvider, epoch: int):
+        r"""
+        Default training iteration: Loops through the whole data loader once and, for every batch, executes
+        forward pass, loss calculation and backward pass/optimization step.
 
         Args:
-            config ():
-            loader ():
-            optimizer ():
-            loss_provider ():
-            epoch ():
-
-        Returns:
-
+            config (dict): The configuration dict of the current training run (combines model, dataset and run config)
+            loader (DataLoader): Training data is sampled from this loader.
+            optimizer (Optimizer): The optimizer to use for weight update calculations.
+            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
+            epoch (int): The current epoch.
         """
         loop = tqdm(loader)
         for batch_idx, data in enumerate(loop):
-
-            # input
-            img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
-            input = img_data[:, :config["context_frames"]]
-            targets = img_data[:, config["context_frames"]
-                                  : config["context_frames"] + config["pred_frames"]]
-            actions = data["actions"].to(
-                config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
-
             # fwd
-            predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
+            predictions, targets, model_losses = self._fwd_from_data(data, config)
 
             # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -157,17 +161,19 @@ class VideoPredictionModel(nn.Module):
 
             # bookkeeping
             loop.set_postfix(loss=total_loss.item())
-            # loop.set_postfix(mem=torch.cuda.memory_allocated())
 
-    def eval_iter(self, config, loader, loss_provider):
-        r"""Default evaluation iteration
+    def eval_iter(self, config: dict, loader: DataLoader, loss_provider: PredictionLossProvider):
+        r"""
+        Default training iteration: Loops through the whole data loader once and, for every datapoint, executes
+        forward pass, and loss calculation. Then, aggregates all loss values to assess the prediction quality.
 
         Args:
-            config ():
-            loader ():
-            loss_provider ():
+            config (dict): The configuration dict of the current validation run (combines model, dataset and run config)
+            loader (DataLoader): Validation data is sampled from this loader.
+            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
 
-        Returns:
+        Returns: A dictionary containing the averages value for each loss type specified for usage,
+        as well as the value for the 'indicator' loss (the loss used for determining overall model improvement).
 
         """
         self.eval()
@@ -178,13 +184,7 @@ class VideoPredictionModel(nn.Module):
         with torch.no_grad():
             for batch_idx, data in enumerate(loop):
                 # fwd
-                img_data = data["frames"].to(config["device"])  # [b, T, h, w], with T = total_frames
-                input = img_data[:, :config["context_frames"]]
-                targets = img_data[:, config["context_frames"]
-                                      : config["context_frames"] + config["pred_frames"]]
-                actions = data["actions"].to(config["device"])
-
-                predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
+                predictions, targets, model_losses = self._fwd_from_data(data, config)
 
                 # metrics
                 loss_values, _ = loss_provider.get_losses(predictions, targets)

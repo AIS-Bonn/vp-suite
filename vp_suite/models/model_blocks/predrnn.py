@@ -2,9 +2,14 @@ import torch
 from torch import nn as nn
 
 
-class STLSTMCell(nn.Module):
+class SpatioTemporalLSTMCell(nn.Module):
+    r"""
+    Spatio-Temporal LSTM Cell (v2) as introduced in
+    "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.
+    (https://arxiv.org/pdf/2103.09504.pdf) and implemented in (https://github.com/thuml/predrnn-pytorch).
+    """
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
-        super(STLSTMCell, self).__init__()
+        super(SpatioTemporalLSTMCell, self).__init__()
 
         self.num_hidden = num_hidden
         self.padding = filter_size // 2
@@ -72,9 +77,14 @@ class STLSTMCell(nn.Module):
         return h_new, c_new, m_new, delta_c, delta_m
 
 
-class ActionConditionalSTLSTMCell(nn.Module):
+class ActionConditionalSpatioTemporalLSTMCell(nn.Module):
+    r"""
+    Action-Conditional Spatio-Temporal LSTM Cell (v2) as introduced in
+    "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.
+    (https://arxiv.org/pdf/2103.09504.pdf) and implemented in (https://github.com/thuml/predrnn-pytorch).
+    """
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
-        super(ActionConditionalSTLSTMCell, self).__init__()
+        super(ActionConditionalSpatioTemporalLSTMCell, self).__init__()
 
         self.num_hidden = num_hidden
         self.padding = filter_size // 2

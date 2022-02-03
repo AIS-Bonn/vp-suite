@@ -38,11 +38,11 @@ class KITTIRawDataset(VPDataset):
                                      "AVAILABLE_CAMERAS"])
 
         # set attributes
-        set_from_kwarg(self, "camera", self.camera, dataset_kwargs)
-        set_from_kwarg(self, "trainval_to_test_ratio", self.trainval_to_test_ratio, dataset_kwargs)
-        set_from_kwarg(self, "train_to_val_ratio", self.train_to_val_ratio, dataset_kwargs)
-        set_from_kwarg(self, "trainval_test_seed", self.trainval_test_seed, dataset_kwargs)
-        set_from_kwarg(self, "train_val_seed", self.train_val_seed, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "camera")
+        set_from_kwarg(self, dataset_kwargs, "trainval_to_test_ratio")
+        set_from_kwarg(self, dataset_kwargs, "train_to_val_ratio")
+        set_from_kwarg(self, dataset_kwargs, "trainval_test_seed")
+        set_from_kwarg(self, dataset_kwargs, "train_val_seed")
 
         # get video filepaths
         dd = Path(self.data_dir)

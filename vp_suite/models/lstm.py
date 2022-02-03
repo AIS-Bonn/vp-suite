@@ -62,14 +62,6 @@ class LSTM(VideoPredictionModel):
             self.dec3, TF.Resize((self.img_h, self.img_w))
         )
 
-    def _config(self):
-        return {
-            "bottleneck_dim": self.bottleneck_dim,
-            "lstm_hidden_dim": self.lstm_hidden_dim,
-            "lstm_kernel_size": self.lstm_kernel_size,
-            "lstm_num_layers": self.lstm_num_layers
-        }
-
     def encode(self, x):
         r"""
 

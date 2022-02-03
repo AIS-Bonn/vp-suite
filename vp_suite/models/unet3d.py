@@ -29,7 +29,7 @@ class UNet3D(VideoPredictionModel):
         """
         super(UNet3D, self).__init__(device, **model_kwargs)
 
-        self.min_context_frames = self.temporal_dim
+        self.MIN_CONTEXT_FRAMES = self.temporal_dim
         self.downs = nn.ModuleList()
         self.ups = nn.ModuleList()
         self.time3ds = nn.ModuleList()
@@ -71,12 +71,6 @@ class UNet3D(VideoPredictionModel):
 
         # final
         self.final_conv = nn.Conv2d(in_channels=self.features[0], out_channels=self.img_c, kernel_size=(1, 1))
-
-    def _config(self):
-        return {
-            "temporal_dim": self.temporal_dim,
-            "features": self.features
-        }
 
     def pred_1(self, x, **kwargs):
         r"""

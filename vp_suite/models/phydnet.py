@@ -42,13 +42,6 @@ class PhyDNet(VideoPredictionModel):
                 self.constraints[ind, i, j] = 1
                 ind += 1
 
-    def _config(self):
-        return {
-            "moment_loss_scale": self.moment_loss_scale,
-            "phy_kernel_size": self.phy_kernel_size,
-            "phy_cell_channels": self.phy_cell_channels
-        }
-
     def pred_1(self, x, **kwargs):
         r"""
 

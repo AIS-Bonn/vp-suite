@@ -38,8 +38,8 @@ class CaltechPedestrianDataset(VPDataset):
                                      "AVAILABLE_CAMERAS"])
 
         # set attributes
-        set_from_kwarg(self, "train_to_val_ratio", self.train_to_val_ratio, dataset_kwargs)
-        set_from_kwarg(self, "train_val_seed", self.train_val_seed, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "train_to_val_ratio")
+        set_from_kwarg(self, dataset_kwargs, "train_val_seed")
 
         # get sequence filepaths and slice accordingly
         with open(os.path.join(self.data_dir, "frame_counts.json"), "r") as frame_counts_file:

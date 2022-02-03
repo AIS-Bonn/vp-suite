@@ -48,16 +48,18 @@ class VPDataset(Dataset):
         In order to fully prepare the dataset, :meth:`self.set_seq_len()` has to be called with the desired amount
         of frames and the seq_step. Afterwards, the VPDataset object. is ready to be queried for data.
     """
+    NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "ready_for_usage",
+                       "total_frames", "seq_len", "frame_offsets"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
 
+    # DATASET CONSTANTS
     NAME: str = NotImplemented  #: The dataset's name.
     DEFAULT_DATA_DIR: Path = NotImplemented  #: The default save location of the dataset files.
     VALID_SPLITS = ["train", "test"]  #: The valid arguments for specifying splits.
     MIN_SEQ_LEN: int = NotImplemented  #: The minimum sequence length provided by the dataset.
     ACTION_SIZE: int = NotImplemented  #: The size of the action vector per frame (If the dataset provides no actions, this value is 0).
     DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: Shape of a single frame in the dataset (height, width, channels).
-    NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "ready_for_usage",
-                       "total_frames", "seq_len", "frame_offsets"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
 
+    # dataset hyper-parameters
     img_shape: (int, int, int) = NotImplemented  #: Shape of a single frame as returned by `__getitem()__`.
     train_to_val_ratio: float = 0.8  #: The ratio of files that will be training data (rest will be validation data). For bigger datasets, this ratio can be set closer to 1.
     transform: nn.Module = None  #: This module gets called in the preprocessing step and consists of pre-specified cropping, resizing and augmentation layers.
@@ -83,7 +85,7 @@ class VPDataset(Dataset):
             raise ValueError(f"parameter '{split}' has to be one of the following: {self.VALID_SPLITS}")
         self.split = split
 
-        set_from_kwarg(self, "seq_step", self.seq_step, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "seq_step")
         self.data_dir = dataset_kwargs.get("data_dir", self.data_dir)
         if self.data_dir is None:
             if not self.default_available(self.split, **dataset_kwargs):
@@ -96,8 +98,8 @@ class VPDataset(Dataset):
         transforms = []
 
         # scale
-        set_from_kwarg(self, "value_range_min", self.value_range_min, dataset_kwargs)
-        set_from_kwarg(self, "value_range_max", self.value_range_max, dataset_kwargs)
+        set_from_kwarg(self, dataset_kwargs, "value_range_min")
+        set_from_kwarg(self, dataset_kwargs, "value_range_max")
 
         # crop
         crop = dataset_kwargs.get("crop", None)
@@ -139,9 +141,7 @@ class VPDataset(Dataset):
         Returns: A dictionary containing the complete dataset configuration, including common attributes
         as well as dataset-specific attributes.
         """
-        attr_dict = get_public_attrs(self, "config")
-        for k in self.NON_CONFIG_VARS:
-            attr_dict.pop(k, None)
+        attr_dict = get_public_attrs(self, "config", non_config_vars=self.NON_CONFIG_VARS)
         img_c, img_h, img_w = self.img_shape
         extra_config = {
             "img_h": img_h,
@@ -151,17 +151,9 @@ class VPDataset(Dataset):
             "supports_actions": self.ACTION_SIZE > 0,
             "tensor_value_range": [self.value_range_min, self.value_range_max],
         }
+        return {**attr_dict, **extra_config}
 
-        return {**attr_dict, **extra_config, **self._config()}
-
-    def _config(self) -> dict:
-        r"""
-        Returns: Dataset-specific config that is not covered by the get_public_attrs() call
-        of the actual :meth:`self.config()` method.
-        """
-        return dict()
-
-    def set_seq_len(self, context_frames : int, pred_frames : int, seq_step : int):
+    def set_seq_len(self, context_frames: int, pred_frames: int, seq_step: int):
         r"""
         Set the sequence length for the upcoming run. Assumes that the given parameters
         lead to a sequence length that does not exceed the minimum sequence length

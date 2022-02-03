@@ -169,8 +169,12 @@ Updating the API documentation can be done by executing `build_docs.sh` from the
 
 All other sources are acknowledged in the documentation of the respective point of usage (to the best of our knowledge).
 
-### License stuffs
+### License
 
 This project comes with an [MIT License](https://github.com/Flunzmas/vp-suite/blob/main/LICENSE), except for the following components:
 
 - Module `vp_suite.measure.fvd.pytorch_i3d` (Apache 2.0 License, taken and modified from [here](https://github.com/piergiaj/pytorch-i3d))
+
+### Disclaimer
+
+I do not host or distribute any dataset. For all provided dataset functionality, I trust you have the permission to download and use the respective data. 
