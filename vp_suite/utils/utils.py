@@ -9,6 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 import cv2
 import numpy as np
+import torch
 import torch.nn as nn
 
 
@@ -149,7 +150,7 @@ def get_frame_count(fp: Union[Path, str]):
     return length
 
 
-def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, no_modules: bool = False):
+def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, model_mode: bool = False):
     r"""
     Similar to inspect.getmembers()
 
@@ -157,7 +158,7 @@ def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, no
         obj ():
         calling_method (str):
         non_config_vars([str]):
-        no_modules(bool):
+        model_mode(bool):
 
     Returns:
 
@@ -170,7 +171,7 @@ def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, no
         value = getattr(obj, name)
         if inspect.isroutine(value):  # disregard routines
             continue
-        if no_modules and isinstance(value, nn.Module):  # disregard nn.Module objects if specified
+        if model_mode and (isinstance(value, nn.Module) or isinstance(value, torch.Tensor)):  # disregard nn.Module objects and tensors if specified
             continue
         attr_dict[name] = value
     for k in (non_config_vars or []):  # remove non-config vars, if any

@@ -70,7 +70,7 @@ class VideoPredictionModel(nn.Module):
         Returns: A dictionary containing the complete model configuration, including common attributes
         as well as model-specific attributes.
         """
-        attr_dict = get_public_attrs(self, "config", non_config_vars=self.NON_CONFIG_VARS, no_modules=True)
+        attr_dict = get_public_attrs(self, "config", non_config_vars=self.NON_CONFIG_VARS, model_mode=True)
         img_c, img_h, img_w = self.img_shape
         extra_config = {
             "img_h": img_h,
