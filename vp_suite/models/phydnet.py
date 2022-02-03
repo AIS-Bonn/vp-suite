@@ -23,14 +23,14 @@ class PhyDNet(VideoPredictionModel):
     phy_kernel_size = (7, 7)  #: TODO
     phy_cell_channels = 49  #: TODO
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(PhyDNet, self).__init__(device, **model_args)
+        super(PhyDNet, self).__init__(device, **model_kwargs)
 
         self.criterion = MSE(self.device)
         self.encoder = EncoderRNN(self.img_shape, self.phy_cell_channels, self.phy_kernel_size,

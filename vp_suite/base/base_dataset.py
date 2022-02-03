@@ -23,16 +23,16 @@ SHAPE_PRESERVING_AUGMENTATIONS = [
 
 
 class VPData(TypedDict):
-    r"""TODO
-
+    r"""
+    This template class defines the return type for all datasets.
     """
-    frames: torch.Tensor  #: shape: [t, c, h, w]
-    actions: torch.Tensor  #: shape: [t, a]
+    frames: torch.Tensor  #: Video frames: torch tensors of shape [t, c, h, w].
+    actions: torch.Tensor  #: Actions per frame: torch tensors of shape [t, a].
 
 
 class VPSubset(Subset):
     r"""
-    TODO
+    A minimal wrapper around :class:`~Subset` that allows to directly access the underlying dataset's attributes.
     """
     def __getattr__(self, item):
         return getattr(self.dataset, item)
@@ -40,35 +40,41 @@ class VPSubset(Subset):
 
 class VPDataset(Dataset):
     r"""
+    The base class for all video prediction dataset loaders.
+    Data points are provided in the shape of :class:`VPData` dicts.
 
-    Attributes:
-
+    Note:
+        VPDataset objects are not usable directly after creation since the sequence length is unspecified.
+        In order to fully prepare the dataset, :meth:`self.set_seq_len()` has to be called with the desired amount
+        of frames and the seq_step. Afterwards, the VPDataset object. is ready to be queried for data.
     """
 
-    NAME: str = NotImplemented  #: the dataset's name.
-    DEFAULT_DATA_DIR: Path = NotImplemented  #: the default save location of the dataset files.
-    VALID_SPLITS = ["train", "test"]  #: the valid arguments for specifying splits.
-    MIN_SEQ_LEN: int = NotImplemented  #: TODO
-    ACTION_SIZE: int = NotImplemented  #: TODO
-    DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: shape of a single frame in the dataset (height, width, channels)
+    NAME: str = NotImplemented  #: The dataset's name.
+    DEFAULT_DATA_DIR: Path = NotImplemented  #: The default save location of the dataset files.
+    VALID_SPLITS = ["train", "test"]  #: The valid arguments for specifying splits.
+    MIN_SEQ_LEN: int = NotImplemented  #: The minimum sequence length provided by the dataset.
+    ACTION_SIZE: int = NotImplemented  #: The size of the action vector per frame (If the dataset provides no actions, this value is 0).
+    DATASET_FRAME_SHAPE: (int, int, int) = NotImplemented  #: Shape of a single frame in the dataset (height, width, channels).
     NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "ready_for_usage",
-                       "total_frames", "seq_len", "frame_offsets"]  #: TODO
+                       "total_frames", "seq_len", "frame_offsets"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
 
-    img_shape: (int, int, int) = NotImplemented  #: TODO
-    train_to_val_ratio: float = 0.8  #: The ratio of files that will be training data (rest will be validation data)
-    transform: nn.Module = None  #: TODO
-    split: str = None  #: TODO
-    seq_step: int = 1  #: TODO
-    data_dir: str = None  #: TODO
-    value_range_min: float = 0.0  #: TODO
-    value_range_max: float = 1.0  #: TODO
+    img_shape: (int, int, int) = NotImplemented  #: Shape of a single frame as returned by `__getitem()__`.
+    train_to_val_ratio: float = 0.8  #: The ratio of files that will be training data (rest will be validation data). For bigger datasets, this ratio can be set closer to 1.
+    transform: nn.Module = None  #: This module gets called in the preprocessing step and consists of pre-specified cropping, resizing and augmentation layers.
+    split: str = None  #: The dataset's split identifier (i.e. whether it's a training/validation/test dataset).
+    seq_step: int = 1  #: With a step N, every Nth frame is included in the returned sequence.
+    data_dir: str = None  #: The specified path to the folder containing the dataset.
+    value_range_min: float = 0.0  #: The lower end of the value range for the returned data.
+    value_range_max: float = 1.0  #: The upper end of the value range for the returned data.
 
-    def __init__(self, split, **dataset_kwargs):
+    def __init__(self, split: str, **dataset_kwargs):
         r"""
+        Initializes the dataset loader by determining its split and extracting and processing
+        all dataset attributes from the parameters given in `dataset_kwargs`.
 
         Args:
-            split ():
-            **dataset_kwargs ():
+            split (str): The dataset's split identifier (i.e. whether it's a training/validation/test dataset)
+            **dataset_kwargs (Any): Optional dataset arguments for image transformation, value_range, splitting etc.
         """
 
         super(VPDataset, self).__init__()
@@ -128,11 +134,10 @@ class VPDataset(Dataset):
         self.ready_for_usage = False  # becomes True once sequence length has been set
 
     @property
-    def config(self):
-        r"""TODO
-
-        Returns:
-
+    def config(self) -> dict:
+        r"""
+        Returns: A dictionary containing the complete dataset configuration, including common attributes
+        as well as dataset-specific attributes.
         """
         attr_dict = get_public_attrs(self, "config")
         for k in self.NON_CONFIG_VARS:
@@ -149,20 +154,23 @@ class VPDataset(Dataset):
 
         return {**attr_dict, **extra_config, **self._config()}
 
-    def _config(self):
-        r"""Dataset-specific config that is not covered by the vars() call
+    def _config(self) -> dict:
+        r"""
+        Returns: Dataset-specific config that is not covered by the get_public_attrs() call
+        of the actual :meth:`self.config()` method.
         """
-        return {}
+        return dict()
 
     def set_seq_len(self, context_frames : int, pred_frames : int, seq_step : int):
         r"""
-        Set the sequence length for the upcoming run. Asserts that the given parameters
-        lead to a sequence length that does not exceed the possible range.
+        Set the sequence length for the upcoming run. Assumes that the given parameters
+        lead to a sequence length that does not exceed the minimum sequence length
+        specified in :attr:`self.MIN_SEQ_LEN`.
 
         Args:
-            context_frames ():
-            pred_frames ():
-            seq_step ():
+            context_frames (int): Number of input/context frames.
+            pred_frames (int): Number of frames to be predicted.
+            seq_step (int): Sequence step (for step N, assemble the sequence by taking every Nth frame).
         """
         total_frames = context_frames + pred_frames
         seq_len = (total_frames - 1) * seq_step + 1
@@ -178,40 +186,43 @@ class VPDataset(Dataset):
         self.ready_for_usage = True
 
     def _set_seq_len(self):
-        r"""Optional logic for datasets with specific logic
-
-        """
+        r""" Optional dataset-specific logic for :meth:`self.set_seq_len()`. """
         pass
 
     def __len__(self) -> int:
         r"""
+        Returns: The number of available data points of this dataset (its "size").
 
-        Returns:
-
+        Note: Prior to setting the sequence length, this parameter is unusable!
         """
         raise NotImplementedError
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         raise NotImplementedError
 
-    def preprocess(self, x: Union[np.ndarray, torch.Tensor], transform: bool=True):
+    def preprocess(self, x: Union[np.ndarray, torch.Tensor], transform: bool = True) -> torch.Tensor:
         r"""
-        convert -> permute -> scale -> crop -> resize -> augment
+        Preprocesses the input sequence to make it usable by the video prediction models.
+        Makes use of the transformations defined in :meth:`self.__init__()`.
+        Workflow is as follows:
+
+        1. Convert to torch tensor of type torch.float.
+
+        2. Permute axes to obtain the following shape: [frames/time (t), channels (c), height (h), width (w)].
+
+        3. Scale values to the interval defined by :attr:`self.value_range_min` and :attr:`self.value_range_max`.
+
+        4. Crop the image (if applicable).
+
+        5. Resize the image (if applicable).
+
+        6. Perform further data augmentation operations (if applicable).
 
         Args:
-            x ():
-            transform (bool):
+            x (Union[np.ndarray, torch.Tensor]): The input sequence.
+            transform (bool): Whether to crop/resize/augment the sequence using the dataset's transformations.
 
-        Returns:
-
+        Returns: The preprocessed sequence tensor.
         """
 
         # conversion to torch float of range [0.0, 1.0]
@@ -256,12 +267,16 @@ class VPDataset(Dataset):
             x = self.transform(x)
         return x
 
-    def postprocess(self, x):
-        '''
+    def postprocess(self, x: torch.Tensor) -> np.ndarray:
+        r"""
         Converts a normalized tensor of an image to a denormalized numpy array.
-        Input: torch.float, shape: [..., c, h, w], range (approx.): [min_val, max_val]
         Output: np.uint8, shape: [..., h, w, c], range: [0, 255]
-        '''
+
+        Args:
+            x (torch.Tensor): Input tensor of shape [..., c, h, w] and (approx.) range [min_val, max_val].
+
+        Returns: A post-processed (quantized) sequence array ready for display.
+        """
 
         # assuming shape = [..., c, h, w] -> [..., h, w, c]
         if x.ndim < 3:
@@ -277,17 +292,17 @@ class VPDataset(Dataset):
         x = x.cpu().numpy().astype('uint8')
         return x
 
-    def default_available(self, split, **dataset_kwargs):
+    def default_available(self, split: str, **dataset_kwargs):
         r"""
-        Tries to load a dataset and a datapoint using the default data_dir value.
+        Tries to load a dataset and a datapoint using the default :attr:`self.data_dir` value.
         If this succeeds, then we can safely use the default data dir,
         otherwise a new dataset has to be downloaded and prepared.
 
         Args:
-            split ():
-            **dataset_kwargs ():
+            split (str): The dataset's split identifier (i.e. whether it's a training/validation/test dataset).
+            **dataset_kwargs (Any): Optional dataset arguments for image transformation, value_range, splitting etc.
 
-        Returns:
+        Returns: True if we could load the dataset using default values, False otherwise.
 
         """
         try:
@@ -305,18 +320,21 @@ class VPDataset(Dataset):
         r"""
         Downloads the specific dataset, prepares it for the video prediction task (if needed)
         and stores it in a default location in the 'data/' folder.
-        Implemented by the derived dataset classes
+        Implemented by the derived dataset classes.
         """
         raise NotImplementedError
 
     @classmethod
-    def get_train_val(cls, **dataset_args):
+    def get_train_val(cls, **dataset_kwargs):
         r"""
+        A wrapper method that creates a training and a validation dataset from the given dataset class.
+        Like when initializing such datasets directly,
+        optional dataset arguments can be specified with `\*\*dataset_kwargs`.
 
         Args:
-            **dataset_args ():
+            **dataset_kwargs (Any): Optional dataset arguments for image transformation, value_range, splitting etc.
 
-        Returns:
+        Returns: The created training and validation dataset of the same class.
 
         """
         assert cls.VALID_SPLITS == ["train", "test"] or cls.VALID_SPLITS == ["train", "val", "test"], \
@@ -324,42 +342,31 @@ class VPDataset(Dataset):
 
         # CAUTION: datasets that need set_seq_len to be ready can't be split using _random_split()
         if cls.VALID_SPLITS == ["train", "test"]:
-            D_main = cls("train", **dataset_args)
+            D_main = cls("train", **dataset_kwargs)
             len_main = len(D_main)
             len_train = int(len_main * cls.train_to_val_ratio)
             len_val = len_main - len_train
             D_train, D_val = _random_split(D_main, [len_train, len_val])
         else:
-            D_train = cls("train", **dataset_args)
-            D_val = cls("val", **dataset_args)
+            D_train = cls("train", **dataset_kwargs)
+            D_val = cls("val", **dataset_kwargs)
         return D_train, D_val
 
     @classmethod
-    def get_test(cls, **dataset_args):
+    def get_test(cls, **dataset_kwargs):
         r"""
+        A wrapper method that creates a test dataset from the given dataset class.
+        Like when initializing such datasets directly,
+        optional dataset arguments can be specified with `\*\*dataset_kwargs`.
 
         Args:
-            **dataset_args ():
+            **dataset_kwargs (Any): optional dataset arguments for image transformation, value_range, splitting etc.
 
-        Returns:
+        Returns: The created test dataset of the same class.
 
         """
-        D_test = cls("test", **dataset_args)
+        D_test = cls("test", **dataset_kwargs)
         return D_test
-
-    @classmethod
-    def get_train_val_test(cls, **dataset_args):
-        r"""
-
-        Args:
-            **dataset_args ():
-
-        Returns:
-
-        """
-        D_train, D_val = cls.get_train_val(**dataset_args)
-        D_test = cls.get_test(**dataset_args)
-        return D_train, D_val, D_test
 
 
 def _random_split(dataset: VPDataset, lengths: Sequence[int],
@@ -371,10 +378,11 @@ def _random_split(dataset: VPDataset, lengths: Sequence[int],
     Optionally fix the generator for reproducible results.
 
     Args:
-        dataset (Dataset): Dataset to be split
-        lengths (sequence): lengths of splits to be produced
+        dataset (Dataset): Dataset to be split.
+        lengths (sequence): lengths of splits to be produced.
         generator (Generator): Generator used for the random permutation.
     """
+
     # Cannot verify that dataset is Sized
     if sum(lengths) != len(dataset):
         raise ValueError("Sum of input lengths does not equal the length of the input dataset!")

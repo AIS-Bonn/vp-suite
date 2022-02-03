@@ -20,14 +20,14 @@ class LSTM(VideoPredictionModel):
     lstm_kernel_size = (5, 5)  #: TODO
     lstm_num_layers = 3  #: TODO
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(LSTM, self).__init__(device, **model_args)
+        super(LSTM, self).__init__(device, **model_kwargs)
 
         self.act_fn = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)

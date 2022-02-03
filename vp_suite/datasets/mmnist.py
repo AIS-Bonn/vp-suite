@@ -12,24 +12,27 @@ import vp_suite.constants as constants
 
 class MovingMNISTDataset(VPDataset):
     r"""
+    Dataset class for the dataset "Moving MNIST", as firstly encountered in
+    "Unsupervised Learning of Video Representations using LSTMs" by Srivastava et al.
+    (https://arxiv.org/pdf/1502.04681v3.pdf).
 
+    Each sequence depicts two digits from the MNIST dataset moving linearly in front of a black background,
+    occasionally bouncing off the wall and overlapping each other.
+
+    For downloading and preparing the dataset, scripts have been developed by Tencia Lee,
+    ported to python 3 by Praateek Mahajan (https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+    and further modified here.
     """
 
     NAME = "Moving MNIST"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
-    MIN_SEQ_LEN = 20  #: default MMNIST sequences span 20 frames
+    MIN_SEQ_LEN = 20
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
-    train_to_val_ratio = 0.96  #: big dataset -> val can be smaller
+    train_to_val_ratio = 0.96
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(MovingMNISTDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["data_ids", "data_fps"])
 
@@ -38,22 +41,9 @@ class MovingMNISTDataset(VPDataset):
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.data_fps)
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
@@ -68,12 +58,6 @@ class MovingMNISTDataset(VPDataset):
         return data
 
     def download_and_prepare_dataset(self):
-        r"""
-
-        Returns:
-
-        """
-
         frame_size = (64, 64)
         num_frames = 20  # length of each sequence
         digit_size = 28  # size of mnist digit within frame
@@ -101,22 +85,15 @@ class MovingMNISTDataset(VPDataset):
 
 # === MMNIST data preparation tools ============================================
 
-def save_generated_mmnist(data, seqs, frame_size, out_path):
+def save_generated_mmnist(data: np.ndarray, seqs: int, frame_size: (int, int), out_path: Path):
     r"""
-    scripts to generate moving mnist video dataset (frame by frame) as described in
-    [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs (Srivastava et al.)
-    by Tencia Lee / Praateek Mahajan (port to python 3)
-    saves in hdf5, npz, or jpg (individual frames) format
-    (modified from https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+    Save generated data per-sequence to specified out path.
 
     Args:
-        data ():
-        seqs ():
-        frame_size ():
-        out_path ():
-
-    Returns:
-
+        data (np.ndarray): The generated data to save.
+        seqs (int): The number of generated sequences.
+        frame_size ((int, int)): The frame size.
+        out_path (Path): The path where the data should be saved.
     """
     out_path.mkdir()
     num_frames = data.shape[0] // seqs
@@ -126,18 +103,14 @@ def save_generated_mmnist(data, seqs, frame_size, out_path):
         np.save(str(cur_out_fp), data[i])
 
 # helper functions
-def arr_from_img(im, mean=0, std=1):
+def arr_from_img(im, mean: float = 0, std: float = 1):
     r"""
-    scripts to generate moving mnist video dataset (frame by frame) as described in
-    [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs (Srivastava et al.)
-    by Tencia Lee / Praateek Mahajan (port to python 3)
-    saves in hdf5, npz, or jpg (individual frames) format
-    (modified from https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+    Convert image to array.
 
     Args:
-        im(): Image
-        mean(): Mean to subtract
-        std(): Standard Deviation to subtract
+        im(): Image.
+        mean(float): Mean to subtract.
+        std(float): Standard Deviation to subtract.
 
     Returns:
         Image in np.float32 format, in width height channel format. With values in range 0,1
@@ -150,23 +123,18 @@ def arr_from_img(im, mean=0, std=1):
 
     return (np.asarray(arr, dtype=np.float32).reshape((height, width, c)).transpose(2, 1, 0) / 255. - mean) / std
 
-def get_image_from_array(X, index, mean=0, std=1):
+def img_from_arr(X: np.ndarray, index: int, mean: float = 0, std: float = 1):
     r"""
-    scripts to generate moving mnist video dataset (frame by frame) as described in
-    [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs (Srivastava et al.)
-    by Tencia Lee / Praateek Mahajan (port to python 3)
-    saves in hdf5, npz, or jpg (individual frames) format
-    (modified from https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+    Convert array to image.
 
     Args:
-        X(): Dataset of shape N x C x W x H
-        index(): Index of image we want to fetch
-        mean(): Mean to add
-        std(): Standard Deviation to add
+        X(np.ndarray): Dataset of shape N x C x W x H.
+        index(int): Index of image we want to fetch.
+        mean(float): Mean to add.
+        std(float): Standard Deviation to add.
 
     Returns:
-        Image with dimensions H x W x C or H x W if it's a single channel image
-
+        Image with dimensions H x W x C or H x W if it's a single channel image.
     """
     ch, w, h = X.shape[1], X.shape[2], X.shape[3]
     ret = (((X[index] + mean) * 255.) * std).reshape(ch, w, h).transpose(2, 1, 0).clip(0, 255).astype(np.uint8)
@@ -174,19 +142,15 @@ def get_image_from_array(X, index, mean=0, std=1):
         ret = ret.reshape(h, w)
     return ret
 
-def load_dataset(d_path, training):
-    r"""loads mnist from web on demand
-    scripts to generate moving mnist video dataset (frame by frame) as described in
-    [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs (Srivastava et al.)
-    by Tencia Lee / Praateek Mahajan (port to python 3)
-    saves in hdf5, npz, or jpg (individual frames) format
-    (modified from https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+def load_dataset(d_path: Path, training: bool):
+    r"""
+    Loads MNIST from the web on demand.
 
     Args:
-        d_path ():
-        training ():
+        d_path (Path): The path where the downloaded digits should be stored.
+        training (bool): Whether to use the training images (True) or the test images (False).
 
-    Returns:
+    Returns: The loaded MNIST images.
 
     """
     from vp_suite.utils.utils import download_from_url
@@ -206,22 +170,19 @@ def load_dataset(d_path, training):
         return load_mnist_images(str(d_path / 'train-images-idx3-ubyte.gz'))
     return load_mnist_images(str(d_path / 't10k-images-idx3-ubyte.gz'))
 
-def generate_moving_mnist(d_path, training=False, shape=(64, 64), num_frames=30, num_images=100, original_size=28,
-                          nums_per_image=2):
+def generate_moving_mnist(d_path: Path, training: bool = False, shape: (int, int) = (64, 64),
+                          num_frames: int = 30, num_images: int = 100, original_size: int = 28,
+                          nums_per_image: int = 2):
     r"""
-    scripts to generate moving mnist video dataset (frame by frame) as described in
-    [1] arXiv:1502.04681 - Unsupervised Learning of Video Representations Using LSTMs (Srivastava et al.)
-    by Tencia Lee / Praateek Mahajan (port to python 3)
-    saves in hdf5, npz, or jpg (individual frames) format
-    (modified from https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe)
+    Generate sequences of moving MNIST digits by moving them around between frames.
 
     Args:
-        training: Boolean, used to decide if downloading/generating train set or test set
-        shape: Shape we want for our moving images (new_width and new_height)
-        num_frames: Number of frames in a particular movement/animation/gif
-        num_images: Number of movement/animations/gif to generate
-        original_size: Real size of the images (eg: MNIST is 28x28)
-        nums_per_image: Digits per movement/animation/gif.
+        training (bool): Used to decide if downloading/generating training set or test set.
+        shape ((int, int)): Shape we want for our moving images (new_width and new_height).
+        num_frames (int): Number of frames in a particular movement/animation/gif.
+        num_images (int): Number of movement/animations/gif to generate.
+        original_size (int): Real size of the images (eg: MNIST is 28x28).
+        nums_per_image (int): Digits per movement/animation/gif.
 
     Returns:
         Dataset of np.uint8 type with dimensions num_frames * num_images x 1 x new_width x new_height
@@ -243,8 +204,8 @@ def generate_moving_mnist(d_path, training=False, shape=(64, 64), num_frames=30,
         speeds = np.random.randint(5, size=nums_per_image) + 2
         veloc = np.asarray([(speed * math.cos(direc), speed * math.sin(direc)) for direc, speed in zip(direcs, speeds)])
         # Get a list containing two PIL images randomly sampled from the database
-        mnist_images = [Image.fromarray(get_image_from_array(mnist, r, mean=0)).resize((original_size, original_size),
-                                                                                       Image.ANTIALIAS) \
+        mnist_images = [Image.fromarray(img_from_arr(mnist, r, mean=0)).resize((original_size, original_size),
+                                                                               Image.ANTIALIAS) \
                         for r in np.random.randint(0, mnist.shape[0], nums_per_image)]
         # Generate tuples of (x,y) i.e initial positions for nums_per_image (default : 2)
         positions = np.asarray([(np.random.rand() * x_lim, np.random.rand() * y_lim) for _ in range(nums_per_image)])

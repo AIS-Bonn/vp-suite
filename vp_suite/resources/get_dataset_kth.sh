@@ -1,13 +1,15 @@
 #!/bin/bash
 
+# Originally from https://github.com/edenton/svg,
+# Modified by Ani Karapetyan and further modified here.
+
 TARGET_DIR=$1
 CLASSES="boxing handclapping handwaving jogging running walking"
 IMG_SIZE=64
 IMG_STR="${IMG_SIZE}x${IMG_SIZE}"
 
 ### DOWNLOAD ###
-if [ -z $TARGET_DIR ]
-then
+if [ -z $TARGET_DIR ]; then
   echo "Must specify target directory"
 else
   mkdir -p $TARGET_DIR/processed
@@ -31,11 +33,11 @@ fi
 ### CONVERT ###
 for class in $CLASSES; do
   echo "Unpacking videos for: ${class}"
-	for fname in $TARGET_DIR/raw/$class/*; do
-		fname="$(basename -- $fname)"
-		mkdir -p $TARGET_DIR/processed/$class/${fname:0:-11}
-		src="${TARGET_DIR}/raw/${class}/${fname}"
-		dst="${TARGET_DIR}/processed/${class}/${fname:0:-11}/image-%03d_${IMG_STR}.png"
-		ffmpeg -hide_banner -loglevel error -i $src -r 25 -f image2 -s $IMG_STR $dst
-	done
+  for fname in $TARGET_DIR/raw/$class/*; do
+    fname="$(basename -- $fname)"
+    mkdir -p $TARGET_DIR/processed/$class/${fname:0:-11}
+    src="${TARGET_DIR}/raw/${class}/${fname}"
+    dst="${TARGET_DIR}/processed/${class}/${fname:0:-11}/image-%03d_${IMG_STR}.png"
+    ffmpeg -hide_banner -loglevel error -i $src -r 25 -f image2 -s $IMG_STR $dst
+  done
 done

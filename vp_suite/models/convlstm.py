@@ -23,14 +23,14 @@ class ConvLSTM(VideoPredictionModel):
     encoding_channels = 16, lstm_channels  #: TODO
     decoding_channels = lstm_channels, 32, 16, 8  #: TODO
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(ConvLSTM, self).__init__(device, **model_args)
+        super(ConvLSTM, self).__init__(device, **model_kwargs)
         self._check_kernel_size_consistency(self.lstm_kernel_size)
 
         # Make sure that both `kernel_size` and `hidden_dim` are lists having len == num_layers

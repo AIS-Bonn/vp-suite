@@ -15,14 +15,14 @@ class SimpleV1(VideoPredictionModel):
     # model hyperparameters
     temporal_dim = None  #: TODO
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(SimpleV1, self).__init__(device, **model_args)
+        super(SimpleV1, self).__init__(device, **model_kwargs)
 
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)
@@ -101,14 +101,14 @@ class SimpleV2(VideoPredictionModel):
             "hidden_channels": self.hidden_channels
         }
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(SimpleV2, self).__init__(device, **model_args)
+        super(SimpleV2, self).__init__(device, **model_kwargs)
 
         self.min_context_frames = self.temporal_dim
         self.act_fn = nn.ReLU(inplace=True)

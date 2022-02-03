@@ -12,23 +12,22 @@ import vp_suite.constants as constants
 
 class BAIRPushingDataset(VPDataset):
     r"""
+    Dataset class for the dataset "BAIR Robotic Pushing", as firstly encountered in
+    "Self-Supervised Visual Planning with Temporal Skip Connections" by Ebert et al. (https://arxiv.org/abs/1710.05268).
 
+    Each sequence depicts a robotic gripper arm that randomly moves its end effector inside a bin filled with objects,
+    occasionally stirring them around. This dataset is split into training and test data by default and provides RGB
+    images of size 64x64 as well as 4D action vectors describing the robot gripper movement per-frame.
     """
     NAME = "BAIR robot pushing"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
-    MIN_SEQ_LEN = 30  #: a trajectory in the BAIR robot pushing dataset is 30 timesteps
+    MIN_SEQ_LEN = 30
     ACTION_SIZE = 4
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
-    train_to_val_ratio = 0.96  #: big dataset -> val can be smaller
+    train_to_val_ratio = 0.96
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(BAIRPushingDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["obs_ids", "actions_ids", "obs_fps", "actions_fps"])
 
@@ -45,22 +44,9 @@ class BAIRPushingDataset(VPDataset):
         self.actions_fps = [os.path.join(self.data_dir, i) for i in self.actions_ids]
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.obs_fps)
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
@@ -76,12 +62,6 @@ class BAIRPushingDataset(VPDataset):
 
     @classmethod
     def download_and_prepare_dataset(cls):
-        r"""
-
-        Returns:
-
-        """
-
         d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         ds_path = d_path / "softmotion30_44k"
@@ -94,14 +74,12 @@ class BAIRPushingDataset(VPDataset):
 
 # === BAIR data preparation tools ==============================================
 
-def download_and_extract_bair(d_path):
+def download_and_extract_bair(d_path : Path):
     r"""
+    Download the BAIR dataset and unpack the downloaded archives into the specified target folder.
 
     Args:
-        d_path ():
-
-    Returns:
-
+        d_path (Path): Specified path to dataset.
     """
     tar_fname = "bair_robot_pushing_dataset_v0.tar"
     tar_path = str(d_path / tar_fname)
@@ -117,12 +95,14 @@ def download_and_extract_bair(d_path):
     tar.close()
     os.remove(tar_path)
 
-def split_bair_traj_files(data_dir, delete_tfrecords):
+def split_bair_traj_files(data_dir: Path, delete_tfrecords: bool):
     r"""
+    Pre-processes downloaded BAIR pushing data by extracting the per-frame image and action information
+    from the provided .tfrecord files and store the information in numpy arrays.
 
     Args:
-        data_dir ():
-        delete_tfrecords ():
+        data_dir (Path): Specified path to dataset.
+        delete_tfrecords (bool): If True, delete the .tfrecord files after extraction.
 
     Returns:
 

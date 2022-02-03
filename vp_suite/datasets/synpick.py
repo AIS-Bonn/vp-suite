@@ -15,29 +15,28 @@ from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 
 
-class SynpickVideoDataset(VPDataset):
+class SynpickMovingDataset(VPDataset):
     r"""
+    Dataset class for the Videos of the dataset "Synpick - Moving", as encountered in
+    "SynPick: A Dataset for Dynamic Bin Picking Scene Understanding"
+    by Periyasamy et al. (https://arxiv.org/pdf/2107.04852.pdf).
 
+    Each sequence depicts a robotic suction cap gripper that moves around in a red bin filled with objects.
+    Over the course of the sequence, the robot approaches 4 waypoints that are randomly chosen from the 4 corners.
+    On its way, the robot is pushing around the objects in the bin.
     """
-
-    NAME = "SynPick bin picking"
+    NAME = "SynPick - Moving"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
-    SKIP_FIRST_N = 72  #: TODO
-    MIN_SEQ_LEN = 90  #: a trajectory in the SynPick dataset is at least 90 frames
+    SKIP_FIRST_N = 72  #: Skip the first few frames as the robotic gripper is still in descent to the bin.
+    MIN_SEQ_LEN = 90
     ACTION_SIZE = 3
     DATASET_FRAME_SHAPE = (135, 240, 3)
 
     train_to_val_ratio = 0.9
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
-        super(SynpickVideoDataset, self).__init__(split, **dataset_kwargs)
+        super(SynpickMovingDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["all_idx", "valid_idx", "image_ids", "image_fps", "gripper_pos", "total_len"])
 
         self.data_dir = str((Path(self.data_dir) / "processed" / split).resolve())
@@ -59,18 +58,13 @@ class SynpickVideoDataset(VPDataset):
         self.total_len = len(self.image_ids)
 
     def _set_seq_len(self):
-        r"""
-
-        Returns:
-
-        """
         # Determine which dataset indices are valid for given sequence length T
         last_valid_idx = -1 * self.seq_len
         for idx in range(self.total_len - self.seq_len + 1):
 
             self.all_idx.append(idx)
-            ep_nums = [self.ep_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
-            frame_nums = [self.frame_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
+            ep_nums = [self._ep_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
+            frame_nums = [self._frame_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
 
             # first few frames are discarded
             if frame_nums[0] < self.SKIP_FIRST_N:
@@ -86,7 +80,7 @@ class SynpickVideoDataset(VPDataset):
 
             # discard sequences without considerable gripper movement
             gripper_pos = [self.gripper_pos[ep_nums[0]][frame_num] for frame_num in frame_nums]
-            gripper_pos_deltas = self.get_gripper_pos_xydist(gripper_pos)
+            gripper_pos_deltas = self._get_gripper_pos_xydist(gripper_pos)
             gripper_pos_deltas_above_min = [(delta > 1.0) for delta in gripper_pos_deltas]
             gripper_pos_deltas_below_max = [(delta < 30.0) for delta in gripper_pos_deltas]
             gripper_movement_ok = most(gripper_pos_deltas_above_min) and all(gripper_pos_deltas_below_max)
@@ -101,24 +95,16 @@ class SynpickVideoDataset(VPDataset):
                              "Perhaps the calculated sequence length is longer than the trajectories of the data?")
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
         i = self.valid_idx[i]  # only consider valid indices
         idx = range(i, i + self.seq_len, self.seq_step)  # create range of indices for frame sequence
 
-        ep_num = self.ep_num_from_id(self.image_ids[idx[0]])
-        frame_nums = [self.frame_num_from_id(self.image_ids[id_]) for id_ in idx]
+        ep_num = self._ep_num_from_id(self.image_ids[idx[0]])
+        frame_nums = [self._frame_num_from_id(self.image_ids[id_]) for id_ in idx]
         gripper_pos = [self.gripper_pos[ep_num][frame_num] for frame_num in frame_nums]
-        actions = torch.from_numpy(self.get_gripper_pos_diff(gripper_pos)).float()  # [t, a] sequence length is one less!
+        actions = torch.from_numpy(self._get_gripper_pos_diff(gripper_pos)).float()  # [t, a] sequence length is one less!
 
         imgs_ = [cv2.cvtColor(cv2.imread(self.image_fps[id_]), cv2.COLOR_BGR2RGB) for id_ in idx]
         rgb = np.stack(imgs_, axis=0)  # [t, h, w, c]
@@ -128,77 +114,26 @@ class SynpickVideoDataset(VPDataset):
         return data
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.valid_idx)
 
-    def comp_gripper_pos(self, old, new):
-        r"""
-
-        Args:
-            old ():
-            new ():
-
-        Returns:
-
-        """
+    def _comp_gripper_pos(self, old, new):
         x_diff, y_diff = new[0] - old[0], new[1] - old[1]
         return math.sqrt(x_diff * x_diff + y_diff * y_diff)
 
-    def get_gripper_pos_xydist(self, gripper_pos):
-        r"""
+    def _get_gripper_pos_xydist(self, gripper_pos):
+        return [self._comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
 
-        Args:
-            gripper_pos ():
-
-        Returns:
-
-        """
-        return [self.comp_gripper_pos(old, new) for old, new in zip(gripper_pos, gripper_pos[1:])]
-
-    def get_gripper_pos_diff(self, gripper_pos):
-        r"""
-
-        Args:
-            gripper_pos ():
-
-        Returns:
-
-        """
+    def _get_gripper_pos_diff(self, gripper_pos):
         gripper_pos_numpy = np.array(gripper_pos)
         return np.stack([new-old for old, new in zip(gripper_pos_numpy, gripper_pos_numpy[1:])], axis=0)
 
-    def ep_num_from_id(self, file_id: str):
-        r"""
-
-        Args:
-            file_id ():
-
-        Returns:
-
-        """
+    def _ep_num_from_id(self, file_id: str):
         return int(file_id[-17:-11])
 
-    def frame_num_from_id(self, file_id: str):
-        r"""
-
-        Args:
-            file_id ():
-
-        Returns:
-
-        """
+    def _frame_num_from_id(self, file_id: str):
         return int(file_id[-10:-4])
 
     def download_and_prepare_dataset(self):
-        r"""
-
-        Returns:
-
-        """
         self.DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
         d_path_processed = self.DEFAULT_DATA_DIR / "processed"
         d_path_raw = self.DEFAULT_DATA_DIR / "raw"
@@ -215,14 +150,12 @@ class SynpickVideoDataset(VPDataset):
 
 # === SynPick data preparation tools ===========================================
 
-def download_synpick(d_path_raw):
+def download_synpick(d_path_raw: Path):
     r"""
+    Downloads the SynPick - Moving dataset. Currently, this method is not implemented and will raise an Error.
 
     Args:
-        d_path_raw ():
-
-    Returns:
-
+        d_path_raw (Path): The output path for the raw data.
     """
     raise NotImplementedError("SynPick dataset is not yet downloadable! "
                               "Please contact the paper authors to resolve this issue.")
@@ -230,6 +163,7 @@ def download_synpick(d_path_raw):
 
 def prepare_synpick(in_path, out_path, seed, resize_ratio, train_to_val_ratio):
     r"""
+    DEPRECATED
 
     Args:
         in_path ():
@@ -286,6 +220,7 @@ def prepare_synpick(in_path, out_path, seed, resize_ratio, train_to_val_ratio):
 
 def copy_synpick_imgs(all_fps, out_path, resize_ratio):
     r"""
+    DEPRECATED
 
     Args:
         all_fps ():
@@ -316,6 +251,7 @@ def copy_synpick_imgs(all_fps, out_path, resize_ratio):
 
 def copy_synpick_scene_gts(all_fps, out_path):
     r"""
+    DEPRECATED
 
     Args:
         all_fps ():

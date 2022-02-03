@@ -11,14 +11,14 @@ class CopyLastFrame(VideoPredictionModel):
     REQUIRED_ARGS = []
     TRAINABLE = False
 
-    def __init__(self, device=None, **model_args):
+    def __init__(self, device=None, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(CopyLastFrame, self).__init__(device, **model_args)
+        super(CopyLastFrame, self).__init__(device, **model_kwargs)
 
     def pred_1(self, x, **kwargs):
         r"""

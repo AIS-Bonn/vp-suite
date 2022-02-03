@@ -13,28 +13,26 @@ from vp_suite.utils.utils import set_from_kwarg, read_video
 
 class CaltechPedestrianDataset(VPDataset):
     r"""
+    Dataset class for the dataset "Caltech Pedestrian", as firstly encountered in
+    "Pedestrian Detection: A Benchmark" by Dollár et al.
+    (http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/files/CVPR09pedestrians.pdf).
 
+    Each sequence shows a short clip of 'driving through regular traffic in an urban environment'.
     """
     NAME = "Caltech Pedestrian"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "caltech_pedestrian"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 568  #: Minimum number of frames across all sequences (1322 in 2nd-shortest, 2175 in longest)
-    ACTION_SIZE = 0  #: No actions given
+    ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (480, 640, 3)
-    FPS = 30  #: TODO
-    TRAIN_VAL_SETS = [f"set{i:02d}" for i in range(6)]  #: TODO
-    TEST_SETS = [f"set{i:02d}" for i in range(6, 11)]  #: TODO
+    FPS = 30  #: Frames per second.
+    TRAIN_VAL_SETS = [f"set{i:02d}" for i in range(6)]  #: The official training sets (here: training and validation).
+    TEST_SETS = [f"set{i:02d}" for i in range(6, 11)]  #: The official test sets.
 
-    train_to_val_ratio = 0.9  #: big dataset -> val can be smaller
-    train_val_seed = 1234  #: The seed to separate training/validation data from the previously split training data
+    train_to_val_ratio = 0.9
+    train_val_seed = 1234  #: The random seed used to separate training and validation data.
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(CaltechPedestrianDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["sequences", "sequences_with_frame_index",
                                      "AVAILABLE_CAMERAS"])
@@ -68,12 +66,7 @@ class CaltechPedestrianDataset(VPDataset):
         self.sequences_with_frame_index = []  # mock value, must not be used for iteration till sequence length is set
 
     def _set_seq_len(self):
-        r"""
-        Determine per video which frame indices are valid
-
-        Returns:
-
-        """
+        # Determine per video which frame indices are valid start indices. Each resulting index marks a datapoint.
         for sequence_path, frame_count in self.sequences:
             valid_start_idx = range(0, frame_count - self.seq_len + 1,
                                     self.seq_len + self.seq_step - 1)
@@ -81,14 +74,6 @@ class CaltechPedestrianDataset(VPDataset):
                 self.sequences_with_frame_index.append((sequence_path, idx))
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         sequence_path, start_idx = self.sequences_with_frame_index[i]
         vid = read_video(sequence_path, start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
         vid = vid[::self.seq_step]  # [t, h, w, c]
@@ -99,20 +84,10 @@ class CaltechPedestrianDataset(VPDataset):
         return data
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.sequences_with_frame_index)
 
     @classmethod
     def download_and_prepare_dataset(cls):
-        r"""
-
-        Returns:
-
-        """
         d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
 

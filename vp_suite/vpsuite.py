@@ -120,13 +120,13 @@ class VPSuite:
         model = torch.load(model_ckpt)
         self._model_setup(model, loaded=True)
 
-    def create_model(self, model_type, action_conditional=False, **model_args):
+    def create_model(self, model_type, action_conditional=False, **model_kwargs):
         r"""
 
         Args:
             model_type ():
             action_conditional ():
-            **model_args ():
+            **model_kwargs ():
 
         Returns:
 
@@ -138,7 +138,7 @@ class VPSuite:
 
         model_class = MODEL_CLASSES[model_type]
         for param in model_class.REQUIRED_ARGS:
-            if param not in model_args.keys():
+            if param not in model_kwargs.keys():
                 print(f"model parameter '{param}' not specified -> trying to take from last loaded dataset...")
                 if len(self.datasets) < 1:
                     raise ValueError(f"no dataset loaded to take parameter '{param}' from")
@@ -146,14 +146,14 @@ class VPSuite:
                 if param_val is None:
                     raise ValueError(f"dataset '{self.datasets[-1].NAME}' doesn't provide parameter '{param}', "
                                      f"so it has to be specified on model creation")
-                model_args.update({param: param_val})
+                model_kwargs.update({param: param_val})
         if action_conditional and not model_class.CAN_HANDLE_ACTIONS:
             warnings.warn("specified model can't handle actions -> argument 'action_conditional' set to False")
             action_conditional = False
-        model_args.update(action_conditional=action_conditional)
+        model_kwargs.update(action_conditional=action_conditional)
 
         # model creation
-        model = model_class(self.device, **model_args).to(self.device)
+        model = model_class(self.device, **model_kwargs).to(self.device)
         self._model_setup(model)
 
     def _model_setup(self, model, loaded=False):

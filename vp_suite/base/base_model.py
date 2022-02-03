@@ -20,21 +20,21 @@ class VideoPredictionModel(nn.Module):
     model_dir = None  #: specifies save location of model
     tensor_value_range = None  #: TODO
 
-    def __init__(self, device="cpu", **model_args):
+    def __init__(self, device="cpu", **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
         super(VideoPredictionModel, self).__init__()
 
         # set required parameters
         self.device = device
         for required_arg in self.REQUIRED_ARGS:
-            if required_arg not in model_args.keys():
+            if required_arg not in model_kwargs.keys():
                 raise ValueError(f"model {self.NAME} requires parameter '{required_arg}'")
-            required_val = model_args[required_arg]
+            required_val = model_kwargs[required_arg]
 
             # pre-setattr checks
             if required_arg == "tensor_value_range":
@@ -49,8 +49,8 @@ class VideoPredictionModel(nn.Module):
                 self.img_c, self.img_h, self.img_w = self.img_shape
 
         # set optional parameters
-        self.action_conditional = model_args.get("action_conditional", False)
-        for model_arg, model_arg_val in model_args.items():
+        self.action_conditional = model_kwargs.get("action_conditional", False)
+        for model_arg, model_arg_val in model_kwargs.items():
             if model_arg in self.REQUIRED_ARGS:
                 continue  # skip required args as they have been set up already
             elif hasattr(self, model_arg):

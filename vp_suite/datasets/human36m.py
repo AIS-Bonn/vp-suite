@@ -13,31 +13,30 @@ from vp_suite.utils.utils import set_from_kwarg, get_frame_count, read_video
 
 class Human36MDataset(VPDataset):
     r"""
+    Dataset class for the Videos of the dataset "Human 3.6M", as encountered in
+    "Human3.6M: Large Scale Datasets and Predictive Methods for 3D Human Sensing in Natural Environments"
+    by Ionescu et al. (http://vision.imar.ro/human3.6m/pami-h36m.pdf).
 
+    Each sequence depicts a human actor in a room equipped with different cameras and sensors. The actor
+    is one of several different scenarios such as "Discussion", "Sitting" or "Smoking".
     """
     NAME = "Human 3.6M"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "human36m"
     VALID_SPLITS = ["train", "val", "test"]
-    MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest)
-    ACTION_SIZE = 0  #: No actions given
-    DATASET_FRAME_SHAPE = (1000, 1000, 3) # some videos have (1002, 1000, 3) -> resize during loading
-    FPS = 50
-    SKIP_FIRST_N = 25  # some of the sequence start with a tiny bit of idling
+    MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest).
+    ACTION_SIZE = 0
+    DATASET_FRAME_SHAPE = (1000, 1000, 3) #: For Human 3.6M, some sequences come in a shape of (1002, 1000, 3). They're resized during loading.
+    FPS = 50  #: Frames per Second.
+    SKIP_FIRST_N = 25  #: Some of the sequences start with a bit of idling from the actor. Therefore, the first few frames of each sequence are discarded.
     ALL_SCENARIOS = ['Directions', 'Discussion', 'Eating', 'Greeting', 'Phoning', 'Photo',
                      'Posing', 'Purchases', 'Sitting', 'SittingDown', 'Smoking', 'TakingPhoto',
-                     'Waiting', 'WalkDog', 'WalkTogether', 'Walking', 'WalkingDog']
+                     'Waiting', 'WalkDog', 'WalkTogether', 'Walking', 'WalkingDog']  #: All recorded scenarios of the dataset.
 
-    train_to_val_ratio = 0.96  #: big dataset -> val can be smaller
-    train_val_seed = 1234
-    scenarios = None
+    train_to_val_ratio = 0.96
+    train_val_seed = 1234  #: Random seed used to separate training and validation data.
+    scenarios = None  #: Scenarios chosen for the current dataset instance (defaults to `self.ALL_SCENARIOS`)
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(Human36MDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["sequences", "sequences_with_frame_index",
                                      "ALL_SCENARIOS"])
@@ -69,12 +68,7 @@ class Human36MDataset(VPDataset):
         self.sequences_with_frame_index = []  # mock value, must not be used for iteration till sequence length is set
 
     def _set_seq_len(self):
-        r"""
-        Determine per video which frame indices are valid
-
-        Returns:
-
-        """
+        # Determine per video which frame indices are valid
         for vfp, frame_count in self.sequences.items():
             valid_idx = range(self.SKIP_FIRST_N,
                               frame_count - self.seq_len + 1,
@@ -83,14 +77,6 @@ class Human36MDataset(VPDataset):
                 self.sequences_with_frame_index.append((vfp, idx))
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         vid_fp, start_idx = self.sequences_with_frame_index[i]
         vid = read_video(vid_fp, img_size=self.img_shape[1:],
                          start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
@@ -102,20 +88,10 @@ class Human36MDataset(VPDataset):
         return data
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.sequences_with_frame_index)
 
     @classmethod
     def download_and_prepare_dataset(cls):
-        r"""
-
-        Returns:
-
-        """
         d_path = cls.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))

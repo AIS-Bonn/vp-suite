@@ -23,14 +23,14 @@ class STLSTM(VideoPredictionModel):
     decoupling_loss_scale = 100.0  #: TODO
     inflated_action_dim = 3  #: TODO
     
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(STLSTM, self).__init__(device, **model_args)
+        super(STLSTM, self).__init__(device, **model_kwargs)
 
         self.num_hidden = [self.enc_channels] * self.num_layers
         self.autoencoder = Autoencoder(self.img_shape, self.enc_channels, device)

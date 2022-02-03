@@ -1,10 +1,6 @@
 import os
 import random
-import numpy as np
 import torch
-import imageio
-import torchfile
-import torchvision.transforms as TF
 from torchvision.io import read_video
 from pathlib import Path
 
@@ -12,31 +8,28 @@ from vp_suite.base.base_dataset import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_video
 
-class CropUpperRight(torch.nn.Module):
-    def __init__(self, w):
-        super(CropUpperRight, self).__init__()
-        self.w = w
-
-    def forward(self, img):
-        return img[:, :, :self.w, -self.w:]
-
 
 class Physics101Dataset(VPDataset):
     r"""
+    Dataset class for the Videos of the dataset "Physics 101", as encountered in
+    "Physics 101: Learning Physical Object Properties from Unlabeled Videos" by Wu et al.
+    (http://phys101.csail.mit.edu/papers/phys101_bmvc.pdf).
 
+    Each sequence depicts object-centered physical properties by showing objects of various materials and apperances in
+    different physical scenarios such as sliding down a ramp or bouncing off a flat surface.
     """
     NAME = "Physics 101"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "phys101"
-    AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #, "Kinect_FullDepth_1", "Kinect_RGB-D_1"]
-    AVAILABLE_SUBSEQ = ["start", "middle", "end"]
-    MIN_SEQ_LEN = 16  #: Minimum number of frames across all sequences
-    ACTION_SIZE = 0  #: No actions given
-    DATASET_FRAME_SHAPE = (1080, 1920, 3) # for cams without depth information
+    AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #: Available cameras/image sources.
+    AVAILABLE_SUBSEQ = ["start", "middle", "end"]  #: Available (sub-)sequence extraction position identifiers.
+    MIN_SEQ_LEN = 16
+    ACTION_SIZE = 0
+    DATASET_FRAME_SHAPE = (1080, 1920, 3)
 
-    camera = "Kinect_RGB_1"  #: Which camera to take from the dataset. TODO explanations
-    subseq = "middle"  #: Whether to take a sequence from the middle of the clip or the beginning
-    trainval_to_test_ratio = 0.8
-    trainval_test_seed = 1612  #: The seed to separate training data from test data; Value from the 'Noether Networks' code
+    camera = "Kinect_RGB_1"  #: Which camera to use from the dataset.
+    subseq = "middle"  #: Where to extract the sequence from: "start" starts from the first frame, "end" ends at the last frame and "middle" lies exactly in between.
+    trainval_to_test_ratio = 0.8  #: The ratio of files that will be training/validation data (rest will be test data).
+    trainval_test_seed = 1612 #: The random seed used to separate training/validation and testing data. Value from the 'Noether Networks' code
 
     def __init__(self, split, **dataset_kwargs):
         r"""
@@ -63,14 +56,6 @@ class Physics101Dataset(VPDataset):
             self.vid_filepaths = self.vid_filepaths[slice_idx:]
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
         vid = read_video(self.vid_filepaths[i], num_frames=self.total_frames)  # [T, h, w, c]
         if self.seq_step > 1:
@@ -91,19 +76,9 @@ class Physics101Dataset(VPDataset):
         return data
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return len(self.vid_filepaths)
 
     def download_and_prepare_dataset(self):
-        r"""
-
-        Returns:
-
-        """
         d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))

@@ -15,7 +15,7 @@ mv source/readme source/readme.rst
 
 # build api docs
 sphinx-apidoc -f -e -M -d 1 -t _templates -o ./source ../vp_suite
-rm -f source/modules.rst  # modules.rst is auto-generated but skipped by index.rst
+rm -f source/modules.rst  # modules.rst is auto-generated but not used by our index.rst
 
 # remove the words 'module' and 'package' from all generated RST files except source and readme
 RST_FILES="source/*.rst"

@@ -20,14 +20,14 @@ class UNet3D(VideoPredictionModel):
     features = [8, 16, 32, 64]  #: TODO
     temporal_dim = None  #: TODO
 
-    def __init__(self, device, **model_args):
+    def __init__(self, device, **model_kwargs):
         r"""
 
         Args:
             device ():
-            **model_args ():
+            **model_kwargs ():
         """
-        super(UNet3D, self).__init__(device, **model_args)
+        super(UNet3D, self).__init__(device, **model_kwargs)
 
         self.min_context_frames = self.temporal_dim
         self.downs = nn.ModuleList()

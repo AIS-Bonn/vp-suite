@@ -18,14 +18,14 @@ p = 5  # pred_frames
 def test_models_without_actions(model_key):
 
     model_class = MODEL_CLASSES[model_key]
-    model_args = {
+    model_kwargs = {
         "action_size": ACTION_SIZE,
         "img_shape": IMG_SHAPE,
         "temporal_dim": TEMPORAL_DIM,
         "action_conditional": False,
         "tensor_value_range": [0.0, 1.0]
     }
-    model : VideoPredictionModel = model_class(DEVICE, **model_args).to(DEVICE)
+    model : VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
     t = 3 # model.min_context_frames
     x = torch.randn(b, t, c, h, w, device=DEVICE)
     pred_1 = model.pred_1(x)
@@ -41,14 +41,14 @@ def test_models_without_actions(model_key):
 def test_models_with_actions(model_key):
 
     model_class = MODEL_CLASSES[model_key]
-    model_args = {
+    model_kwargs = {
         "action_size": ACTION_SIZE,
         "img_shape": IMG_SHAPE,
         "temporal_dim": TEMPORAL_DIM,
         "action_conditional": model_class.CAN_HANDLE_ACTIONS,
         "tensor_value_range": [0.0, 1.0]
     }
-    model : VideoPredictionModel = model_class(DEVICE, **model_args).to(DEVICE)
+    model : VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
     t = 3 # model.min_context_frames
     x = torch.randn(b, t, c, h, w, device=DEVICE)
     a = torch.randn(b, t+p, ACTION_SIZE, device=DEVICE)

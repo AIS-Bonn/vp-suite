@@ -11,6 +11,11 @@ import vp_suite.constants as constants
 
 class KTHActionsDataset(VPDataset):
     r"""
+    Dataset class for the dataset "KTH Action", as mentioned in
+    "Recognizing human actions: a local SVM approach" by Schuldt et al.
+    (https://ieeexplore.ieee.org/document/1334462).
+
+    Each sequence depicts a human acting according to one of six scenarios (actions).
 
     Code by Angel Villar-Corrales, modified.
 
@@ -21,19 +26,13 @@ class KTHActionsDataset(VPDataset):
     """
     NAME = "KTH Actions"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
-    CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: TODO
-    SHORT_CLASSES = ['walking', 'running', 'jogging']  #: TODO
+    CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: The different scenarios that constitue this dataset.
+    SHORT_CLASSES = ['walking', 'running', 'jogging']  #: Those scenarios where the sequence length might drop below the required frame count.
     MIN_SEQ_LEN = 30
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["data"])
 
@@ -42,14 +41,6 @@ class KTHActionsDataset(VPDataset):
         self.data = {c: torchfile.load(os.path.join(self.data_dir, c, torchfile_name)) for c in self.CLASSES}
 
     def get_from_idx(self, i):
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         for c, c_data in self.data.items():
             len_c_data = sum([len(vid[b'files']) for vid in c_data])
             if i >= len_c_data:  # seq sits in another class
@@ -65,14 +56,6 @@ class KTHActionsDataset(VPDataset):
         raise ValueError("invalid i")
 
     def __getitem__(self, i) -> VPData:
-        r"""
-
-        Args:
-            i ():
-
-        Returns:
-
-        """
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
@@ -94,23 +77,10 @@ class KTHActionsDataset(VPDataset):
         return data
 
     def __len__(self):
-        r"""
-
-        Returns:
-
-        """
         return sum([sum([len(vid[b'files']) for vid in c_data]) for c_data in self.data.values()])
 
     @classmethod
     def download_and_prepare_dataset(cls):
-        r"""
-
-        Downloads and parepares the KTH datasets, using bash scripts from https://github.com/edenton/svg
-        that have been modified by Ani Karapetyan.
-
-        Returns:
-
-        """
         from vp_suite.utils.utils import run_shell_command
         import vp_suite.constants as constants
         get_kth_command = f"{(constants.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} " \
