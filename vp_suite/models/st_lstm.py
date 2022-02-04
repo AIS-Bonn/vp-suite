@@ -70,12 +70,12 @@ class STLSTM(VideoPredictionModel):
         """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
-    def forward(self, frames, pred_length=1, **kwargs):
+    def forward(self, frames, pred_frames=1, **kwargs):
         r"""
 
         Args:
             frames ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -91,7 +91,7 @@ class STLSTM(VideoPredictionModel):
                 actions = actions.transpose(0, 1)
 
         t_in, b, _, _, _ = frames.shape
-        T = t_in + pred_length
+        T = t_in + pred_frames
         next_frames = []
         h_t = []
         c_t = []

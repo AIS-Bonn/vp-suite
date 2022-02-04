@@ -98,12 +98,12 @@ class STPhy(VideoPredictionModel):
         """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
-    def forward(self, input, pred_length=1, **kwargs):
+    def forward(self, input, pred_frames=1, **kwargs):
         r"""
 
         Args:
             input ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -112,7 +112,7 @@ class STPhy(VideoPredictionModel):
 
         frames = input.transpose(0, 1)  # [t, b, c, h, w]
         input_length, batch_size, _, _, _ = frames.shape
-        T = input_length + pred_length
+        T = input_length + pred_frames
         out_frames = []
 
         empty_actions = torch.zeros(batch_size, T, device=self.device)
@@ -187,7 +187,7 @@ class STPhy(VideoPredictionModel):
             decouple_loss.append(torch.mean(torch.abs(decouple_loss_)))
 
         out_frames = torch.stack(out_frames, dim=1)
-        reconstructions, predictions = out_frames.split([input_length-1, pred_length], dim=1)
+        reconstructions, predictions = out_frames.split([input_length - 1, pred_frames], dim=1)
 
         losses = {
             "reconstruction": self.criterion(reconstructions, input[:, 1:]),

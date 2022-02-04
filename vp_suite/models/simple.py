@@ -55,12 +55,12 @@ class SimpleV1(VideoPredictionModel):
             raise ValueError("invalid number of frames given")
         return self.cnn(x).squeeze(dim=2)  # [b, c, h, w]
 
-    def forward(self, x, pred_length=1, **kwargs):
+    def forward(self, x, pred_frames=1, **kwargs):
         r"""
 
         Args:
             x ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -68,7 +68,7 @@ class SimpleV1(VideoPredictionModel):
         """
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
-        for t in range(pred_length):
+        for t in range(pred_frames):
             input = x[:, :, -self.temporal_dim:]
             output_frames.append(self.pred_1(input))
         return torch.stack(output_frames, dim=1), None
@@ -136,12 +136,12 @@ class SimpleV2(VideoPredictionModel):
         out = self.final_merge(torch.cat([big_branch, last_frame], dim=1))
         return out
 
-    def forward(self, x, pred_length=1, **kwargs):
+    def forward(self, x, pred_frames=1, **kwargs):
         r"""
 
         Args:
             x ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -149,7 +149,7 @@ class SimpleV2(VideoPredictionModel):
         """
         x = x.transpose(1, 2)  # shape: [b, c, t, h, w]
         output_frames = []
-        for t in range(pred_length):
+        for t in range(pred_frames):
             input = x[:, :, -self.temporal_dim:]
             output_frames.append(self.pred_1(input))
         return torch.stack(output_frames, dim=1), None

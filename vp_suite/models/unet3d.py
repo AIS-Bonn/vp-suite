@@ -131,14 +131,14 @@ class UNet3D(VideoPredictionModel):
         # FINAL
         return self.final_conv(x)
 
-    def forward(self, x, pred_length=1, **kwargs):
+    def forward(self, x, pred_frames=1, **kwargs):
         r"""
         input: T_in frames: [b, T_in, c, h, w]
         output: pred_length (P) frames: [b, P, c, h, w]
 
         Args:
             x ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -148,10 +148,10 @@ class UNet3D(VideoPredictionModel):
 
         # actions
         b, input_length, _, _, _ = x.shape
-        empty_actions = torch.zeros(b, input_length + pred_length, device=self.device)
+        empty_actions = torch.zeros(b, input_length + pred_frames, device=self.device)
         actions = kwargs.get("actions", empty_actions)
 
-        for t in range(pred_length):
+        for t in range(pred_frames):
             pred = self.pred_1(x, actions=actions)
             pred = pred.unsqueeze(dim=1)
             preds.append(pred)

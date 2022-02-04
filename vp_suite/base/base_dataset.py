@@ -30,6 +30,23 @@ class VPData(TypedDict):
     actions: torch.Tensor  #: Actions per frame: torch tensors of shape [t, a].
 
 
+def unpack_data_for_model(data: VPData, config: dict):
+    r"""
+    Extracts inputs and targets from a data blob.
+
+    Args:
+        data (VPData): The given VPData data blob/dictionary containing frames and actions.
+        config (dict): The current run configuration specifying how to extract the data from the given data blob.
+
+    Returns: The specified amount of input/target frames as well as the actions.
+    """
+    img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
+    input_frames = img_data[:, :config["context_frames"]]
+    target_frames = img_data[:, config["context_frames"]: config["context_frames"] + config["pred_frames"]]
+    actions = data["actions"].to(config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
+    return input_frames, target_frames, actions
+
+
 class VPSubset(Subset):
     r"""
     A minimal wrapper around :class:`~Subset` that allows to directly access the underlying dataset's attributes.

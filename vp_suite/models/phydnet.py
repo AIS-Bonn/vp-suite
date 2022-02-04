@@ -54,7 +54,7 @@ class PhyDNet(VideoPredictionModel):
         """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
-    def forward(self, frames, pred_length=1, **kwargs):
+    def forward(self, frames, pred_frames=1, **kwargs):
         r"""
 
         Note:
@@ -62,7 +62,7 @@ class PhyDNet(VideoPredictionModel):
 
         Args:
             frames ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -74,7 +74,7 @@ class PhyDNet(VideoPredictionModel):
         in_length = frames.shape[1]
         out_frames = []
 
-        empty_actions = torch.zeros(frames.shape[0], in_length + pred_length, device=self.device)
+        empty_actions = torch.zeros(frames.shape[0], in_length + pred_frames, device=self.device)
         actions = kwargs.get("actions", empty_actions)
         if self.action_conditional:
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
@@ -87,7 +87,7 @@ class PhyDNet(VideoPredictionModel):
 
         decoder_input = frames[:, -1, :, :, :]  # first decoder input = last image of input sequence
 
-        for di in range(pred_length):
+        for di in range(pred_frames):
             decoder_output, decoder_hidden, output_image, _, _ = self.encoder(decoder_input, actions[:, ac_index], (ac_index == 0))
             out_frames.append(output_image)
             decoder_input = output_image

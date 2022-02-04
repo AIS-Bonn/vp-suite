@@ -96,12 +96,12 @@ class LSTM(VideoPredictionModel):
         """
         return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
 
-    def forward(self, x, pred_length=1, **kwargs):
+    def forward(self, x, pred_frames=1, **kwargs):
         r"""
 
         Args:
             x ():
-            pred_length ():
+            pred_frames ():
             **kwargs ():
 
         Returns:
@@ -140,7 +140,7 @@ class LSTM(VideoPredictionModel):
         preds = [self.decode(output)]
 
         # preds 2, 3, ...
-        for t in range(pred_length - 1):
+        for t in range(pred_frames - 1):
             encoded = self.encode(preds[-1])
             if self.action_conditional:
                 inflated_action = self.action_inflate(actions[t - T_in].flatten(1, -1))

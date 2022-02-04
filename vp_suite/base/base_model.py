@@ -5,7 +5,7 @@ from torch.optim.optimizer import Optimizer
 from tqdm import tqdm
 from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
 from vp_suite.measure.loss_provider import PredictionLossProvider
-from vp_suite.base.base_dataset import VPData
+from vp_suite.base.base_dataset import VPData, unpack_data_for_model
 
 
 class VideoPredictionModel(nn.Module):
@@ -92,42 +92,26 @@ class VideoPredictionModel(nn.Module):
         """
         raise NotImplementedError
 
-    def forward(self, x: torch.Tensor, pred_length: int = 1, **kwargs):
+    def forward(self, x: torch.Tensor, pred_frames: int = 1, **kwargs):
         r"""
         Given an input sequence of t frames, predicts `pred_length` (`p`) frames into the future.
 
         Args:
             x (torch.Tensor): A batch of `b` sequences of `t` input frames as a tensor of shape [b, t, c, h, w].
-            pred_length (int): The number of frames to predict into the future.
+            pred_frames (int): The number of frames to predict into the future.
             **kwargs ():
 
         Returns: A batch of sequences of `p` predicted frames as a tensor of shape [b, p, c, h, w].
 
         """
         predictions = []
-        for i in range(pred_length):
+        for i in range(pred_frames):
             pred = self.pred_1(x, **kwargs).unsqueeze(dim=1)
             predictions.append(pred)
             x = torch.cat([x, pred], dim=1)
 
         pred = torch.cat(predictions, dim=1)
         return pred, None
-
-    def _fwd_from_data(self, data: VPData, config: dict):
-        r"""
-        Extracts inputs and targets from a data blob
-        and executes a forward pass to obtain predictions and losses.
-        """
-        img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
-        input = img_data[:, :config["context_frames"]]
-        targets = img_data[:, config["context_frames"]
-                              : config["context_frames"] + config["pred_frames"]]
-        actions = data["actions"].to(
-            config["device"])  # [b, T-1, a]. Action t corresponds to what happens after frame t
-
-        # fwd
-        predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
-        return predictions, targets, model_losses
 
     def train_iter(self, config: dict, loader: DataLoader, optimizer: Optimizer,
                    loss_provider: PredictionLossProvider, epoch: int):
@@ -145,7 +129,8 @@ class VideoPredictionModel(nn.Module):
         loop = tqdm(loader)
         for batch_idx, data in enumerate(loop):
             # fwd
-            predictions, targets, model_losses = self._fwd_from_data(data, config)
+            input, targets, actions = unpack_data_for_model(data, config)
+            predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
 
             # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -184,7 +169,8 @@ class VideoPredictionModel(nn.Module):
         with torch.no_grad():
             for batch_idx, data in enumerate(loop):
                 # fwd
-                predictions, targets, model_losses = self._fwd_from_data(data, config)
+                input, targets, actions = unpack_data_for_model(data, config)
+                predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
 
                 # metrics
                 loss_values, _ = loss_provider.get_losses(predictions, targets)
