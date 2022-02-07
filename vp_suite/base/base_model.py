@@ -116,7 +116,7 @@ class VideoPredictionModel(nn.Module):
 
     def forward(self, x: torch.Tensor, pred_frames: int = 1, **kwargs):
         r"""
-        Given an input sequence of t frames, predicts `pred_length` (`p`) frames into the future.
+        Given an input sequence of t frames, predicts `pred_frames` (`p`) frames into the future.
 
         Args:
             x (torch.Tensor): A batch of `b` sequences of `t` input frames as a tensor of shape [b, t, c, h, w].
@@ -152,7 +152,7 @@ class VideoPredictionModel(nn.Module):
         for batch_idx, data in enumerate(loop):
             # fwd
             input, targets, actions = self.unpack_data(data, config)
-            predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
+            predictions, model_losses = self(input, pred_frames=config["pred_frames"], actions=actions)
 
             # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -191,7 +191,7 @@ class VideoPredictionModel(nn.Module):
             for batch_idx, data in enumerate(loop):
                 # fwd
                 input, targets, actions = self.unpack_data(data, config)
-                predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
+                predictions, model_losses = self(input, pred_frames=config["pred_frames"], actions=actions)
 
                 # metrics
                 loss_values, _ = loss_provider.get_losses(predictions, targets)

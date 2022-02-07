@@ -96,7 +96,7 @@ class STPhy(VideoPredictionModel):
         Returns:
 
         """
-        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
+        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, input, pred_frames=1, **kwargs):
         r"""
@@ -223,7 +223,7 @@ class STPhy(VideoPredictionModel):
             actions = data["actions"].to(self.device)
 
             predictions, model_losses \
-                = self(input_frames, pred_length=config["pred_frames"], actions=actions,
+                = self(input_frames, pred_frames=config["pred_frames"], actions=actions,
                                teacher_forcing_ratio=teacher_forcing_ratio, target_frames=target_frames)
 
             # loss

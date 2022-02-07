@@ -134,7 +134,7 @@ class UNet3D(VideoPredictionModel):
     def forward(self, x, pred_frames=1, **kwargs):
         r"""
         input: T_in frames: [b, T_in, c, h, w]
-        output: pred_length (P) frames: [b, P, c, h, w]
+        output: pred_frames (P) frames: [b, P, c, h, w]
 
         Args:
             x ():

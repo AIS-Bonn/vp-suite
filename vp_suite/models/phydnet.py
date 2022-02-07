@@ -52,7 +52,7 @@ class PhyDNet(VideoPredictionModel):
         Returns:
 
         """
-        return self(x, pred_length=1, **kwargs)[0].squeeze(dim=1)
+        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, frames, pred_frames=1, **kwargs):
         r"""

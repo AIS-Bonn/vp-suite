@@ -52,7 +52,7 @@ class PredRNN_V2(VideoPredictionModel):
     residual_on_action_conv: bool = True
 
     def pred_1(self, x, **kwargs):
-        return self(x, pred_length=1, **kwargs)
+        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def __init__(self, device, **model_kwargs):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)
@@ -124,6 +124,8 @@ class PredRNN_V2(VideoPredictionModel):
         # prep variables
         b, total_frames, _, img_h, img_w = x.shape  # NOTE: x NEEDS TO HAVE 'TOTAL_FRAMES' FRAMES!
         context_frames = total_frames - pred_frames
+        if context_frames < 1:
+            raise ValueError("Model {self.NAME} needs input sequences that also include the target frames!")
         train = kwargs.get("train", False)
 
         # prep inputs
@@ -148,13 +150,13 @@ class PredRNN_V2(VideoPredictionModel):
         delta_m_list = []
         decouple_loss = []
         for i in range(self.num_layers):
-            zeros = torch.zeros([b, self.num_hidden[i], self.patch_h, self.patch_w]).to(self.device)
+            zeros = torch.zeros([b, self.num_hidden[i], self.patch_h, self.patch_w], device=self.device)
             h_t.append(zeros)
             c_t.append(zeros)
             delta_c_list.append(zeros)
             delta_m_list.append(zeros)
 
-        memory = torch.zeros([b, self.num_hidden[0], self.patch_h, self.patch_w]).to(self.device)
+        memory = torch.zeros([b, self.num_hidden[0], self.patch_h, self.patch_w], device=self.device)
         mask_true = self._scheduled_sampling(b, context_frames, pred_frames, train)
         x_gen = None
 
@@ -196,9 +198,9 @@ class PredRNN_V2(VideoPredictionModel):
 
             for i in range(1, self.num_layers):
                 if self.action_conditional:
-                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[0](h_t[i - 1], h_t[i], c_t[i], memory, a_patch)
+                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i], memory, a_patch)
                 else:
-                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[0](h_t[i - 1], h_t[i], c_t[i], memory)
+                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i], memory)
                 delta_c_list[i] = F.normalize(self.adapter(delta_c).view(delta_c.shape[0], delta_c.shape[1], -1), dim=2)
                 delta_m_list[i] = F.normalize(self.adapter(delta_m).view(delta_m.shape[0], delta_m.shape[1], -1), dim=2)
 
@@ -221,8 +223,8 @@ class PredRNN_V2(VideoPredictionModel):
             next_frames.append(x_gen)
 
         # finalize
-        predictions_patch = torch.stack(next_frames, dim=1)  # [b, t, c, h, w]
-        predictions = self._reshape_patch_back(predictions_patch)
+        predictions_patch = torch.stack(next_frames, dim=1)  # [b, t', cpp, h_, w_]
+        predictions = self._reshape_patch_back(predictions_patch)[:, -pred_frames:]  # [b, t_pred, c, h, w]
         decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0))
         return predictions, {"ST-LSTM decouple loss": decouple_loss}
 
@@ -232,9 +234,9 @@ class PredRNN_V2(VideoPredictionModel):
         expected_input_shape = (expected_img_c, self.img_h, self.img_w)
         if expected_input_shape != (c, h, w):
             raise ValueError(f"shape mismatch: expected {expected_input_shape}, got {(c, h, w)}")
-        a = torch.reshape(x, [b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size])
-        b = torch.permute(a, (0, 1, 2, 4, 6, 3, 5))  # [b, t, c, p, p, h_, w_]
-        x_patch = torch.reshape(b, [b, t, -1, self.patch_h, self.patch_w])  # infer channel dim automatically since there might be actions included
+        x = x.reshape(b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size)
+        x = x.permute((0, 1, 2, 4, 6, 3, 5))  # [b, t, c, p, p, h_, w_]
+        x_patch = x.reshape(b, t, -1, self.patch_h, self.patch_w)  # infer channel dim automatically since there might be actions included
         return x_patch
 
     def _reshape_patch_back(self, x_patch):
@@ -242,9 +244,9 @@ class PredRNN_V2(VideoPredictionModel):
         c = cpp // (self.patch_size * self.patch_size)
         h = self.patch_h * self.patch_size
         w = self.patch_w * self.patch_size
-        a = torch.reshape(x_patch, [b, t, c, self.patch_size, self.patch_size, self.patch_h, self.patch_w])
-        b = torch.permute(a, [0, 1, 2, 5, 3, 6, 4])  # [b, t, c, h_, p, w_, p]
-        x = torch.reshape(b, [b, t, c, h, w])
+        x_patch = x_patch.reshape(b, t, c, self.patch_size, self.patch_size, self.patch_h, self.patch_w)
+        x_patch = x_patch.permute((0, 1, 2, 5, 3, 6, 4))  # [b, t, c, h_, p, w_, p]
+        x = x_patch.reshape(b, t, c, h, w)
         return x
 
     def _reserve_schedule_sampling(self, batch_size: int, context_frames: int, pred_frames: int):
@@ -263,13 +265,15 @@ class PredRNN_V2(VideoPredictionModel):
         else:
             eta = 0.0
 
-        r_random_flip = torch.rand(batch_size, context_frames-1)
-        random_flip = torch.rand(batch_size, pred_frames - 1)
+        r_random_flip = torch.rand(batch_size, context_frames-1, device=self.device)
+        random_flip = torch.rand(batch_size, pred_frames - 1, device=self.device)
 
-        r_real_input_flag_ = torch.zeros(batch_size, context_frames-1, self.patch_c, self.patch_h, self.patch_w)
+        r_real_input_flag_ = torch.zeros(batch_size, context_frames-1, self.patch_c, self.patch_h, self.patch_w,
+                                         device=self.device)
         r_real_input_flag_[(r_random_flip < r_eta)] = 1
 
-        real_input_flag_ = torch.zeros(batch_size, pred_frames-1, self.patch_c, self.patch_h, self.patch_w)
+        real_input_flag_ = torch.zeros(batch_size, pred_frames-1, self.patch_c, self.patch_h, self.patch_w,
+                                       device=self.device)
         real_input_flag_[(random_flip < eta)] = 1
 
         real_input_flag = torch.cat([r_real_input_flag_, real_input_flag_], dim=1)
@@ -279,15 +283,17 @@ class PredRNN_V2(VideoPredictionModel):
         pred_frames_m1 = pred_frames - 1
 
         if not self.scheduled_sampling:
-            return 0.0, torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w)
+            return 0.0, torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w,
+                                    device=self.device)
 
         if self.training_iteration < self.sampling_stop_iter:
             self.sampling_eta -= self.sampling_changing_rate
         else:
             self.sampling_eta = 0.0
 
-        random_flip = torch.rand(batch_size, pred_frames_m1)
-        real_input_flag = torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w)
+        random_flip = torch.rand(batch_size, pred_frames_m1, device=self.device)
+        real_input_flag = torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w,
+                                      device=self.device)
         real_input_flag[(random_flip < self.sampling_eta)] = 1
         return real_input_flag
 
@@ -296,7 +302,8 @@ class PredRNN_V2(VideoPredictionModel):
             mask_frames = context_frames + pred_frames - 2
         else:
             mask_frames = pred_frames - 1
-        real_input_flag = torch.zeros(batch_size, mask_frames, self.patch_c, self.patch_h, self.patch_w)
+        real_input_flag = torch.zeros(batch_size, mask_frames, self.patch_c, self.patch_h, self.patch_w,
+                                      device=self.device)
         if self.reverse_scheduled_sampling:
             real_input_flag[:, :context_frames-1] = 1
         return real_input_flag
@@ -327,7 +334,7 @@ class PredRNN_V2(VideoPredictionModel):
 
             # fwd
             input, targets, actions = self.unpack_data(data, config)
-            predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions, train=True)
+            predictions, model_losses = self(input, pred_frames=config["pred_frames"], actions=actions, train=True)
 
             # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
@@ -338,7 +345,7 @@ class PredRNN_V2(VideoPredictionModel):
             # reverse
             if self.reverse_input:
                 input_rev, targets_rev, actions_rev = self.unpack_data(data, config, reverse=True)
-                predictions_rev, model_losses_rev = self(input_rev, pred_length=config["pred_frames"],
+                predictions_rev, model_losses_rev = self(input_rev, pred_frames=config["pred_frames"],
                                                          actions=actions, train=True)
 
                 # reverse_loss

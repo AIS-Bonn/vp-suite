@@ -476,9 +476,9 @@ class VPSuite:
                     input, target, actions = model.unpack_data(data, config)
                     input = preprocess(input)  # test format to model format
                     if getattr(model, "use_actions", False):
-                        pred, _ = model(input, pred_length=config["pred_frames"], actions=actions)
+                        pred, _ = model(input, pred_frames=config["pred_frames"], actions=actions)
                     else:
-                        pred, _ = model(input, pred_length=config["pred_frames"])
+                        pred, _ = model(input, pred_frames=config["pred_frames"])
                     pred = postprocess(pred)  # model format to test format
                     cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
                     model_metrics_per_dp.append(cur_metrics)
