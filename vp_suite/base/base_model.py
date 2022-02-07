@@ -5,7 +5,7 @@ from torch.optim.optimizer import Optimizer
 from tqdm import tqdm
 from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
 from vp_suite.measure.loss_provider import PredictionLossProvider
-from vp_suite.base.base_dataset import VPData, unpack_data_for_model
+from vp_suite.base.base_dataset import VPData
 
 
 class VideoPredictionModel(nn.Module):
@@ -22,6 +22,7 @@ class VideoPredictionModel(nn.Module):
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]  #: The attributes that the model creator needs to supply when creating the model.
     CAN_HANDLE_ACTIONS = False  #: Whether the model can handle actions or not.
     TRAINABLE = True  #: Whether the model is trainable or not.
+    NEEDS_COMPLETE_INPUT = False  #: Whether the input sequences also need to include the to-be-predicted frames.
     MIN_CONTEXT_FRAMES = 1  #: Minimum number of context frames required for the model to work. By default, models will be able to deal with any number of context frames.
 
     # model hyper-parameters
@@ -79,6 +80,27 @@ class VideoPredictionModel(nn.Module):
         }
         return {**attr_dict, **extra_config}
 
+    def unpack_data(self, data: VPData, config: dict, reverse: bool = False):
+        r"""
+        Extracts inputs and targets from a data blob.
+
+        Args:
+            data (VPData): The given VPData data blob/dictionary containing frames and actions.
+            config (dict): The current run configuration specifying how to extract the data from the given data blob.
+            reverse (bool): If specified, reverses the input first
+
+        Returns: The specified amount of input/target frames as well as the actions. All inputs will come in the
+        shape the model expects as input later.
+        """
+        img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
+        actions = data["actions"].to( config["device"])  # [b, T-1, a]. Action t happens between frame t and t+1
+        if reverse:
+            img_data = img_data[:, ::-1]
+            actions = actions[:, ::-1]
+        input_frames = img_data if self.NEEDS_COMPLETE_INPUT else img_data[:, :config["context_frames"]]
+        target_frames = img_data[:, config["context_frames"]: config["context_frames"] + config["pred_frames"]]
+        return input_frames, target_frames, actions
+
     def pred_1(self, x: torch.Tensor, **kwargs):
         r"""
         Given an input sequence of t frames, predicts one single frame into the future.
@@ -129,7 +151,7 @@ class VideoPredictionModel(nn.Module):
         loop = tqdm(loader)
         for batch_idx, data in enumerate(loop):
             # fwd
-            input, targets, actions = unpack_data_for_model(data, config)
+            input, targets, actions = self.unpack_data(data, config)
             predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
 
             # loss
@@ -141,7 +163,6 @@ class VideoPredictionModel(nn.Module):
             # bwd
             optimizer.zero_grad()
             total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.parameters(), 100)
             optimizer.step()
 
             # bookkeeping
@@ -169,7 +190,7 @@ class VideoPredictionModel(nn.Module):
         with torch.no_grad():
             for batch_idx, data in enumerate(loop):
                 # fwd
-                input, targets, actions = unpack_data_for_model(data, config)
+                input, targets, actions = self.unpack_data(data, config)
                 predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
 
                 # metrics

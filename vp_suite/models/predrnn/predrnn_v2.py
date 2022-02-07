@@ -4,8 +4,6 @@ import torch.nn as nn
 from vp_suite.models.model_blocks.predrnn import SpatioTemporalLSTMCell as STCell,\
     ActionConditionalSpatioTemporalLSTMCell as ActionConditionalSTCell
 from vp_suite.base.base_model import VideoPredictionModel
-from vp_suite.base.base_dataset import unpack_data_for_model
-from vp_suite.utils.utils import set_from_kwarg
 import torch.nn.functional as F
 from tqdm import tqdm
 
@@ -18,6 +16,7 @@ class PredRNN_V2(VideoPredictionModel):
     # model-specific constants
     NAME = "PredRNN V2"
     CAN_HANDLE_ACTIONS = False
+    NEEDS_COMPLETE_INPUT = True
 
     patch_size = 4
     num_layers = 3
@@ -41,27 +40,26 @@ class PredRNN_V2(VideoPredictionModel):
     sampling_eta: float = None
 
     def pred_1(self, x, **kwargs):
-        pass
+        return self(x, pred_length=1, **kwargs)
 
     def __init__(self, device, **model_kwargs):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)
 
-        set_from_kwarg(self, model_kwargs, "patch_size")
-
-        self.cpp = self.patch_size * self.patch_size * self.img_c  # frame channel
-        self.h_ = self.img_h // self.patch_size  # cell height
-        self.w_ = self.img_w // self.patch_size  # cell width
+        self.NON_CONFIG_VARS.extend(["training_iteration, sampling_eta"])
+        self.patch_c = self.patch_size * self.patch_size * self.img_c  # frame channel
+        self.patch_h = self.img_h // self.patch_size  # cell height
+        self.patch_w = self.img_w // self.patch_size  # cell width
 
         cell_list = []
 
         for i in range(self.num_layers):
-            in_channel = self.cpp if i == 0 else self.num_hidden[i - 1]
+            in_channel = self.patch_c if i == 0 else self.num_hidden[i - 1]
             cell_list.append(
-                STCell(in_channel, self.num_hidden[i], self.h_, self.w_,
+                STCell(in_channel, self.num_hidden[i], self.patch_h, self.patch_w,
                        self.filter_size, self.stride, self.layer_norm)
             )
         self.cell_list = nn.ModuleList(cell_list)
-        self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.cpp,
+        self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.patch_c,
                                    kernel_size=1, stride=1, padding=0, bias=False)
         # shared adapter
         adapter_num_hidden = self.num_hidden[0]
@@ -70,13 +68,10 @@ class PredRNN_V2(VideoPredictionModel):
         self.sampling_eta = 1.0
 
     def forward(self, x, pred_frames: int = 1, **kwargs):
-        mask_true = kwargs.get("mask_true", None)
-        if mask_true is None:
-            raise ValueError(f"forward method for model {self.NAME} needs kwarg 'mask_true'!")
-
         b, total_frames = x.shape[:2]  # NOTE: x NEEDS TO HAVE 'TOTAL_FRAMES' FRAMES!
-        input_frames = total_frames - pred_frames
-
+        context_frames = total_frames - pred_frames
+        train = kwargs.get("train", False)
+        mask_true = self._scheduled_sampling(b, context_frames, pred_frames, train)
         x_patch = self._reshape_patch(x)  # [b, t, cpp, h_, w_]
 
         next_frames = []
@@ -88,13 +83,13 @@ class PredRNN_V2(VideoPredictionModel):
         decouple_loss = []
 
         for i in range(self.num_layers):
-            zeros = torch.zeros([b, self.num_hidden[i], self.h_, self.w_]).to(self.device)
+            zeros = torch.zeros([b, self.num_hidden[i], self.patch_h, self.patch_w]).to(self.device)
             h_t.append(zeros)
             c_t.append(zeros)
             delta_c_list.append(zeros)
             delta_m_list.append(zeros)
 
-        memory = torch.zeros([b, self.num_hidden[0], self.h_, self.w_]).to(self.device)
+        memory = torch.zeros([b, self.num_hidden[0], self.patch_h, self.patch_w]).to(self.device)
         x_gen = None
 
         for t in range(total_frames - 1):
@@ -106,10 +101,10 @@ class PredRNN_V2(VideoPredictionModel):
                     net = mask_true[:, t - 1] * x_patch[:, t] + (1 - mask_true[:, t - 1]) * x_gen
             else:
                 # schedule sampling
-                if t < input_frames:
+                if t < context_frames:
                     net = x_patch[:, t]
                 else:
-                    net = mask_true[:, t - input_frames] * x_patch[:, t] + (1 - mask_true[:, t - input_frames]) * x_gen
+                    net = mask_true[:, t - context_frames] * x_patch[:, t] + (1 - mask_true[:, t - context_frames]) * x_gen
 
             h_t[0], c_t[0], memory, delta_c, delta_m = self.cell_list[0](net, h_t[0], c_t[0], memory)
             delta_c_list[0] = F.normalize(self.adapter(delta_c).view(delta_c.shape[0], delta_c.shape[1], -1), dim=2)
@@ -136,31 +131,23 @@ class PredRNN_V2(VideoPredictionModel):
         b, t, c, h, w = x.shape
         if self.img_shape != (c, h, w):
             raise ValueError(f"shape mismatch: expected {self.img_shape}, got {(c, h, w)}")
-        a = torch.reshape(x, [b, t, c, self.h_, self.patch_size, self.w_, self.patch_size])
+        a = torch.reshape(x, [b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size])
         b = torch.permute(a, (0, 1, 2, 4, 6, 3, 5))  # [b, t, c, p, p, h_, w_]
-        x_patch = torch.reshape(b, [b, t, self.cpp, self.h_, self.w_])
+        x_patch = torch.reshape(b, [b, t, self.patch_c, self.patch_h, self.patch_w])
         return x_patch
 
     def _reshape_patch_back(self, x_patch):
         b, t = x_patch.shape[:2]
-        c = self.cpp // (self.patch_size * self.patch_size)
-        h = self.h_ * self.patch_size
-        w = self.w_ * self.patch_size
-        a = torch.reshape(x_patch, [b, t, c, self.patch_size, self.patch_size, self.h_, self.w_])
+        c = self.patch_c // (self.patch_size * self.patch_size)
+        h = self.patch_h * self.patch_size
+        w = self.patch_w * self.patch_size
+        a = torch.reshape(x_patch, [b, t, c, self.patch_size, self.patch_size, self.patch_h, self.patch_w])
         b = torch.permute(a, [0, 1, 2, 5, 3, 6, 4])  # [b, t, c, h_, p, w_, p]
         x = torch.reshape(b, [b, t, c, h, w])
         return x
 
-    def _reserve_schedule_sampling_exp(self, config):
-        b = config["batch_size"]
-        context_frames_m1 = config["context_frames"] - 1
-        pred_frames_m1 = config["pred_frames"] - 1
-        h_ = self.h_
-        w_ = self.w_
-        cpp = self.cpp
-
+    def _reserve_schedule_sampling(self, batch_size: int, context_frames: int, pred_frames: int):
         itr = self.training_iteration
-
         if itr < self.r_sampling_step_1:
             r_eta = 0.5
         elif itr < self.r_sampling_step_2:
@@ -175,66 +162,92 @@ class PredRNN_V2(VideoPredictionModel):
         else:
             eta = 0.0
 
-        r_random_flip = torch.rand(b, context_frames_m1)
-        random_flip = torch.rand(b, pred_frames_m1)
+        r_random_flip = torch.rand(batch_size, context_frames-1)
+        random_flip = torch.rand(batch_size, pred_frames - 1)
 
-        r_real_input_flag_ = torch.zeros(b, context_frames_m1, cpp, h_, w_)
+        r_real_input_flag_ = torch.zeros(batch_size, context_frames-1, self.patch_c, self.patch_h, self.patch_w)
         r_real_input_flag_[(r_random_flip < r_eta)] = 1
 
-        real_input_flag_ = torch.zeros(b, pred_frames_m1, cpp, h_, w_)
+        real_input_flag_ = torch.zeros(batch_size, pred_frames-1, self.patch_c, self.patch_h, self.patch_w)
         real_input_flag_[(random_flip < eta)] = 1
 
         real_input_flag = torch.cat([r_real_input_flag_, real_input_flag_], dim=1)
         return real_input_flag
 
-    def _schedule_sampling(self, config: dict):
-        b = config["batch_size"]
-        pred_frames_m1 = config["pred_frames"] - 1
-        h_ = self.img_h // self.patch_size
-        w_ = self.img_w // self.patch_size
-        cpp = self.img_c * self.patch_size * self.patch_size
+    def _std_schedule_sampling(self, batch_size: int, context_frames: int, pred_frames: int):
+        pred_frames_m1 = pred_frames - 1
 
         if not self.scheduled_sampling:
-            return 0.0, torch.zeros(b, pred_frames_m1, cpp, h_, w_)
+            return 0.0, torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w)
 
         if self.training_iteration < self.sampling_stop_iter:
             self.sampling_eta -= self.sampling_changing_rate
         else:
             self.sampling_eta = 0.0
 
-        random_flip = torch.rand(b, pred_frames_m1)
-        real_input_flag = torch.zeros(b, pred_frames_m1, cpp, h_, w_)
+        random_flip = torch.rand(batch_size, pred_frames_m1)
+        real_input_flag = torch.zeros(batch_size, pred_frames_m1, self.patch_c, self.patch_h, self.patch_w)
         real_input_flag[(random_flip < self.sampling_eta)] = 1
         return real_input_flag
 
+    def _test_schedule_sampling(self, batch_size: int, context_frames: int, pred_frames: int):
+        if self.reverse_scheduled_sampling:
+            mask_frames = context_frames + pred_frames - 2
+        else:
+            mask_frames = pred_frames - 1
+        real_input_flag = torch.zeros(batch_size, mask_frames, self.patch_c, self.patch_h, self.patch_w)
+        if self.reverse_scheduled_sampling:
+            real_input_flag[:, :context_frames-1] = 1
+        return real_input_flag
+
+    def _scheduled_sampling(self, batch_size: int, context_frames: int, pred_frames: int, train: bool):
+        if not train:
+            return self._test_schedule_sampling(batch_size, context_frames, pred_frames)
+        elif self.reverse_scheduled_sampling:
+            return self._reserve_schedule_sampling(batch_size, context_frames, pred_frames)
+        else:
+            return self._std_schedule_sampling(batch_size, context_frames, pred_frames)
+
     def train_iter(self, config, loader, optimizer, loss_provider, epoch):
+        r"""
+        PredRNN++'s training iteration utilizes reversed input and keeps track of the number of training iterations
+        done so far in order to adjust the sampling schedule.
+        Otherwise, the iteration logic is the same as in the default :meth:`train_iter()` function.
+
+        Args:
+            config (dict): The configuration dict of the current training run (combines model, dataset and run config)
+            loader (DataLoader): Training data is sampled from this loader.
+            optimizer (Optimizer): The optimizer to use for weight update calculations.
+            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
+            epoch (int): The current epoch.
+        """
         loop = tqdm(loader)
         for data in loop:
-            input = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
-            targets = input[:, config["context_frames"]: config["context_frames"] + config["pred_frames"]]
 
-            if self.reverse_scheduled_sampling:
-                real_input_flag = self._reserve_schedule_sampling_exp(config)
-            else:
-                real_input_flag = self._schedule_sampling(config)
+            # fwd
+            input, targets, actions = self.unpack_data(data, config)
+            predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions, train=True)
 
-            predictions, model_losses = self(input, mask_true=real_input_flag)
+            # loss
             _, total_loss = loss_provider.get_losses(predictions, targets)
             if model_losses is not None:
                 for value in model_losses.values():
                     total_loss += value
 
+            # reverse
             if self.reverse_input:
-                input_rev = torch.flip(input.detach().clone(), dims=[1])
-                targets_rev = input_rev[:, config["context_frames"]: config["context_frames"] + config["pred_frames"]]
-                predictions_rev, model_losses_rev = self(input_rev, mask_true=real_input_flag)
+                input_rev, targets_rev, actions_rev = self.unpack_data(data, config, reverse=True)
+                predictions_rev, model_losses_rev = self(input_rev, pred_length=config["pred_frames"],
+                                                         actions=actions, train=True)
+
+                # reverse_loss
                 _, total_loss_rev = loss_provider.get_losses(predictions_rev, targets_rev)
                 if model_losses_rev is not None:
                     for value in model_losses_rev.values():
                         total_loss_rev += value
-
                 total_loss = (total_loss + total_loss_rev) / 2
 
+            # bwd
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
@@ -242,42 +255,3 @@ class PredRNN_V2(VideoPredictionModel):
             # bookkeeping
             self.training_iteration += 1
             loop.set_postfix(loss=total_loss.item())
-
-
-    def eval_iter(self, config: dict, loader: DataLoader, loss_provider: PredictionLossProvider):
-        r"""
-        Default training iteration: Loops through the whole data loader once and, for every datapoint, executes
-        forward pass, and loss calculation. Then, aggregates all loss values to assess the prediction quality.
-
-        Args:
-            config (dict): The configuration dict of the current validation run (combines model, dataset and run config)
-            loader (DataLoader): Validation data is sampled from this loader.
-            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
-
-        Returns: A dictionary containing the averages value for each loss type specified for usage,
-        as well as the value for the 'indicator' loss (the loss used for determining overall model improvement).
-
-        """
-        self.eval()
-        loop = tqdm(loader)
-        all_losses = []
-        indicator_losses = []
-
-        with torch.no_grad():
-            for batch_idx, data in enumerate(loop):
-                # fwd
-                input, targets, actions = unpack_data_for_model(data, config)
-                predictions, model_losses = self(input, pred_length=config["pred_frames"], actions=actions)
-
-                # metrics
-                loss_values, _ = loss_provider.get_losses(predictions, targets)
-                all_losses.append(loss_values)
-                indicator_losses.append(loss_values[config["val_rec_criterion"]])
-
-        indicator_loss = torch.stack(indicator_losses).mean()
-        all_losses = {
-            k: torch.stack([loss_values[k] for loss_values in all_losses]).mean().item() for k in all_losses[0].keys()
-        }
-        self.train()
-
-        return all_losses, indicator_loss

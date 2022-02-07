@@ -14,7 +14,6 @@ import vp_suite.constants as constants
 from vp_suite.utils.dataset_wrapper import DatasetWrapper
 from vp_suite.datasets import DATASET_CLASSES
 from vp_suite.base.base_model import VideoPredictionModel
-from vp_suite.base.base_dataset import unpack_data_for_model
 from vp_suite.models import MODEL_CLASSES, AVAILABLE_MODELS
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure import LOSS_CLASSES
@@ -472,9 +471,9 @@ class VPSuite:
 
             for _ in tqdm(range(eval_length)):
                 data = next(iter_loader)
-                input, target, actions = unpack_data_for_model(data, config)
 
                 for (model, preprocess, postprocess, model_metrics_per_dp) in model_info_list:
+                    input, target, actions = model.unpack_data(data, config)
                     input = preprocess(input)  # test format to model format
                     if getattr(model, "use_actions", False):
                         pred, _ = model(input, pred_length=config["pred_frames"], actions=actions)
