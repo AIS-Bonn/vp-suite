@@ -1,8 +1,7 @@
 #!/bin/bash
 
-if [[ $PWD/ != */vp-suite/docs/ ]]; then
-  echo 'Please change to the documentation folder before runnning this script.'
-  echo 'Exiting...'
+if [[ "$(dirname "$0")" != "." ]]; then
+  echo 'Please change to the folder containing this script before execution. Exiting...'
   exit
 fi
 
