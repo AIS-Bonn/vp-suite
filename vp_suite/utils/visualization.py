@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 COLORS = {
     "green": [0, 200, 0],
@@ -129,3 +130,15 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
         else:
             save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
                 GT_Color=gt_colorized_vis, mode=mode)
+
+
+def save_diff_hist(diff, diff_id):
+    avg_diff, min_diff, max_diff = np.average(diff), np.min(diff), np.max(diff)
+    plt.hist(diff.flatten(), bins=1000, log=True)
+    plt.suptitle(f"np.abs(their_pred - our_pred)\n"
+                 f"min: {min_diff}, max: {max_diff}, avg: {avg_diff}")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.savefig(f"diff_{diff_id}.png")

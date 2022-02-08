@@ -60,7 +60,7 @@ setup(
     setup_requires=[],
     install_requires=_load_requirements(str(here)),
     extras_require={
-        'dev': [ 'pytest', 'pytest-cov' ],
+        'dev': ['pytest', 'pytest-cov', 'sklearn'],
         'doc': _load_requirements(str(docs)),
     },
     project_urls={

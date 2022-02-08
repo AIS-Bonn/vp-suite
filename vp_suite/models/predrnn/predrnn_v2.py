@@ -32,7 +32,7 @@ class PredRNN_V2(VideoPredictionModel):
     num_layers = 3
     num_hidden = [128, 128, 128, 128]
     filter_size = 5
-    stride = 1
+    stride = 1  #: stride for ST Cell
     layer_norm: bool = False
     reverse_input: bool = True
     reconstruction_loss_scale = 0.1
@@ -58,6 +58,7 @@ class PredRNN_V2(VideoPredictionModel):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)
 
         self.patch_c = self.patch_size * self.patch_size * self.img_c  # frame channel
+        self.patch_a = self.patch_size * self.patch_size * self.action_size
         self.patch_h = self.rnn_h = self.img_h // self.patch_size  # cell/RNN height
         self.patch_w = self.rnn_w = self.img_w // self.patch_size  # cell/RNN width
         self.conv_actions_on_input = self.conv_actions_on_input and self.action_conditional  # set to false if not A.C.
@@ -71,7 +72,7 @@ class PredRNN_V2(VideoPredictionModel):
                                          stride=2, padding=self.filter_size // 2, bias=False)
             self.conv_input2 = nn.Conv2d(self.num_hidden[0] // 2, self.num_hidden[0], self.filter_size,
                                          stride=2, padding=self.filter_size // 2, bias=False)
-            self.action_conv_input1 = nn.Conv2d(self.action_size, self.num_hidden[0] // 2, self.filter_size,
+            self.action_conv_input1 = nn.Conv2d(self.patch_a, self.num_hidden[0] // 2, self.filter_size,
                                                 stride=2, padding=self.filter_size // 2, bias=False)
             self.action_conv_input2 = nn.Conv2d(self.num_hidden[0] // 2, self.num_hidden[0], self.filter_size,
                                                 stride=2, padding=self.filter_size // 2, bias=False)
@@ -88,8 +89,8 @@ class PredRNN_V2(VideoPredictionModel):
         cell_class = ACSTCell if self.action_conditional else STCell
         for i in range(self.num_layers):
             if i == 0:
-                if self.conv_actions_on_input:
-                    in_channel = self.patch_c + self.action_size
+                if self.action_conditional and not self.conv_actions_on_input:
+                    in_channel = self.patch_c + self.patch_a
                 elif self.action_conditional:
                     in_channel = self.num_hidden[0]
                 else:
@@ -104,7 +105,7 @@ class PredRNN_V2(VideoPredictionModel):
 
         # conv_last (non-existent for when conv_actions_on_input is True)
         if self.action_conditional and not self.conv_actions_on_input:
-            self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.patch_c + self.action_size,
+            self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.patch_c + self.patch_a,
                                        kernel_size=1, stride=1, padding=0, bias=False)
         elif not self.action_conditional:
             self.conv_last = nn.Conv2d(self.num_hidden[self.num_layers - 1], self.patch_c,
@@ -234,9 +235,9 @@ class PredRNN_V2(VideoPredictionModel):
         expected_input_shape = (expected_img_c, self.img_h, self.img_w)
         if expected_input_shape != (c, h, w):
             raise ValueError(f"shape mismatch: expected {expected_input_shape}, got {(c, h, w)}")
-        x = x.reshape(b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size)
-        x = x.permute((0, 1, 2, 4, 6, 3, 5))  # [b, t, c, p, p, h_, w_]
-        x_patch = x.reshape(b, t, -1, self.patch_h, self.patch_w)  # infer channel dim automatically since there might be actions included
+        x = x.view(b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size)
+        x = x.permute((0, 1, 4, 6, 2, 3, 5)).contiguous()  # [b, t, p, p, c, h_, w_], 'channels' order: (p_h, p_w, c)
+        x_patch = x.view(b, t, -1, self.patch_h, self.patch_w)  # infer channel dim automatically since there might be actions included
         return x_patch
 
     def _reshape_patch_back(self, x_patch):
@@ -244,8 +245,8 @@ class PredRNN_V2(VideoPredictionModel):
         c = cpp // (self.patch_size * self.patch_size)
         h = self.patch_h * self.patch_size
         w = self.patch_w * self.patch_size
-        x_patch = x_patch.reshape(b, t, c, self.patch_size, self.patch_size, self.patch_h, self.patch_w)
-        x_patch = x_patch.permute((0, 1, 2, 5, 3, 6, 4))  # [b, t, c, h_, p, w_, p]
+        x_patch = x_patch.reshape(b, t, self.patch_size, self.patch_size, c, self.patch_h, self.patch_w)  # [b, t, p, p, c, h_, w_]
+        x_patch = x_patch.permute((0, 1, 4, 5, 2, 6, 3))  # [b, t, c, h_, p, w_, p]
         x = x_patch.reshape(b, t, c, h, w)
         return x
 
