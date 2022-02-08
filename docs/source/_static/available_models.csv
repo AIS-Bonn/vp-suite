@@ -4,6 +4,7 @@ UNet3D,``”unet”``,,
 ConvLSTM,``”lstm”``,https://arxiv.org/abs/1506.04214,No
 LSTM,``”non_conv”``,,
 PhyDNet,``”phy”``,https://arxiv.org/abs/2003.01460,No
+PredRNN-V2,``”predrnn2”``,https://arxiv.org/abs/2103.09504,Yes (action-free version)
 STPhy,``”st_phy”``,,
 SimpleV1,``”simplev1”``,,
 SimpleV2,``”simplev2”``,,
