@@ -17,3 +17,5 @@ python ./_test_impl_match.py\
     --layer_norm 0 \
     --reverse_scheduled_sampling 1 \
     --batch_size 4 \
+
+rm -rf ./predrnn-pytorch

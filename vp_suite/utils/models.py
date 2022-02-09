@@ -28,7 +28,8 @@ class ScaleToModel(nn.Module):
         return img
 
 
-def state_dicts_equal(model1: nn.Module, model2: nn.Module, check_values: bool = False):
+def state_dicts_equal(model1: nn.Module, model2: nn.Module,
+                      check_values: bool = False, verbose: bool = False):
     r"""
     Checks whether two models are equal with respect to their state dicts.
     Modified from: https://gist.github.com/rohan-varma/a0a75e9a0fbe9ccc7420b04bff4a7212
@@ -37,17 +38,19 @@ def state_dicts_equal(model1: nn.Module, model2: nn.Module, check_values: bool =
         model2 (nn.Module): Model 2.
         check_values (bool): If specified, also compares the values of the state dicts. By default, only the keys and
         dimensionalities are checked
+        verbose (bool): If specified, prints all state dict components to console
 
     Returns: True if both state dicts are equal in keys and values, False (with debug prints) otherwise.
     """
     model1_state_dict = model1.state_dict()
     model2_state_dict = model2.state_dict()
 
-    #for param_tensor in model1_state_dict:
-    #    print(param_tensor, "\t", model1_state_dict[param_tensor].size())
-    #print("")
-    #for param_tensor in model2_state_dict:
-    #    print(param_tensor, "\t", model2_state_dict[param_tensor].size())
+    if verbose:
+        for param_tensor in model1_state_dict:
+            print(param_tensor, "\t", model1_state_dict[param_tensor].size())
+        print("")
+        for param_tensor in model2_state_dict:
+            print(param_tensor, "\t", model2_state_dict[param_tensor].size())
 
     if len(model1_state_dict) != len(model2_state_dict):
         print(

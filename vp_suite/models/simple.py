@@ -9,7 +9,7 @@ class SimpleV1(VideoPredictionModel):
     """
 
     # model-specific constants
-    NAME = "SimpleV1"
+    NAME = "Simple V1"
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters
@@ -80,7 +80,7 @@ class SimpleV2(VideoPredictionModel):
     """
 
     # model-specific constants
-    NAME = "SimpleV2"
+    NAME = "Simple V2"
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
 
     # model hyperparameters

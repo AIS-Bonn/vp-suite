@@ -24,7 +24,7 @@ class PredRNN_V2(VideoPredictionModel):
     """
 
     # model-specific constants
-    NAME = "PredRNN V2"
+    NAME = "PredRNN++"
     CAN_HANDLE_ACTIONS = False
     NEEDS_COMPLETE_INPUT = True
 

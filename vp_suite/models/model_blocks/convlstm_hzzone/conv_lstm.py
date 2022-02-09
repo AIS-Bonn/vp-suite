@@ -1,0 +1,58 @@
+from torch import nn
+import torch
+
+class ConvLSTM(nn.Module):
+    def __init__(self, device, in_c, enc_c, state_h, state_w, kernel_size, stride=1, padding=1):
+        super().__init__()
+        self.device = device
+        self._conv = nn.Conv2d(in_channels=in_c + enc_c,
+                               out_channels=enc_c * 4,
+                               kernel_size=kernel_size,
+                               stride=stride,
+                               padding=padding)
+        self.state_h = state_h
+        self.state_w = state_w
+        # if using requires_grad flag, torch.save will not save parameters in deed although it may be updated every epoch.
+        # However, if you use declare an optimizer like Adam(model.parameters()),
+        # parameters will not be updated forever.
+        self.Wci = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
+        self.Wcf = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
+        self.Wco = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
+        self.in_c = in_c
+        self.enc_c = enc_c
+
+    # inputs and states should not be all none
+    # inputs: S*B*C*H*W
+    def forward(self, inputs=None, states=None):
+
+        b, T = inputs.shape[0]
+
+        if states is None:
+            c = torch.zeros((b, self.enc_c, self.state_h, self.state_w),
+                            dtype=torch.float, device=self.device)
+            h = torch.zeros((b, self.enc_c, self.state_h, self.state_w),
+                            dtype=torch.float, device=self.device)
+        else:
+            h, c = states
+
+        outputs = []
+        for t in range(T):
+            # initial inputs
+            if inputs is None:
+                x = torch.zeros((b, self.in_c, self.state_h,
+                                 self.state_w), dtype=torch.float, device=self.device)
+            else:
+                x = inputs[:, t]
+            cat_x = torch.cat([x, h], dim=1)
+            conv_x = self._conv(cat_x)
+
+            i, f, tmp_c, o = torch.chunk(conv_x, 4, dim=1)
+
+            i = torch.sigmoid(i+self.Wci*c)
+            f = torch.sigmoid(f+self.Wcf*c)
+            c = f*c + i*torch.tanh(tmp_c)
+            o = torch.sigmoid(o+self.Wco*c)
+            h = o*torch.tanh(c)
+            outputs.append(h)
+        return torch.stack(outputs, dim=1), (h, c)
+
