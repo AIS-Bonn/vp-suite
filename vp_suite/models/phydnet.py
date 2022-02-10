@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from vp_suite.measure.image_wise import MSE
 from vp_suite.base.base_model import VideoPredictionModel
-from vp_suite.model_blocks import EncoderRNN, K2M
+from vp_suite.model_blocks.phydnet import EncoderRNN, K2M
 
 
 class PhyDNet(VideoPredictionModel):

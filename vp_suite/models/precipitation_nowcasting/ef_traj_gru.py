@@ -61,13 +61,13 @@ class EF_TrajGRU(Encoder_Forecaster):
     dec_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]
 
     # final convs
-    final_conv_1_name = ["conv3_leaky_2"]
+    final_conv_1_name = "conv3_leaky_2"
     final_conv_1_c = 8
     final_conv_1_k = 3
     final_conv_1_s = 1
     final_conv_1_p = 1
 
-    final_conv_2_name = ["conv3_3"]
+    final_conv_2_name = "conv3_3"
     final_conv_2_k = 1
     final_conv_2_s = 1
     final_conv_2_p = 0

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from vp_suite.model_blocks.convlstm_hzzone import ConvLSTM
+from vp_suite.model_blocks import ConvLSTM
 from vp_suite.models.precipitation_nowcasting.ef_blocks import Encoder_Forecaster
 
 
@@ -55,13 +55,13 @@ class EF_ConvLSTM(Encoder_Forecaster):
     dec_rnn_p = [1, 1, 1]
 
     # final convs
-    final_conv_1_name = ["conv3_leaky_2"]
+    final_conv_1_name = "conv3_leaky_2"
     final_conv_1_c = 8
     final_conv_1_k = 3
     final_conv_1_s = 1
     final_conv_1_p = 1
 
-    final_conv_2_name = ["conv3_3"]
+    final_conv_2_name = "conv3_3"
     final_conv_2_k = 1
     final_conv_2_s = 1
     final_conv_2_p = 0

@@ -11,7 +11,7 @@ from vp_suite.measure.image_wise import MSE
 from vp_suite.base.base_model import VideoPredictionModel
 from vp_suite.model_blocks import Autoencoder
 from vp_suite.model_blocks.predrnn import SpatioTemporalLSTMCell, ActionConditionalSpatioTemporalLSTMCell
-from vp_suite.model_blocks import PhyCell_Cell, K2M
+from vp_suite.model_blocks.phydnet import PhyCell_Cell, K2M
 
 
 class STPhy(VideoPredictionModel):

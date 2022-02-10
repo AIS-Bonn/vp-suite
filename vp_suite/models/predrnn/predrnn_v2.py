@@ -1,7 +1,7 @@
 import math
 import torch
 import torch.nn as nn
-from vp_suite.model_blocks.predrnn import SpatioTemporalLSTMCell as STCell,\
+from vp_suite.model_blocks import SpatioTemporalLSTMCell as STCell,\
     ActionConditionalSpatioTemporalLSTMCell as ACSTCell
 from vp_suite.base.base_model import VideoPredictionModel
 import torch.nn.functional as F

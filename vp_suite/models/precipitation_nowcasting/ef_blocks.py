@@ -4,8 +4,7 @@ import torch
 import torch.nn as nn
 
 from vp_suite.base.base_model import VideoPredictionModel
-from vp_suite.models.precipitation_nowcasting.ef_blocks import Encoder, Forecaster
-
+from vp_suite.utils.models import conv_output_shape, convtransp_output_shape
 
 def make_layers(block):
     layers = []
@@ -50,13 +49,10 @@ class Encoder(nn.Module):
             setattr(self, 'rnn'+str(index), rnn)
 
     def forward_by_stage(self, input, subnet, rnn):
-        seq_number, batch_size, input_channel, height, width = input.size()
-        input = torch.reshape(input, (-1, input_channel, height, width))
+        b, t, c, h, w = input.shape
+        input = torch.reshape(input, (-1, c, h, w))
         input = subnet(input)
-        input = torch.reshape(input, (seq_number, batch_size, input.size(1), input.size(2), input.size(3)))
-        # hidden = torch.zeros((batch_size, rnn._cell._hidden_size, input.size(3), input.size(4))).to(cfg.GLOBAL.DEVICE)
-        # cell = torch.zeros((batch_size, rnn._cell._hidden_size, input.size(3), input.size(4))).to(cfg.GLOBAL.DEVICE)
-        # state = (hidden, cell)
+        input = torch.reshape(input, (b, t, input.size(1), input.size(2), input.size(3)))
         outputs_stage, state_stage = rnn(input, None)
 
         return outputs_stage, state_stage
@@ -83,17 +79,18 @@ class Forecaster(nn.Module):
 
     def forward_by_stage(self, input, state, subnet, rnn):
         input, state_stage = rnn(input, state)
-        seq_number, batch_size, input_channel, height, width = input.size()
-        input = torch.reshape(input, (-1, input_channel, height, width))
+        b, t, c, h, w = input.shape
+        input = torch.reshape(input, (-1, c, h, w))
         input = subnet(input)
-        input = torch.reshape(input, (seq_number, batch_size, input.size(1), input.size(2), input.size(3)))
+        input = torch.reshape(input, (b, t, input.size(1), input.size(2), input.size(3)))
 
         return input
 
         # input: 5D S*B*I*H*W
 
     def forward(self, hidden_states):
-        input = self.forward_by_stage(None, hidden_states[-1], getattr(self, 'stage3'),
+        input = torch.zeros_like(hidden_states)
+        input = self.forward_by_stage(input, hidden_states[-1], getattr(self, 'stage3'),
                                       getattr(self, 'rnn3'))
         for i in list(range(1, self.blocks))[::-1]:
             input = self.forward_by_stage(input, hidden_states[i-1], getattr(self, 'stage' + str(i)),
@@ -123,7 +120,7 @@ class Encoder_Forecaster(VideoPredictionModel):
     def __init__(self, device, **model_kwargs):
         super(Encoder_Forecaster, self).__init__(device, **model_kwargs)
 
-        per_layer_params = [(k, v) for (k, v) in vars(self) if k.startswith("enc_") or k.startswith("dec_")]
+        per_layer_params = [(k, v) for (k, v) in vars(self).items() if k.startswith("enc_") or k.startswith("dec_")]
         for param, val in per_layer_params:
             ok = True
             if param in ["enc_c", "dec_c"] and len(val) != 2 * self.num_layers:
@@ -134,9 +131,38 @@ class Encoder_Forecaster(VideoPredictionModel):
                 raise AttributeError(f"Speficied {self.num_layers} layers, "
                                      f"but len of attribute '{param}' doesn't match that number.")
 
+        # set rnn state sizes according to calculated conv output size
+        next_h, next_w = self.img_h, self.img_w
+        enc_rnn_state_h, enc_rnn_state_w = [], []
+        print(next_h, next_w)
+        for n in range(self.num_layers):
+            next_h, next_w = conv_output_shape((next_h, next_w),
+                                               self.enc_conv_k[n], self.enc_conv_s[n], self.enc_conv_p[n])
+            enc_rnn_state_h.append(next_h)
+            enc_rnn_state_w.append(next_w)
+            print(next_h, next_w)
+
+        dec_rnn_state_h, dec_rnn_state_w = [next_h], [next_w]
+        for n in range(self.num_layers - 1):
+            next_h, next_w = convtransp_output_shape((next_h, next_w),
+                                                     self.dec_conv_k[n], self.dec_conv_s[n], self.dec_conv_p[n])
+            dec_rnn_state_h.append(next_h)
+            dec_rnn_state_w.append(next_w)
+            print(next_h, next_w)
+
+        final_h, final_w = convtransp_output_shape((next_h, next_w),
+                                                   self.dec_conv_k[-1], self.dec_conv_s[-1], self.dec_conv_p[-1])
+        #if (self.img_h, self.img_w) != (final_h, final_w):
+        #    raise AttributeError(f"Model layer hyperparameters yield wrong output size: "
+        #                         f"{(final_h, final_w)} (expected: {(self.img_h, self.img_w)})")
+
         enc_convs, enc_rnns, dec_convs, dec_rnns = self._build_encoder_decoder()
-        self.encoder = Encoder(enc_convs, enc_rnns)
-        self.forecaster = Forecaster(dec_convs, dec_rnns)
+        self.encoder = Encoder(enc_convs, enc_rnns).to(self.device)
+        self.forecaster = Forecaster(dec_convs, dec_rnns).to(self.device)
+        in_shape = self.encoder(torch.zeros((1, 2, *self.img_shape), device=self.device))
+        out_shape = self.forecaster(in_shape)
+        print(in_shape.shape, out_shape.shape)
+        exit(0)
         self.NON_CONFIG_VARS.extend(["encoder", "forecaster"])
 
     def _build_encoder_decoder(self):
@@ -152,8 +178,6 @@ class Encoder_Forecaster(VideoPredictionModel):
             pred_2, _ = self(pred_1, pred_frames=pred_frames - context_frames, **kwargs)
             return torch.cat([pred_1, pred_2], dim=1)
         else:
-            x = x.permute((1, 0, 2, 3, 4))  # [t_in, b, c, h, w]
             state = self.encoder(x)
-            pred = self.forecaster(state)[:pred_frames]  # [t_pred, b, c, h, w]
-            pred = pred.permute((1, 0, 2, 3, 4))  # [b, t_pred, c, h, w]
+            pred = self.forecaster(state)[:, pred_frames]  # [b, t_pred, c, h, w]
             return pred, None
