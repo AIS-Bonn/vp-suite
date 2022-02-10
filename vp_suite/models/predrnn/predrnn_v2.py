@@ -51,9 +51,6 @@ class PredRNN_V2(VideoPredictionModel):
     conv_actions_on_input: bool = True
     residual_on_action_conv: bool = True
 
-    def pred_1(self, x, **kwargs):
-        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
-
     def __init__(self, device, **model_kwargs):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)
 
@@ -119,6 +116,9 @@ class PredRNN_V2(VideoPredictionModel):
         self.training_iteration = 1
         self.sampling_eta = 1.0
         self.NON_CONFIG_VARS.extend(["training_iteration, sampling_eta"])
+
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_frames: int = 1, **kwargs):
 

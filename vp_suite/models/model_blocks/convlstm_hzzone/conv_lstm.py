@@ -22,7 +22,7 @@ class ConvLSTM(nn.Module):
         self.enc_c = enc_c
 
     # inputs and states should not be all none
-    # inputs: S*B*C*H*W
+    # inputs: [b, t, c, h, w]
     def forward(self, inputs=None, states=None):
 
         b, T = inputs.shape[0]
