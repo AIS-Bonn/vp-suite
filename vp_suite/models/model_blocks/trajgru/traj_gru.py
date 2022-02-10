@@ -57,11 +57,11 @@ class BaseConvRNN(nn.Module):
 
 class TrajGRU(BaseConvRNN):
     # b_h_w: input feature map size
-    def __init__(self, device, input_channel, num_filter, in_h, in_w, zoneout=0.0, L=5,
+    def __init__(self, device, in_c, enc_c, state_h, state_w, zoneout=0.0, L=5,
                  i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),
                  h2h_kernel=(5, 5), h2h_dilate=(1, 1),
                  act_type=Activation('leaky', negative_slope=0.2, inplace=True)):
-        super(TrajGRU, self).__init__(device, num_filter, in_h, in_w,
+        super(TrajGRU, self).__init__(device, enc_c, state_h, state_w,
                                       h2h_kernel=h2h_kernel,
                                       h2h_dilate=h2h_dilate,
                                       i2h_kernel=i2h_kernel,
@@ -74,20 +74,20 @@ class TrajGRU(BaseConvRNN):
 
         # corresponds to wxz, wxr, wxh
         # reset_gate, update_gate, new_mem
-        self.i2h = nn.Conv2d(in_channels=input_channel,
-                            out_channels=self._num_filter*3,
-                            kernel_size=self._i2h_kernel,
-                            stride=self._i2h_stride,
-                            padding=self._i2h_pad,
-                            dilation=self._i2h_dilate)
+        self.i2h = nn.Conv2d(in_channels=in_c,
+                             out_channels=self._num_filter*3,
+                             kernel_size=self._i2h_kernel,
+                             stride=self._i2h_stride,
+                             padding=self._i2h_pad,
+                             dilation=self._i2h_dilate)
 
         # inputs to flow
-        self.i2f_conv1 = nn.Conv2d(in_channels=input_channel,
-                                out_channels=32,
-                                kernel_size=(5, 5),
-                                stride=1,
-                                padding=(2, 2),
-                                dilation=(1, 1))
+        self.i2f_conv1 = nn.Conv2d(in_channels=in_c,
+                                   out_channels=32,
+                                   kernel_size=(5, 5),
+                                   stride=1,
+                                   padding=(2, 2),
+                                   dilation=(1, 1))
 
         # hidden to flow
         self.h2f_conv1 = nn.Conv2d(in_channels=self._num_filter,

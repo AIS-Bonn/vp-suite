@@ -1,8 +1,10 @@
 from collections import OrderedDict
-import logging
 
 import torch
-from torch import nn
+import torch.nn as nn
+
+from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.models.precipitation_nowcasting.ef_blocks import Encoder, Forecaster
 
 
 def make_layers(block):
@@ -62,7 +64,6 @@ class Encoder(nn.Module):
     # input: 5D S*B*I*H*W
     def forward(self, input):
         hidden_states = []
-        logging.debug(input.size())
         for i in range(1, self.blocks+1):
             input, state_stage = self.forward_by_stage(input, getattr(self, 'stage'+str(i)), getattr(self, 'rnn'+str(i)))
             hidden_states.append(state_stage)
@@ -98,3 +99,61 @@ class Forecaster(nn.Module):
             input = self.forward_by_stage(input, hidden_states[i-1], getattr(self, 'stage' + str(i)),
                                                        getattr(self, 'rnn' + str(i)))
         return input
+
+
+class Encoder_Forecaster(VideoPredictionModel):
+    r"""
+    This is a reimplementation of the Encoder-Forecaster structure, as introduced in
+    "Deep Learning for Precipitation Nowcasting: A Benchmark and A New Model" by Shi et al.
+    (https://arxiv.org/abs/1706.03458). This implementation is based on the PyTorch implementation on
+    https://github.com/Hzzone/Precipitation-Nowcasting .
+
+    The Encoder-Forecaster Network stacks multiple convolutional/up-/downsampling and recurrent layers
+    that operate on different spatial scales. This model is an abstract one, and the concrete subclasses will fill
+    the encoder/forecaster with actual model components.
+
+    Note:
+        In its basic version, this model predicts as many frames as it got fed (t_pred == t_in).
+        For t_pred < t_in, the same procedure will be used and excess frames will be discarded.
+        For t_pred > t_in, multiple consecutive forward passes will be combined that each work on the previous result.
+    """
+    # model-specific constants
+    NAME = "Encoder-Forecaster Structure (Shi et al.)"
+
+    def __init__(self, device, **model_kwargs):
+        super(Encoder_Forecaster, self).__init__(device, **model_kwargs)
+
+        per_layer_params = [(k, v) for (k, v) in vars(self) if k.startswith("enc_") or k.startswith("dec_")]
+        for param, val in per_layer_params:
+            ok = True
+            if param in ["enc_c", "dec_c"] and len(val) != 2 * self.num_layers:
+                ok = False
+            elif len(val) != self.num_layers:
+                ok = False
+            if not ok:
+                raise AttributeError(f"Speficied {self.num_layers} layers, "
+                                     f"but len of attribute '{param}' doesn't match that number.")
+
+        enc_convs, enc_rnns, dec_convs, dec_rnns = self._build_encoder_decoder()
+        self.encoder = Encoder(enc_convs, enc_rnns)
+        self.forecaster = Forecaster(dec_convs, dec_rnns)
+        self.NON_CONFIG_VARS.extend(["encoder", "forecaster"])
+
+    def _build_encoder_decoder(self):
+        raise NotImplementedError
+
+    def pred_1(self, x, **kwargs):
+        return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
+
+    def forward(self, x, pred_frames: int = 1, **kwargs):
+        context_frames = x.shape[1]
+        if context_frames < pred_frames:
+            pred_1, _ = self(x, pred_frames=context_frames, **kwargs)
+            pred_2, _ = self(pred_1, pred_frames=pred_frames - context_frames, **kwargs)
+            return torch.cat([pred_1, pred_2], dim=1)
+        else:
+            x = x.permute((1, 0, 2, 3, 4))  # [t_in, b, c, h, w]
+            state = self.encoder(x)
+            pred = self.forecaster(state)[:pred_frames]  # [t_pred, b, c, h, w]
+            pred = pred.permute((1, 0, 2, 3, 4))  # [b, t_pred, c, h, w]
+            return pred, None
