@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-sys.path.append(".")
+sys.path.append("")
 sys.path.append("./ConvLSTM_pytorch")
 
 import torch.nn as nn

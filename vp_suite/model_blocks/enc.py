@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from torchvision import transforms as TF
 from torchvision.transforms import Resize
 
-from vp_suite.models.model_blocks.conv import DCGANConv, DCGANConvTranspose
+from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
 
 
 class Autoencoder(nn.Module):

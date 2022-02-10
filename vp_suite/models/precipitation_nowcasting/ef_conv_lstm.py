@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from vp_suite.models.model_blocks.convlstm_hzzone.conv_lstm import ConvLSTM
+from vp_suite.model_blocks.convlstm_hzzone import ConvLSTM
 from vp_suite.models.precipitation_nowcasting.ef_blocks import Encoder_Forecaster
 
 

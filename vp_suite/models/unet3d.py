@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torchvision.transforms import functional as TF
 
-from vp_suite.models.model_blocks.conv import DoubleConv3d, DoubleConv2d
+from vp_suite.model_blocks import DoubleConv3d, DoubleConv2d
 from vp_suite.base.base_model import VideoPredictionModel
 
 

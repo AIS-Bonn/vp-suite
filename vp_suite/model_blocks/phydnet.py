@@ -5,8 +5,8 @@ from functools import reduce
 from scipy.special import factorial
 from torch import nn as nn
 
-from vp_suite.models.model_blocks.conv import DCGANConv, DCGANConvTranspose
-from vp_suite.models.model_blocks.enc import DCGANEncoder, DCGANDecoder
+from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
+from vp_suite.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
 class PhyCell_Cell(nn.Module):
