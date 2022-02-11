@@ -183,6 +183,12 @@ if __name__ == '__main__':
     parser.add_argument('--num_action_ch', type=int, default=4, help='num action ch')
     args = parser.parse_args()
 
+    args.is_training = 0
+    args.device = "cuda"
+    args.img_channel = 3
+    args.batch_size = 1
+    args.num_hidden = "128, 128, 128, 128"
+
     # test different architectures for equality
     action_setups = [
         {"model_name": "predrnn_v2", "reverse_scheduled_sampling": 0},
