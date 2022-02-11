@@ -145,21 +145,26 @@ class TrajGRU(BaseConvRNN):
 
     # inputs and state should not be both empty
     # inputs: [b, t, c, h, w]
-    def forward(self, inputs, states=None):
-        
-        b, T, c, h, w = inputs.shape
-        
+    def forward(self, inputs, states, seq_len):
+
+        if inputs is None and states is None:
+            raise ValueError("TrajGRU received 'None' both in input and state")
         if states is None:
-            states = torch.zeros((b, self._num_filter, self._state_height, self._state_width),
+            states = torch.zeros((inputs.shape[0], self._num_filter, self._state_height, self._state_width),
                                  dtype=torch.float, device=self.device)
-        i2h = self.i2h(torch.reshape(inputs, (-1, c, h, w)))
-        i2h = i2h.reshape(b, T, *i2h.shape[1:])
-        i2h_slice = torch.split(i2h, self._num_filter, dim=2)
+
+        if inputs is not None:
+            b, _, c, h, w = inputs.shape
+            i2h = self.i2h(torch.reshape(inputs, (-1, c, h, w)))
+            i2h = i2h.reshape(b, seq_len, *i2h.shape[1:])
+            i2h_slice = torch.split(i2h, self._num_filter, dim=2)
+        else:
+            i2h_slice = None
 
         prev_h = states
         outputs = []
         next_h = None
-        for t in range(T):
+        for t in range(seq_len):
             if inputs is not None:
                 flows = self._flow_generator(inputs[:, t], prev_h)
             else:

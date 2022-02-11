@@ -53,15 +53,15 @@ class Encoder(nn.Module):
         input = torch.reshape(input, (-1, c, h, w))
         input = subnet(input)
         input = torch.reshape(input, (b, t, input.size(1), input.size(2), input.size(3)))
-        outputs_stage, state_stage = rnn(input, None)
-
+        outputs_stage, state_stage = rnn(input, None, seq_len=t)
         return outputs_stage, state_stage
 
     # input: 5D S*B*I*H*W
     def forward(self, input):
         hidden_states = []
         for i in range(1, self.blocks+1):
-            input, state_stage = self.forward_by_stage(input, getattr(self, 'stage'+str(i)), getattr(self, 'rnn'+str(i)))
+            input, state_stage = self.forward_by_stage(input, getattr(self, 'stage'+str(i)),
+                                                       getattr(self, 'rnn'+str(i)))
             hidden_states.append(state_stage)
         return tuple(hidden_states)
 
@@ -77,24 +77,20 @@ class Forecaster(nn.Module):
             setattr(self, 'rnn' + str(self.blocks-index), rnn)
             setattr(self, 'stage' + str(self.blocks-index), make_layers(params))
 
-    def forward_by_stage(self, input, state, subnet, rnn):
-        input, state_stage = rnn(input, state)
+    def forward_by_stage(self, input, state, pred_frames, subnet, rnn):
+        input, state_stage = rnn(input, state, pred_frames)
         b, t, c, h, w = input.shape
         input = torch.reshape(input, (-1, c, h, w))
         input = subnet(input)
         input = torch.reshape(input, (b, t, input.size(1), input.size(2), input.size(3)))
-
         return input
 
-        # input: 5D S*B*I*H*W
-
-    def forward(self, hidden_states):
-        input = torch.zeros_like(hidden_states)
-        input = self.forward_by_stage(input, hidden_states[-1], getattr(self, 'stage3'),
+    def forward(self, hidden_states, pred_frames):
+        input = self.forward_by_stage(None, hidden_states[-1], pred_frames, getattr(self, 'stage3'),
                                       getattr(self, 'rnn3'))
         for i in list(range(1, self.blocks))[::-1]:
-            input = self.forward_by_stage(input, hidden_states[i-1], getattr(self, 'stage' + str(i)),
-                                                       getattr(self, 'rnn' + str(i)))
+            input = self.forward_by_stage(input, hidden_states[i-1], pred_frames, getattr(self, 'stage' + str(i)),
+                                          getattr(self, 'rnn' + str(i)))
         return input
 
 
@@ -108,11 +104,6 @@ class Encoder_Forecaster(VideoPredictionModel):
     The Encoder-Forecaster Network stacks multiple convolutional/up-/downsampling and recurrent layers
     that operate on different spatial scales. This model is an abstract one, and the concrete subclasses will fill
     the encoder/forecaster with actual model components.
-
-    Note:
-        In its basic version, this model predicts as many frames as it got fed (t_pred == t_in).
-        For t_pred < t_in, the same procedure will be used and excess frames will be discarded.
-        For t_pred > t_in, multiple consecutive forward passes will be combined that each work on the previous result.
     """
     # model-specific constants
     NAME = "Encoder-Forecaster Structure (Shi et al.)"
@@ -134,13 +125,11 @@ class Encoder_Forecaster(VideoPredictionModel):
         # set rnn state sizes according to calculated conv output size
         next_h, next_w = self.img_h, self.img_w
         enc_rnn_state_h, enc_rnn_state_w = [], []
-        print(next_h, next_w)
         for n in range(self.num_layers):
             next_h, next_w = conv_output_shape((next_h, next_w),
                                                self.enc_conv_k[n], self.enc_conv_s[n], self.enc_conv_p[n])
             enc_rnn_state_h.append(next_h)
             enc_rnn_state_w.append(next_w)
-            print(next_h, next_w)
 
         dec_rnn_state_h, dec_rnn_state_w = [next_h], [next_w]
         for n in range(self.num_layers - 1):
@@ -148,21 +137,16 @@ class Encoder_Forecaster(VideoPredictionModel):
                                                      self.dec_conv_k[n], self.dec_conv_s[n], self.dec_conv_p[n])
             dec_rnn_state_h.append(next_h)
             dec_rnn_state_w.append(next_w)
-            print(next_h, next_w)
 
         final_h, final_w = convtransp_output_shape((next_h, next_w),
                                                    self.dec_conv_k[-1], self.dec_conv_s[-1], self.dec_conv_p[-1])
-        #if (self.img_h, self.img_w) != (final_h, final_w):
-        #    raise AttributeError(f"Model layer hyperparameters yield wrong output size: "
-        #                         f"{(final_h, final_w)} (expected: {(self.img_h, self.img_w)})")
+        if (self.img_h, self.img_w) != (final_h, final_w):
+            raise AttributeError(f"Model layer hyperparameters yield wrong output size: "
+                                 f"{(final_h, final_w)} (expected: {(self.img_h, self.img_w)})")
 
         enc_convs, enc_rnns, dec_convs, dec_rnns = self._build_encoder_decoder()
         self.encoder = Encoder(enc_convs, enc_rnns).to(self.device)
         self.forecaster = Forecaster(dec_convs, dec_rnns).to(self.device)
-        in_shape = self.encoder(torch.zeros((1, 2, *self.img_shape), device=self.device))
-        out_shape = self.forecaster(in_shape)
-        print(in_shape.shape, out_shape.shape)
-        exit(0)
         self.NON_CONFIG_VARS.extend(["encoder", "forecaster"])
 
     def _build_encoder_decoder(self):
@@ -172,12 +156,6 @@ class Encoder_Forecaster(VideoPredictionModel):
         return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_frames: int = 1, **kwargs):
-        context_frames = x.shape[1]
-        if context_frames < pred_frames:
-            pred_1, _ = self(x, pred_frames=context_frames, **kwargs)
-            pred_2, _ = self(pred_1, pred_frames=pred_frames - context_frames, **kwargs)
-            return torch.cat([pred_1, pred_2], dim=1)
-        else:
-            state = self.encoder(x)
-            pred = self.forecaster(state)[:, pred_frames]  # [b, t_pred, c, h, w]
-            return pred, None
+        state = self.encoder(x)
+        pred = self.forecaster(state, pred_frames)
+        return pred, None

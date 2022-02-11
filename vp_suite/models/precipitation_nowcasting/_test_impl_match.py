@@ -28,7 +28,9 @@ def compare_implementations():
     """
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    b, t, c, h, w = 2, 4, 3, 480, 480
+    batch_size = 1
+    context_frames, pred_frames = 5, 20  # default values for their EF model
+    c, h, w = 1, 480, 480  # their default EF model takes in images of shape (1, 480, 480)
 
     # set up original models
     print("setting up their models")
@@ -59,31 +61,30 @@ def compare_implementations():
 
         # set up input
         print("setting up input")
-        their_x = torch.rand(t, b, c, h, w, device=device)
+        their_x = torch.rand(context_frames, batch_size, c, h, w, device=device)
         our_x = their_x.clone().permute((1, 0, 2, 3, 4))
 
         # infer: their model
         print("infer: theirs")
         their_model.eval()
-        their_out, their_next_h = their_model(their_x, seq_len=t)
+        their_out = their_model(their_x)
+        print(their_out.shape)
     #
         # infer: our model
         print("infer: ours")
         our_model.eval()
-        our_out, our_next_h = our_model(our_x)
-        our_out = our_out.permute((1, 0, 2, 3, 4))
+        our_out = our_model(our_x, pred_frames=pred_frames)[0].permute((1, 0, 2, 3, 4))
 
         # checks
         print("check results")
-        for (theirs, ours) in zip([their_out, their_next_h], [our_out, our_next_h]):
-            theirs = theirs.detach().cpu().numpy()
-            ours = ours.detach().cpu().numpy()
-            if theirs.shape != ours.shape:
-                raise AssertionError(f"Prediction shapes are not equal. "
-                                     f"Theirs: {theirs.shape}, ours: {ours.shape}")
-            # save_diff_hist(np.abs(theirs - ours), test_id)
-            if not np.allclose(theirs, ours, rtol=0, atol=1e-4):
-                raise AssertionError("Predictions are not equal.")
+        theirs = their_out.detach().cpu().numpy()
+        ours = our_out.detach().cpu().numpy()
+        if theirs.shape != ours.shape:
+            raise AssertionError(f"Prediction shapes are not equal. "
+                                 f"Theirs: {theirs.shape}, ours: {ours.shape}")
+        # save_diff_hist(np.abs(theirs - ours), test_id)
+        if not np.allclose(theirs, ours, rtol=0, atol=1e-4):
+            raise AssertionError("Predictions are not equal.")
 
 
 if __name__ == '__main__':

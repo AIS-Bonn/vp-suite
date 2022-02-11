@@ -11,4 +11,4 @@ fi
 
 python -O ./_test_impl_match.py  # reference code has failing assertions by default
 
-# rm -rf ./Precipitation-Nowcasting
+rm -rf ./Precipitation-Nowcasting

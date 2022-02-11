@@ -135,7 +135,7 @@ def convtransp_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
     if type(pad) is not tuple:
         pad = (pad, pad)
 
-    h = (h_w[0] - 1) * stride[0] - 2 * pad[0] + kernel_size[0] + pad[0]
-    w = (h_w[1] - 1) * stride[1] - 2 * pad[1] + kernel_size[1] + pad[1]
+    h = (h_w[0] - 1) * stride[0] - 2 * pad[0] + (kernel_size[0] - 1) + pad[0]
+    w = (h_w[1] - 1) * stride[1] - 2 * pad[1] + (kernel_size[1] - 1) + pad[1]
 
     return h, w

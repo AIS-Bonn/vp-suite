@@ -23,10 +23,10 @@ class ConvLSTM(nn.Module):
 
     # inputs and states should not be all none
     # inputs: [b, t, c, h, w]
-    def forward(self, inputs, states, seq_len=None):
+    def forward(self, inputs, states, seq_len):
 
         if states is None:
-            b, T = inputs.shape[:2]
+            b = inputs.shape[0]
             c = torch.zeros((b, self.enc_c, self.state_h, self.state_w),
                             dtype=torch.float, device=self.device)
             h = torch.zeros((b, self.enc_c, self.state_h, self.state_w),
@@ -34,7 +34,7 @@ class ConvLSTM(nn.Module):
         else:
             h, c = states
             b = h.shape[0]
-            T = seq_len
+        T = seq_len
 
         outputs = []
         for t in range(T):
