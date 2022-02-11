@@ -15,9 +15,8 @@ class EF_TrajGRU(Encoder_Forecaster):
     that operate on different spatial scales.
 
     Note:
-        In its basic version, this model predicts as many frames as it got fed (t_pred == t_in).
-        For t_pred < t_in, the same procedure will be used and excess frames will be discarded.
-        For t_pred > t_in, multiple consecutive forward passes will be combined that each work on the previous result.
+        The default hyperparameter configuration is intended for input frames of size (64, 64).
+        For considerably larger or smaller image sizes, you might want to adjust the architecture.
     """
     # model-specific constants
     NAME = "EF-TrajGRU (Shi et al.)"
@@ -25,35 +24,31 @@ class EF_TrajGRU(Encoder_Forecaster):
     # model hyperparameters (c=channels, h=height, w=width, k=kernel_size, s=stride, p=padding, d=dilate, z=zoneout)
     activation = Activation('leaky', negative_slope=0.2, inplace=True)
     num_layers = 3
-    enc_c = [8, 64, 192, 192, 192, 192]  #: Channels for conv and rnn; Length should be 2*num_layers
-    dec_c = [192, 192, 192, 64, 64, 8]  #: Channels for conv and rnn; Length should be 2*num_layers
+    enc_c = [16, 64, 64, 96, 96, 96]  #: Channels for conv and rnn; Length should be 2*num_layers
+    dec_c = [96, 96, 96, 96, 64, 16]  #: Channels for conv and rnn; Length should be 2*num_layers
 
     # convs
     enc_conv_names = ["conv1_leaky_1", "conv2_leaky_1", "conv3_leaky_1"]
-    enc_conv_k = [7, 5, 3]
-    enc_conv_s = [5, 3, 2]
+    enc_conv_k = [3, 3, 3]
+    enc_conv_s = [1, 2, 2]
     enc_conv_p = [1, 1, 1]
 
     dec_conv_names = ["deconv1_leaky_1", "deconv2_leaky_1", "deconv3_leaky_1"]
-    dec_conv_k = [4, 5, 7]
-    dec_conv_s = [2, 3, 5]
+    dec_conv_k = [4, 4, 3]
+    dec_conv_s = [2, 2, 1]
     dec_conv_p = [1, 1, 1]
 
     # rnns
-    enc_rnn_state_h = [96, 32, 16]
-    enc_rnn_state_w = [96, 32, 16]
     enc_rnn_z = [0.0, 0.0, 0.0]
-    enc_rnn_L = [13, 13, 9]
+    enc_rnn_L = [13, 13, 13]
     enc_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]
     enc_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]
     enc_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]
     enc_rnn_h2h_k = [(5, 5), (5, 5), (3, 3)]
     enc_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]
 
-    dec_rnn_state_h = [16, 32, 96]
-    dec_rnn_state_w = [16, 32, 96]
     dec_rnn_z = [0.0, 0.0, 0.0]  #: Zoneout
-    dec_rnn_L = [13, 13, 9]  #: L parameter
+    dec_rnn_L = [13, 13, 13]  #: L parameter
     dec_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]
     dec_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]
     dec_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]
@@ -61,8 +56,8 @@ class EF_TrajGRU(Encoder_Forecaster):
     dec_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]
 
     # final convs
-    final_conv_1_name = "conv3_leaky_2"
-    final_conv_1_c = 8
+    final_conv_1_name = "identity"
+    final_conv_1_c = 16
     final_conv_1_k = 3
     final_conv_1_s = 1
     final_conv_1_p = 1

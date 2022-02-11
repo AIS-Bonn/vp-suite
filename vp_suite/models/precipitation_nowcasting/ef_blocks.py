@@ -9,7 +9,10 @@ from vp_suite.utils.models import conv_output_shape, convtransp_output_shape
 def make_layers(block):
     layers = []
     for layer_name, v in block.items():
-        if 'pool' in layer_name:
+        if 'identity' in layer_name:
+            layer = nn.Identity()
+            layers.append((layer_name, layer))
+        elif 'pool' in layer_name:
             layer = nn.MaxPool2d(kernel_size=v[0], stride=v[1],
                                     padding=v[2])
             layers.append((layer_name, layer))
@@ -116,11 +119,11 @@ class Encoder_Forecaster(VideoPredictionModel):
             ok = True
             if param in ["enc_c", "dec_c"] and len(val) != 2 * self.num_layers:
                 ok = False
-            elif len(val) != self.num_layers:
+            elif param not in ["enc_c", "dec_c"] and len(val) != self.num_layers:
                 ok = False
             if not ok:
                 raise AttributeError(f"Speficied {self.num_layers} layers, "
-                                     f"but len of attribute '{param}' doesn't match that number.")
+                                     f"but len of attribute '{param}' doesn't match that ({val}).")
 
         # set rnn state sizes according to calculated conv output size
         next_h, next_w = self.img_h, self.img_w
@@ -141,9 +144,15 @@ class Encoder_Forecaster(VideoPredictionModel):
         final_h, final_w = convtransp_output_shape((next_h, next_w),
                                                    self.dec_conv_k[-1], self.dec_conv_s[-1], self.dec_conv_p[-1])
         if (self.img_h, self.img_w) != (final_h, final_w):
+            hidden_sizes = list(zip(enc_rnn_state_h, enc_rnn_state_w)) + list(zip(dec_rnn_state_h, dec_rnn_state_w))
             raise AttributeError(f"Model layer hyperparameters yield wrong output size: "
-                                 f"{(final_h, final_w)} (expected: {(self.img_h, self.img_w)})")
+                                 f"{(final_h, final_w)} (expected: {(self.img_h, self.img_w)}). "
+                                 f"All hidden sizes: {hidden_sizes}")
 
+        self.enc_rnn_state_h = enc_rnn_state_h
+        self.enc_rnn_state_w = enc_rnn_state_w
+        self.dec_rnn_state_h = dec_rnn_state_h
+        self.dec_rnn_state_w = dec_rnn_state_w
         enc_convs, enc_rnns, dec_convs, dec_rnns = self._build_encoder_decoder()
         self.encoder = Encoder(enc_convs, enc_rnns).to(self.device)
         self.forecaster = Forecaster(dec_convs, dec_rnns).to(self.device)
