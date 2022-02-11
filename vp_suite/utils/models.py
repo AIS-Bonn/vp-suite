@@ -54,7 +54,7 @@ def state_dicts_equal(model1: nn.Module, model2: nn.Module,
 
     if len(model1_state_dict) != len(model2_state_dict):
         print(
-            f"Length mismatch: {len(model1_state_dict)}, {len(model2_state_dict)}"
+            f"Length mismatch: model1 {len(model1_state_dict)}, model2 {len(model2_state_dict)}"
         )
         return False
 
@@ -82,11 +82,11 @@ def state_dicts_equal(model1: nn.Module, model2: nn.Module,
             v_2 = v_2.to("cuda:0" if torch.cuda.is_available() else "cpu")
 
         if v_1.shape != v_2.shape:
-            print(f"Tensor shape mismatch: {k_1} is {v_1.shape}, {k_2} is {v_2.shape}")
+            print(f"Tensor shape mismatch: model1 {k_1} is {v_1.shape}, model2 {k_2} is {v_2.shape}")
             return False
 
         if check_values and not torch.allclose(v_1, v_2):
-            print(f"Tensor mismatch: values of '{k_1}' vs values of '{k_2}'")
+            print(f"Tensor mismatch: model1 values of '{k_1}' vs model2 values of '{k_2}'")
             return False
     return True
 

@@ -20,7 +20,9 @@ class PredRNN_V2(VideoPredictionModel):
     Note:
         This model will use the whole frame sequence as an input, including the frames to be predicted. If you do not
         have a ground truth prediction for your frame sequence, pad the sequence with t "zero" frames, with t being
-        the amount of predicted frames.
+        the amount of predicted frames. Also: The original action-conditonal implementations are broken:
+        if using the action-conditional variant, reverse scheduled sampling as well as 'conv_on_input'
+        has to be set to 1/True!
     """
 
     # model-specific constants
@@ -55,16 +57,22 @@ class PredRNN_V2(VideoPredictionModel):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)
 
         self.patch_c = self.patch_size * self.patch_size * self.img_c  # frame channel
-        self.patch_a = self.patch_size * self.patch_size * self.action_size
+        self.patch_a = self.action_size
         self.patch_h = self.rnn_h = self.img_h // self.patch_size  # cell/RNN height
         self.patch_w = self.rnn_w = self.img_w // self.patch_size  # cell/RNN width
-        self.conv_actions_on_input = self.conv_actions_on_input and self.action_conditional  # set to false if not A.C.
-        self.residual_on_action_conv = self.residual_on_action_conv and self.conv_actions_on_input  # N/A if no a.-conv.
+
+        # action-conditional model has to be run with 'conv_actions_on_input' and 'reverse_scheduled_sampling'!
+        if self.action_conditional:
+            self.conv_actions_on_input = True
+            self.reverse_scheduled_sampling = True
+        else:
+            self.conv_actions_on_input = False
+            self.residual_on_action_conv = False
 
         # in action-conditional mode, setting conv_actions_on_input to True results in a slightly different comp. graph
         if self.conv_actions_on_input:
-            self.rnn_h /= 4
-            self.rnn_w /= 4
+            self.rnn_h //= 4
+            self.rnn_w //= 4
             self.conv_input1 = nn.Conv2d(self.patch_c, self.num_hidden[0] // 2, self.filter_size,
                                          stride=2, padding=self.filter_size // 2, bias=False)
             self.conv_input2 = nn.Conv2d(self.num_hidden[0] // 2, self.num_hidden[0], self.filter_size,
@@ -131,16 +139,13 @@ class PredRNN_V2(VideoPredictionModel):
 
         # prep inputs
         empty_actions = torch.zeros(b, total_frames, device=self.device)
+        x_patch = self._reshape_patch(x)  # [b, t, cpp, h_, w_]
         if self.action_conditional:
             actions = kwargs.get("actions", empty_actions)
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
                 raise ValueError("Given actions are None or of the wrong size!")
-            actions = actions[..., None, None].expand(-1, -1, -1, img_h, img_w)  # [b, t, a, h, w]
-            xa = torch.cat([x, actions], dim=2)  # [b, t, c+a, h, w]
-            xa_patch = self._reshape_patch(xa)  # [b, t, cpp + app, h_, w_]
-            x_patch, a_patch = torch.split(xa_patch, self.patch_c, dim=2)
+            a_patch = actions[..., None, None].expand(-1, -1, -1, self.patch_h, self.patch_w)  # [b, t, a, h_, w_]
         else:
-            x_patch = self._reshape_patch(x)  # [b, t, cpp, h_, w_]
             a_patch = None
 
         # cell iteration preparation
@@ -151,13 +156,13 @@ class PredRNN_V2(VideoPredictionModel):
         delta_m_list = []
         decouple_loss = []
         for i in range(self.num_layers):
-            zeros = torch.zeros([b, self.num_hidden[i], self.patch_h, self.patch_w], device=self.device)
+            zeros = torch.zeros([b, self.num_hidden[i], self.rnn_h, self.rnn_w], device=self.device)
             h_t.append(zeros)
             c_t.append(zeros)
             delta_c_list.append(zeros)
             delta_m_list.append(zeros)
 
-        memory = torch.zeros([b, self.num_hidden[0], self.patch_h, self.patch_w], device=self.device)
+        memory = torch.zeros([b, self.num_hidden[0], self.rnn_h, self.rnn_w], device=self.device)
         mask_true = self._scheduled_sampling(b, context_frames, pred_frames, train)
         x_gen = None
 
@@ -177,6 +182,8 @@ class PredRNN_V2(VideoPredictionModel):
                 else:
                     net = mask_true[:, t - context_frames] * x_patch[:, t] \
                           + (1 - mask_true[:, t - context_frames]) * x_gen
+            if self.action_conditional:
+                action = a_patch[:, t]
 
             if self.conv_actions_on_input:
                 net_shape1 = net.shape
@@ -187,11 +194,11 @@ class PredRNN_V2(VideoPredictionModel):
                 net = self.conv_input2(net)
                 if self.residual_on_action_conv:
                     input_net2 = net
-                a_patch = self.action_conv_input1(a_patch)
-                a_patch = self.action_conv_input2(a_patch)
+                action = self.action_conv_input1(action)
+                action = self.action_conv_input2(action)
 
             if self.action_conditional:
-                h_t[0], c_t[0], memory, delta_c, delta_m = self.cell_list[0](net, h_t[0], c_t[0], memory, a_patch)
+                h_t[0], c_t[0], memory, delta_c, delta_m = self.cell_list[0](net, h_t[0], c_t[0], memory, action)
             else:
                 h_t[0], c_t[0], memory, delta_c, delta_m = self.cell_list[0](net, h_t[0], c_t[0], memory)
             delta_c_list[0] = F.normalize(self.adapter(delta_c).view(delta_c.shape[0], delta_c.shape[1], -1), dim=2)
@@ -199,7 +206,7 @@ class PredRNN_V2(VideoPredictionModel):
 
             for i in range(1, self.num_layers):
                 if self.action_conditional:
-                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i], memory, a_patch)
+                    h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i], memory, action)
                 else:
                     h_t[i], c_t[i], memory, delta_c, delta_m = self.cell_list[i](h_t[i - 1], h_t[i], c_t[i], memory)
                 delta_c_list[i] = F.normalize(self.adapter(delta_c).view(delta_c.shape[0], delta_c.shape[1], -1), dim=2)
@@ -231,8 +238,7 @@ class PredRNN_V2(VideoPredictionModel):
 
     def _reshape_patch(self, x):
         b, t, c, h, w = x.shape
-        expected_img_c = self.img_c + self.action_size if self.action_conditional else self.img_c
-        expected_input_shape = (expected_img_c, self.img_h, self.img_w)
+        expected_input_shape = (self.img_c, self.img_h, self.img_w)
         if expected_input_shape != (c, h, w):
             raise ValueError(f"shape mismatch: expected {expected_input_shape}, got {(c, h, w)}")
         x = x.view(b, t, c, self.patch_h, self.patch_size, self.patch_w, self.patch_size)

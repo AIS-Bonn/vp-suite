@@ -46,15 +46,16 @@ def test_predrnnv2(args, test_id):
     their_x = np.random.random_sample((args.batch_size, t_total, h, w, c))
     our_x = np.copy(their_x)
     their_a = np.random.random_sample((args.batch_size, t_total, a))
-    our_a = np.copy(their_x)
+    our_a = np.copy(their_a)
 
     # infer: their model
     print("infer: theirs")
     their_model.eval()
-    if "action_cond" in args.model_name:
-        their_a = np.tile(their_a[:, :, np.newaxis, np.newaxis, :], (1, 1, h, w, 1))
-        their_x = np.concatenate([their_x, their_a], axis=-1)  # [b, t, h, w, c+a]
     their_x_patch = reshape_patch(their_x, args.patch_size)
+    if "action_cond" in args.model_name:
+        their_a_patch = np.tile(their_a[:, :, np.newaxis, np.newaxis, :],
+                                (1, 1, their_model.patch_height, their_model.patch_width, 1))  # [b, t, h_, w_, cpp+a]
+        their_x_patch = np.concatenate([their_x_patch, their_a_patch], axis=-1)
     mask_input = 1 if args.reverse_scheduled_sampling == 1 else args.input_length
     their_mask_patch = np.zeros((args.batch_size, args.total_length - mask_input - 1,
                                  args.img_width // args.patch_size,
@@ -184,20 +185,19 @@ if __name__ == '__main__':
 
     # test different architectures for equality
     action_setups = [
-        {"model_name": "predrnn_v2"},
-        # the original action-conditonal implementations are broken!
-        #{"model_name": "action_cond_predrnn_v2"},
-        #{"model_name": "action_cond_predrnn_v2", "conv_on_input": 1},
-        #{"model_name": "action_cond_predrnn_v2", "conv_on_input": 1, "res_on_conv": 1}
+        {"model_name": "predrnn_v2", "reverse_scheduled_sampling": 0},
+        {"model_name": "predrnn_v2", "reverse_scheduled_sampling": 1},
+        # the original action-conditonal implementations are broken: if using the action-conditional variant,
+        # reverse scheduled sampling as well as 'conv_on_input' has to be set to 1/True!
+        {"model_name": "action_cond_predrnn_v2", "conv_on_input": 1, "reverse_scheduled_sampling": 1, "res_on_conv": 0},
+        {"model_name": "action_cond_predrnn_v2", "conv_on_input": 1, "reverse_scheduled_sampling": 1, "res_on_conv": 1}
     ]
     test_setups = []
     for action_setup in action_setups:
         for layer_norm in [0, 1]:
-            for r_sched_sampling in [0, 1]:
-                test_setup = deepcopy(action_setup)
-                test_setup["layer_norm"] = layer_norm
-                test_setup["reverse_scheduled_sampling"] = r_sched_sampling
-                test_setups.append(test_setup)
+            test_setup = deepcopy(action_setup)
+            test_setup["layer_norm"] = layer_norm
+            test_setups.append(test_setup)
 
     for i, test_setup in enumerate(test_setups):
         print(f"\ntest #{i}, setup: {test_setup}")
