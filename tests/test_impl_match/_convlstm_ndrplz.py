@@ -1,22 +1,18 @@
-import argparse
-import os
 from copy import deepcopy
-import sys
 
 import torch
-
-sys.path.append("")
-sys.path.append("./ConvLSTM_pytorch")
-
 import torch.nn as nn
 import numpy as np
 
-from convlstm import ConvLSTM as TheirConvLSTM
-from conv_lstm import ConvLSTM as OurConvLSTM
-from vp_suite.utils.models import state_dicts_equal
-from vp_suite.utils.visualization import save_diff_hist
+REFERENCE_GIT_URL = "https://github.com/ndrplz/ConvLSTM_pytorch.git"
+REPO_DIR = "ConvLSTM_pytorch"
 
-def compare_implementations():
+from vp_suite.model_blocks import ConvLSTM_ndrplz as OurConvLSTM
+from vp_suite.utils.models import state_dicts_equal
+
+def test_impl():
+
+    from convlstm import ConvLSTM as TheirConvLSTM
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     input_dim = 3
@@ -70,7 +66,3 @@ def compare_implementations():
                                            f"Theirs: {theirs.shape}, ours: {ours.shape}"
         # save_diff_hist(np.abs(theirs - ours), test_id)
         assert np.allclose(theirs, ours, rtol=0, atol=1e-4), "Predictions are not equal."
-
-
-if __name__ == '__main__':
-    compare_implementations()

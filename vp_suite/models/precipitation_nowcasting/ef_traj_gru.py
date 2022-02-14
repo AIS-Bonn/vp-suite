@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from vp_suite.model_blocks.trajgru.traj_gru import TrajGRU, Activation
+from vp_suite.model_blocks import TrajGRU, TrajGRUActivation as Activation
 from vp_suite.models.precipitation_nowcasting.ef_blocks import Encoder_Forecaster
 
 

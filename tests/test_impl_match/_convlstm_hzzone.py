@@ -1,23 +1,30 @@
 from copy import deepcopy
-import sys
+import sys, os
 
 import torch
-
-sys.path.append("")
-sys.path.append("./Precipitation-Nowcasting")
-
 import torch.nn as nn
 import numpy as np
 
-from nowcasting.models.convLSTM import ConvLSTM as TheirConvLSTM
-from vp_suite.model_blocks.convlstm_hzzone.conv_lstm import ConvLSTM as OurConvLSTM
+from vp_suite.model_blocks import ConvLSTM as OurConvLSTM
 from vp_suite.utils.models import state_dicts_equal
 
+REFERENCE_GIT_URL = "https://github.com/Hzzone/Precipitation-Nowcasting.git"
+REPO_DIR = "Precipitation-Nowcasting"
 
-def compare_implementations():
-    r"""
-    IMPORTANT:
-    """
+
+def test_impl():
+
+    # cfg needs to be imported due to circular import in their code, however it is not loadable by default due to
+    # faulty assertion statements -> Remove 'assert' statements from config file so that it actually gets loaded.
+    cfg_module_fp = os.path.join(sys.path[0], "nowcasting/config.py")
+    with open(cfg_module_fp, 'r') as cfg_module_file:
+        lines = cfg_module_file.readlines()
+    with open(cfg_module_fp, 'w') as cfg_module_file:
+        for line in lines:
+            if "assert" not in line:
+                cfg_module_file.write(line)
+
+    from nowcasting.models.convLSTM import ConvLSTM as TheirConvLSTM
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     input_channel = 3
@@ -36,7 +43,7 @@ def compare_implementations():
 
     # set up our model
     print("setting up our model")
-    our_model: nn.Module = OurConvLSTM(device, input_channel, num_filter, state_h, state_w, kernel_size, 
+    our_model: nn.Module = OurConvLSTM(device, input_channel, num_filter, state_h, state_w, kernel_size,
                                        stride=stride, padding=padding).to(device)
 
     # check and assign state dicts
@@ -68,7 +75,7 @@ def compare_implementations():
     # infer: our model
     print("infer: ours")
     our_model.eval()
-    our_out, (our_h, our_c) = our_model(our_x)
+    our_out, (our_h, our_c) = our_model(our_x, states=None, seq_len=5)
     our_out = our_out.permute((1, 0, 2, 3, 4))
 
     # checks
@@ -82,7 +89,3 @@ def compare_implementations():
         # save_diff_hist(np.abs(theirs - ours), test_id)
         if not np.allclose(theirs, ours, rtol=0, atol=1e-4):
             raise AssertionError("Predictions are not equal.")
-
-
-if __name__ == '__main__':
-    compare_implementations()

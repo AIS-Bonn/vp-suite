@@ -8,7 +8,7 @@ from vp_suite.models.st_phy import STPhy
 from vp_suite.models.unet3d import UNet3D
 from vp_suite.models.lstm import LSTM
 from vp_suite.models.simple import SimpleV1, SimpleV2
-from vp_suite.models.predrnn.predrnn_v2 import PredRNN_V2
+from vp_suite.models.predrnn_v2 import PredRNN_V2
 from vp_suite.models.precipitation_nowcasting.ef_conv_lstm import EF_ConvLSTM
 from vp_suite.models.precipitation_nowcasting.ef_traj_gru import EF_TrajGRU
 
