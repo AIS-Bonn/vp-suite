@@ -12,6 +12,9 @@ class LSTM(VideoPredictionModel):
 
     # model-specific constants
     NAME = "NonConvLSTM"
+    PAPER_REFERENCE = None  #: The paper where this model was introduced first.
+    CODE_REFERENCE = None  #: The code location of the reference implementation.
+    MATCHES_REFERENCE: str = "No"  #: A comment indicating whether the implementation in this package matches the reference.
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters

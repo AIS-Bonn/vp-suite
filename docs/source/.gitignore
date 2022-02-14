@@ -3,6 +3,3 @@
 *.rst
 !index.rst
 !readme.rst
-!available_models.rst
-!available_datasets.rst
-!available_measures.rst

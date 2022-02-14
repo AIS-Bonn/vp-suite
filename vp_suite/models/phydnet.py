@@ -16,6 +16,9 @@ class PhyDNet(VideoPredictionModel):
 
     # model-specific constants
     NAME = "PhyDNet"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"  #: The paper where this model was introduced first.
+    CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"  #: The code location of the reference implementation.
+    MATCHES_REFERENCE: str = "No"  #: A comment indicating whether the implementation in this package matches the reference.
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters

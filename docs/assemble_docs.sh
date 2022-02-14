@@ -26,6 +26,9 @@ for file in $RST_FILES; do
   sed -e "s/ package//g" -i $file
 done
 
+# automatically build RST tables for available implementations from the respective package information
+python build_doc_tables.py
+
 # build HTML from api docs
 make clean
 make html

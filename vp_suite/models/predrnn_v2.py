@@ -27,6 +27,9 @@ class PredRNN_V2(VideoPredictionModel):
 
     # model-specific constants
     NAME = "PredRNN++"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2103.09504"  #: The paper where this model was introduced first.
+    CODE_REFERENCE = "https://github.com/thuml/predrnn-pytorch"  #: The code location of the reference implementation.
+    MATCHES_REFERENCE: str = "Yes"  #: A comment indicating whether the implementation in this package matches the reference.
     CAN_HANDLE_ACTIONS = False
     NEEDS_COMPLETE_INPUT = True
 
