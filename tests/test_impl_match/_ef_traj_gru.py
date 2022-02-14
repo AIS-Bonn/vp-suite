@@ -4,7 +4,7 @@ import sys, os
 import torch
 import numpy as np
 
-from vp_suite.model_blocks import TrajGRUActivation as Activation
+from vp_suite.model_blocks.traj_gru import Activation
 from vp_suite.models import EF_TrajGRU as OurEF_TrajGRU
 from vp_suite.utils.models import state_dicts_equal
 
