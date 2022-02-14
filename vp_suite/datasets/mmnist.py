@@ -25,6 +25,8 @@ class MovingMNISTDataset(VPDataset):
     """
 
     NAME = "Moving MNIST"
+    REFERENCE = "https://arxiv.org/abs/1502.04681v3"
+    IS_DOWNLOADABLE = "Yes"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
     MIN_SEQ_LEN = 20
     ACTION_SIZE = 0

@@ -21,6 +21,8 @@ class Human36MDataset(VPDataset):
     is one of several different scenarios such as "Discussion", "Sitting" or "Smoking".
     """
     NAME = "Human 3.6M"
+    REFERENCE = "http://vision.imar.ro/human3.6m/description.php"
+    IS_DOWNLOADABLE = "With Registered Account"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "human36m"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest).

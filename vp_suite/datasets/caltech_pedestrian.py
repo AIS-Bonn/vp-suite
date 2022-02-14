@@ -20,6 +20,8 @@ class CaltechPedestrianDataset(VPDataset):
     Each sequence shows a short clip of 'driving through regular traffic in an urban environment'.
     """
     NAME = "Caltech Pedestrian"
+    REFERENCE = "http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/"
+    IS_DOWNLOADABLE = "Yes"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "caltech_pedestrian"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 568  #: Minimum number of frames across all sequences (1322 in 2nd-shortest, 2175 in longest)

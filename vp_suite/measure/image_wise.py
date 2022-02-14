@@ -16,6 +16,7 @@ class MSE(BaseMeasure):
     r"""
 
     """
+    NAME = "Mean Squared Error (MSE) / L2 Loss"
     def __init__(self, device):
         super(MSE, self).__init__(device)
         self.criterion = nn.MSELoss(reduction="none").to(device)
@@ -29,6 +30,7 @@ class L1(BaseMeasure):
     r"""
 
     """
+    NAME = "Mean Absolute Error (MAE) / L1 Loss"
     def __init__(self, device):
         super(L1, self).__init__(device)
         self.criterion = nn.L1Loss(reduction="none").to(device)
@@ -42,6 +44,7 @@ class SmoothL1(BaseMeasure):
     r"""
 
     """
+    NAME = "Smooth L1 Loss"
     def __init__(self, device):
         super(SmoothL1, self).__init__(device)
         self.criterion = nn.SmoothL1Loss(reduction="none").to(device)
@@ -55,7 +58,7 @@ class PSNR(BaseMeasure):
     r"""
 
     """
-
+    NAME = "Peak Signal to Noise Ratio (PSNR)"
     BIGGER_IS_BETTER = True
     OPT_VALUE = float("inf")
 
@@ -81,6 +84,9 @@ class LPIPS(BaseMeasure):
     r"""
 
     """
+    NAME = "Learned Perceptual Image Patch Similarity (LPIPS)"
+    REFERENCE = "https://arxiv.org/abs/1801.03924"
+
     def __init__(self, device):
         super(LPIPS, self).__init__(device)
         self.criterion = piqa.lpips.LPIPS().to(device)
@@ -99,7 +105,8 @@ class SSIM(BaseMeasure):
     r"""
 
     """
-
+    NAME = "Structural Similarity (SSIM)"
+    REFERENCE = "https://ieeexplore.ieee.org/document/1284395"
     BIGGER_IS_BETTER = True
     OPT_VALUE = 1
 

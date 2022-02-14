@@ -20,6 +20,8 @@ class BAIRPushingDataset(VPDataset):
     images of size 64x64 as well as 4D action vectors describing the robot gripper movement per-frame.
     """
     NAME = "BAIR robot pushing"
+    REFERENCE = "https://arxiv.org/abs/1710.05268"
+    IS_DOWNLOADABLE = "Yes"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
     MIN_SEQ_LEN = 30
     ACTION_SIZE = 4

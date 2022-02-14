@@ -16,17 +16,23 @@ def _build_table(info_list, header, title, out_filename):
 
 
 def build_available_models_table():
-    model_info_header = ["Model Name", "Model Identifier", "Paper Reference", "Code Reference", "Matches Reference?"]
-    model_info_list = list()
+    info_header = ["Model Name", "Model Identifier", "Paper Reference", "Code Reference", "Matches Reference?"]
+    info_list = list()
     for model_id, model_class in MODEL_CLASSES.items():
-        cur_model_info = [model_class.NAME, f"``{model_id}``", model_class.PAPER_REFERENCE or "",
-                          model_class.CODE_REFERENCE or "", model_class.MATCHES_REFERENCE or ""]
-        model_info_list.append(cur_model_info)
-    _build_table(model_info_list, model_info_header, "Available Models", "source/available_models.rst")
+        cur_info = [model_class.NAME, f"``{model_id}``", model_class.PAPER_REFERENCE or "",
+                    model_class.CODE_REFERENCE or "", model_class.MATCHES_REFERENCE or ""]
+        info_list.append(cur_info)
+    _build_table(info_list, info_header, "Available Models", "source/available_models.rst")
 
 
 def build_available_datasets_table():
-    pass
+    info_header = ["Dataset Name", "Dataset Identifier", "Reference", "Downloadable?"]
+    info_list = list()
+    for dataset_id, dataset_class in DATASET_CLASSES.items():
+        cur_info = [dataset_class.NAME, f"``{dataset_id}``", dataset_class.REFERENCE or "",
+                    dataset_class.IS_DOWNLOADABLE or ""]
+        info_list.append(cur_info)
+    _build_table(info_list, info_header, "Available Datasets", "source/available_datasets.rst")
 
 
 def build_available_model_blocks_table():
@@ -34,11 +40,21 @@ def build_available_model_blocks_table():
 
 
 def build_available_metrics_table():
-    pass
+    info_header = ["Loss Name", "Loss Identifier", "Reference"]
+    info_list = list()
+    for loss_id, loss_class in LOSS_CLASSES.items():
+        cur_info = [loss_class.NAME, f"``{loss_id}``", loss_class.REFERENCE or ""]
+        info_list.append(cur_info)
+    _build_table(info_list, info_header, "Available Losses", "source/available_losses.rst")
 
 
 def build_available_losses_table():
-    pass
+    info_header = ["Metric Name", "Metric Identifier", "Reference"]
+    info_list = list()
+    for metric_id, metric_class in METRIC_CLASSES.items():
+        cur_info = [metric_class.NAME, f"``{metric_id}``", metric_class.REFERENCE or ""]
+        info_list.append(cur_info)
+    _build_table(info_list, info_header, "Available Metrics", "source/available_metrics.rst")
 
 
 if __name__ == '__main__':

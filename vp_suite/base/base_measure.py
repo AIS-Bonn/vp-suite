@@ -5,7 +5,8 @@ class BaseMeasure(nn.Module):
     r"""
 
     """
-
+    NAME: str = NotImplemented  #: The clear-text name of the measure.
+    REFERENCE: str = None  #: The reference where this measure is originally introduced.
     BIGGER_IS_BETTER = False  #: specifying whether bigger values are better
     OPT_VALUE = 0.  #: specifying the best value attainable (e.g. with equal tensors)
 

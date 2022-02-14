@@ -14,6 +14,9 @@ class FrechetVideoDistance(BaseMeasure):
     INSPIRED BY: https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py
 
     """
+    NAME = "Fréchet Video Distance (FVD)"
+    REFERENCE = "https://arxiv.org/abs/1812.01717"
+
     _min_T = 9  #: TODO
     _max_T = 16  #: TODO
     _i3d_in_shape = (224, 224)  #: TODO

@@ -25,6 +25,8 @@ class KTHActionsDataset(VPDataset):
         Going beyond 30 frames is therefore not recommended.
     """
     NAME = "KTH Actions"
+    REFERENCE = "https://doi.org/10.1109/ICPR.2004.1334462"
+    IS_DOWNLOADABLE = "Yes"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: The different scenarios that constitue this dataset.
     SHORT_CLASSES = ['walking', 'running', 'jogging']  #: Those scenarios where the sequence length might drop below the required frame count.

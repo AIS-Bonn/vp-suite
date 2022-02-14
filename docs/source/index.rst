@@ -19,7 +19,8 @@ Welcome to vp-suite's documentation!
 
    available_models
    available_datasets
-   available_measures
+   available_losses
+   available_metrics
 
 
 .. toctree::

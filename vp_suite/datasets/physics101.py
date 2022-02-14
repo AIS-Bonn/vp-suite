@@ -19,6 +19,8 @@ class Physics101Dataset(VPDataset):
     different physical scenarios such as sliding down a ramp or bouncing off a flat surface.
     """
     NAME = "Physics 101"
+    REFERENCE = "http://phys101.csail.mit.edu/"
+    IS_DOWNLOADABLE = "Yes"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "phys101"
     AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #: Available cameras/image sources.
     AVAILABLE_SUBSEQ = ["start", "middle", "end"]  #: Available (sub-)sequence extraction position identifiers.

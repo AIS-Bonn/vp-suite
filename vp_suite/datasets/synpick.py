@@ -26,6 +26,8 @@ class SynpickMovingDataset(VPDataset):
     On its way, the robot is pushing around the objects in the bin.
     """
     NAME = "SynPick - Moving"
+    REFERENCE = "https://arxiv.org/abs/2107.04852"
+    IS_DOWNLOADABLE = "Not Yet"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "synpick"
     VALID_SPLITS = ["train", "val", "test"]
     SKIP_FIRST_N = 72  #: Skip the first few frames as the robotic gripper is still in descent to the bin.

@@ -53,6 +53,8 @@ class VPDataset(Dataset):
 
     # DATASET CONSTANTS
     NAME: str = NotImplemented  #: The dataset's name.
+    REFERENCE: str = None  #: The reference (publication) where the original dataset is introduced.
+    IS_DOWNLOADABLE: str = None  #: A string identifying whether the dataset can be (freely) downloaded.
     DEFAULT_DATA_DIR: Path = NotImplemented  #: The default save location of the dataset files.
     VALID_SPLITS = ["train", "test"]  #: The valid arguments for specifying splits.
     MIN_SEQ_LEN: int = NotImplemented  #: The minimum sequence length provided by the dataset.

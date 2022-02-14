@@ -18,6 +18,8 @@ class KITTIRawDataset(VPDataset):
     Each sequence shows a short clip of 'driving around the mid-size city of Karlsruhe, in rural areas and on highways'.
     """
     NAME = "KITTI raw"
+    REFERENCE = "http://www.cvlibs.net/datasets/kitti/raw_data.php"
+    IS_DOWNLOADABLE = "With Registered Account"
     DEFAULT_DATA_DIR = constants.DATA_PATH / "kitti_raw"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest).
