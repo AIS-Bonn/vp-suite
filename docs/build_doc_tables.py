@@ -3,7 +3,7 @@ sys.path.append("..")
 from tabulate import tabulate
 
 from vp_suite.models import MODEL_CLASSES
-# from vp_suite.model_blocks import MODEL_BLOCK_CLASSES
+from vp_suite.model_blocks import MODEL_BLOCK_CLASSES
 from vp_suite.datasets import DATASET_CLASSES
 from vp_suite.measure import LOSS_CLASSES, METRIC_CLASSES
 
@@ -35,10 +35,6 @@ def build_available_datasets_table():
     _build_table(info_list, info_header, "Available Datasets", "source/available_datasets.rst")
 
 
-def build_available_model_blocks_table():
-    pass
-
-
 def build_available_metrics_table():
     info_header = ["Loss Name", "Loss Identifier", "Reference"]
     info_list = list()
@@ -57,9 +53,19 @@ def build_available_losses_table():
     _build_table(info_list, info_header, "Available Metrics", "source/available_metrics.rst")
 
 
+def build_available_model_blocks_table():
+    info_header = ["Model Block Name", "Paper Reference", "Code Reference", "Matches Reference?"]
+    info_list = list()
+    for model_block_class in MODEL_BLOCK_CLASSES:
+        cur_info = [model_block_class.NAME, model_block_class.PAPER_REFERENCE or "",
+                    model_block_class.CODE_REFERENCE or "", model_block_class.MATCHES_REFERENCE or ""]
+        info_list.append(cur_info)
+    _build_table(info_list, info_header, "Available Model Blocks", "source/available_model_blocks.rst")
+
+
 if __name__ == '__main__':
+    build_available_datasets_table()
     build_available_models_table()
     build_available_losses_table()
     build_available_metrics_table()
     build_available_model_blocks_table()
-    build_available_datasets_table()

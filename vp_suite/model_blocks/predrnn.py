@@ -1,13 +1,20 @@
 import torch
 from torch import nn as nn
 
+from vp_suite.base.base_model_block import ModelBlock
 
-class SpatioTemporalLSTMCell(nn.Module):
+
+class SpatioTemporalLSTMCell(ModelBlock):
     r"""
     Spatio-Temporal LSTM Cell (v2) as introduced in
     "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.
     (https://arxiv.org/pdf/2103.09504.pdf) and implemented in (https://github.com/thuml/predrnn-pytorch).
     """
+    NAME = "Spatio-Temporal LSTM Cell"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2103.09504"
+    CODE_REFERENCE = "https://github.com/thuml/predrnn-pytorch"
+    MATCHES_REFERENCE = "Yes"
+
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
         super(SpatioTemporalLSTMCell, self).__init__()
 
@@ -48,7 +55,6 @@ class SpatioTemporalLSTMCell(nn.Module):
 
 
     def forward(self, x_t, h_t, c_t, m_t):
-
         x_concat = self.conv_x(x_t)
         h_concat = self.conv_h(h_t)
         m_concat = self.conv_m(m_t)
@@ -77,12 +83,17 @@ class SpatioTemporalLSTMCell(nn.Module):
         return h_new, c_new, m_new, delta_c, delta_m
 
 
-class ActionConditionalSpatioTemporalLSTMCell(nn.Module):
+class ActionConditionalSpatioTemporalLSTMCell(ModelBlock):
     r"""
     Action-Conditional Spatio-Temporal LSTM Cell (v2) as introduced in
     "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.
     (https://arxiv.org/pdf/2103.09504.pdf) and implemented in (https://github.com/thuml/predrnn-pytorch).
     """
+    NAME = "Spatio-Temporal LSTM Cell (Action-Conditional)"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2103.09504"
+    CODE_REFERENCE = "https://github.com/thuml/predrnn-pytorch"
+    MATCHES_REFERENCE = "Yes"
+
     def __init__(self, in_channel, num_hidden, height, width, filter_size, stride, layer_norm):
         super(ActionConditionalSpatioTemporalLSTMCell, self).__init__()
 

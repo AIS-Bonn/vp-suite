@@ -1,13 +1,14 @@
 import torch.nn as nn
 import torch
 
+from vp_suite.base.base_model_block import ModelBlock
+
 
 class ConvLSTMCell(nn.Module):
     r"""
     Source: https://github.com/ndrplz/ConvLSTM_pytorch
     Should be matching that implementation!
     """
-
     def __init__(self, input_dim, hidden_dim, kernel_size, bias):
         """
         Initialize ConvLSTM cell.
@@ -62,7 +63,7 @@ class ConvLSTMCell(nn.Module):
                 torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
 
 
-class ConvLSTM(nn.Module):
+class ConvLSTM(ModelBlock):
 
     """
 
@@ -89,6 +90,9 @@ class ConvLSTM(nn.Module):
         >> _, last_states = convlstm(x)
         >> h = last_states[0][0]  # 0 for layer index, 0 for h index
     """
+    NAME = "ConvLSTM (Palazzi, Abati)"
+    CODE_REFERENCE = "https://github.com/ndrplz/ConvLSTM_pytorch"
+    MATCHES_REFERENCE = "Yes (Code Reference)"
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
                  batch_first=False, bias=True, return_all_layers=False):

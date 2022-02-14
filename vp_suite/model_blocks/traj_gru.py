@@ -2,6 +2,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+from vp_suite.base.base_model_block import ModelBlock
+
 
 class Activation():
     def __init__(self, act_type, negative_slope=0.2, inplace=True):
@@ -21,7 +23,7 @@ class Activation():
             raise NotImplementedError
 
 
-class BaseConvRNN(nn.Module):
+class BaseConvRNN(ModelBlock):
     def __init__(self, device, num_filter, in_h, in_w,
                  h2h_kernel=(3, 3), h2h_dilate=(1, 1),
                  i2h_kernel=(3, 3), i2h_stride=(1, 1),
@@ -56,6 +58,11 @@ class BaseConvRNN(nn.Module):
 
 
 class TrajGRU(BaseConvRNN):
+
+    NAME = "TrajGRU"
+    PAPER_REFERENCE = "https://arxiv.org/abs/1706.03458"
+    CODE_REFERENCE = "https://github.com/Hzzone/Precipitation-Nowcasting"
+    MATCHES_REFERENCE = "Yes"
     # b_h_w: input feature map size
     def __init__(self, device, in_c, enc_c, state_h, state_w, zoneout=0.0, L=5,
                  i2h_kernel=(3, 3), i2h_stride=(1, 1), i2h_pad=(1, 1),

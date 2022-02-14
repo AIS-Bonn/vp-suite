@@ -25,7 +25,7 @@ class EF_ConvLSTM(Encoder_Forecaster):
     NAME = "EF-ConvLSTM (Shi et al.)"
     PAPER_REFERENCE = "https://arxiv.org/abs/1506.04214"  #: The paper where this model was introduced first.
     CODE_REFERENCE = "https://github.com/Hzzone/Precipitation-Nowcasting"  #: The code location of the reference implementation.
-    MATCHES_REFERENCE: str = "Yes"  #: A comment indicating whether the implementation in this package matches the reference.
+    MATCHES_REFERENCE = "Yes"  #: A comment indicating whether the implementation in this package matches the reference.
 
     # model hyperparameters (c=channels, h=height, w=width, k=kernel_size, s=stride, p=padding)
     num_layers = 3

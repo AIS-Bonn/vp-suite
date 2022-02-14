@@ -18,6 +18,7 @@ Welcome to vp-suite's documentation!
    :caption: Feature Overview
 
    available_models
+   available_model_blocks
    available_datasets
    available_losses
    available_metrics

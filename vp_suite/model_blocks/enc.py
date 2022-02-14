@@ -8,12 +8,15 @@ from torchvision import transforms as TF
 from torchvision.transforms import Resize
 
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
+from vp_suite.base.base_model_block import ModelBlock
 
 
-class Autoencoder(nn.Module):
+class Autoencoder(ModelBlock):
     r"""
 
     """
+    NAME = "Autoencoder"
+
     def __init__(self, img_shape, encoded_channels, device):
         r"""
 
@@ -69,10 +72,12 @@ class Autoencoder(nn.Module):
         return self.decoder(x)
 
 
-class Encoder(nn.Module):
+class Encoder(ModelBlock):
     r"""
 
     """
+    NAME = "Encoder"
+
     def __init__(self, in_channels, out_channels):
         r"""
 
@@ -106,10 +111,12 @@ class Encoder(nn.Module):
         return x
 
 
-class Decoder(nn.Module):
+class Decoder(ModelBlock):
     r"""
 
     """
+    NAME = "Decoder"
+
     def __init__(self, in_channels, out_shape):
         r"""
 
@@ -146,10 +153,12 @@ class Decoder(nn.Module):
         return x
 
 
-class DCGANEncoder(nn.Module):
+class DCGANEncoder(ModelBlock):
     r"""
 
     """
+    NAME = "DCGAN Encoder"
+
     def __init__(self, nc=1, nf=32):
         r"""
 
@@ -178,10 +187,12 @@ class DCGANEncoder(nn.Module):
         return h3
 
 
-class DCGANDecoder(nn.Module):
+class DCGANDecoder(ModelBlock):
     r"""
 
     """
+    NAME = "DCGAN Decoder"
+
     def __init__(self, out_size, nc=1, nf=32):
         super(DCGANDecoder, self).__init__()
         self.upc1 = DCGANConvTranspose(2 * nf, nf, stride=2)  # (32) x 32 x 32

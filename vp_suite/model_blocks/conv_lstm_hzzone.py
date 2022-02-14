@@ -1,7 +1,15 @@
 from torch import nn
 import torch
 
-class ConvLSTM(nn.Module):
+from vp_suite.base.base_model_block import ModelBlock
+
+
+class ConvLSTM(ModelBlock):
+    NAME = "ConvLSTM (Shi et al.)"
+    PAPER_REFERENCE = "https://arxiv.org/abs/1506.04214"
+    CODE_REFERENCE = "https://github.com/Hzzone/Precipitation-Nowcasting"
+    MATCHES_REFERENCE = "Yes"
+
     def __init__(self, device, in_c, enc_c, state_h, state_w, kernel_size, stride=1, padding=1):
         super().__init__()
         self.device = device

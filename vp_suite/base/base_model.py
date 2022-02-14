@@ -19,7 +19,7 @@ class VideoPredictionModel(nn.Module):
 
     # MODEL CONSTANTS
     NAME = None  #: The model's name.
-    PAPER_REFERENCE = None  #: The paper where this model was introduced first.
+    PAPER_REFERENCE = None  #: The publication where this model was introduced first.
     CODE_REFERENCE = None  #: The code location of the reference implementation.
     MATCHES_REFERENCE: str = None  #: A comment indicating whether the implementation in this package matches the reference.
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range"]  #: The attributes that the model creator needs to supply when creating the model.

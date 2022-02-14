@@ -4,11 +4,15 @@ This module contains convolutional model blocks.
 
 from torch import nn as nn
 
+from vp_suite.base.base_model_block import ModelBlock
 
-class DoubleConv2d(nn.Module):
+
+class DoubleConv2d(ModelBlock):
     r"""
 
     """
+    NAME = "DoubleConv2d"
+
     def __init__(self, in_c, out_c):
         r"""
 
@@ -40,10 +44,12 @@ class DoubleConv2d(nn.Module):
         return self.conv(x)
 
 
-class DoubleConv3d(nn.Module):
+class DoubleConv3d(ModelBlock):
     r"""
 
     """
+    NAME = "DoubleConv3d"
+
     def __init__(self, in_c, out_c):
         super(DoubleConv3d, self).__init__()
         self.conv = nn.Sequential(
@@ -69,10 +75,12 @@ class DoubleConv3d(nn.Module):
         return self.conv(x)
 
 
-class DCGANConv(nn.Module):
+class DCGANConv(ModelBlock):
     r"""
 
     """
+    NAME = "DCGAN - Conv"
+
     def __init__(self, nin, nout, stride):
         r"""
 
@@ -100,10 +108,12 @@ class DCGANConv(nn.Module):
         return self.main(input)
 
 
-class DCGANConvTranspose(nn.Module):
+class DCGANConvTranspose(ModelBlock):
     r"""
 
     """
+    NAME = "DCGAN - ConvTranspose"
+
     def __init__(self, nin, nout, stride):
         r"""
 

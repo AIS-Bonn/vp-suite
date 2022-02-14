@@ -5,14 +5,20 @@ from functools import reduce
 from scipy.special import factorial
 from torch import nn as nn
 
+from vp_suite.base.base_model_block import ModelBlock
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
 from vp_suite.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
-class PhyCell_Cell(nn.Module):
+class PhyCell_Cell(ModelBlock):
     r"""
 
     """
+    NAME = "PhyCell - Cell"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"
+    CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
+    MATCHES_REFERENCE = "Not Yet"
+
     def __init__(self, input_dim, action_conditional, action_size, F_hidden_dim, kernel_size, bias=1):
         r"""
 
@@ -82,10 +88,15 @@ class PhyCell_Cell(nn.Module):
         return next_hidden
 
 
-class PhyCell(nn.Module):
+class PhyCell(ModelBlock):
     r"""
 
     """
+    NAME = "PhyCell"
+    PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"
+    CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
+    MATCHES_REFERENCE = "Not Yet"
+
     def __init__(self, input_shape, input_dim, F_hidden_dims, n_layers, kernel_size, action_conditional,
                  action_size, device):
         r"""
