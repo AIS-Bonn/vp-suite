@@ -105,22 +105,28 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
 
     for i, n in enumerate(vis_idx):
         out_filename = str(out_path / out_fn_template.format(str(i)))
-        data = dataset[n] # [in_l + pred_l, c, h, w]
+        data = dataset[n]  # [in_l + pred_l, c, h, w]
+        actions = data["actions"].clone().to(device).unsqueeze(dim=0)
+        in_traj = data["frames"][:context_frames].clone().to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
+        colorized = data.get("colorized", None)
 
         gt_rgb_vis = dataset.postprocess(data["frames"][:context_frames + pred_frames])
-        gt_colorized_vis = data.get("colorized", None)
-        if gt_colorized_vis is not None:
-            gt_colorized_vis = dataset.postprocess(gt_colorized_vis)  # [in_l, h, w, c]
-        actions = data["actions"].to(device).unsqueeze(dim=0)
-        in_traj = data["frames"]
+        if colorized is not None:
+            colorized = colorized.clone()
+            gt_colorized_vis = dataset.postprocess(colorized)  # [in_l, h, w, c]
+        else:
+            gt_colorized_vis = None
 
         if pred_model is not None:
             pred_model.eval()
             with torch.no_grad():
-                in_traj = in_traj[:context_frames].to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
                 pr_traj, _ = pred_model(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
+                print(in_traj.shape, in_traj.min(), in_traj.max())
+                print(pr_traj.shape, pr_traj.min(), pr_traj.max())
                 pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
                 pr_traj_vis = dataset.postprocess(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
+
+                print(gt_rgb_vis.min(), gt_rgb_vis.max(), pr_traj_vis.min(), pr_traj_vis.max())
 
                 save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
                     GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)
