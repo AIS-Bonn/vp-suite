@@ -264,6 +264,8 @@ class VPSuite:
         model.model_dir = str(out_path.resolve())
         best_model_path = str((out_path / 'best_model.pth').resolve())
         with_training = model.TRAINABLE and not run_config["no_train"]
+        with_validation = not run_config["no_val"]
+        with_wandb = not run_config["no_wandb"]
 
         # HYPERPARAMETER OPTIMIZATION
         optuna_config = run_config.get("optuna", None)
@@ -293,7 +295,7 @@ class VPSuite:
                       default=lambda o: str(o) if callable(getattr(o, "__str__", None)) else '<not serializable>')
 
         # WandB
-        if not run_config["no_wandb"]:
+        if with_wandb:
             wandb_reinit = using_optuna and trial.number > 0
             wandb.init(config=config, project="vp-suite-training",
                        dir=str(constants.WANDB_PATH.resolve()), reinit=wandb_reinit)
@@ -317,29 +319,34 @@ class VPSuite:
 
         # --- MAIN LOOP ---
         for epoch in range(0, run_config["epochs"]):
+            print(f"\nEpoch: {epoch+1} of {config['epochs']}")
 
             # train
-            print(f'\nTraining (epoch: {epoch+1} of {config["epochs"]})')
             if with_training:
+                print("Training...")
                 model.train_iter(config, train_loader, optimizer, loss_provider, epoch)
             else:
                 print("Skipping training loop.")
 
             # eval
-            print("Validating...")
-            val_losses, indicator_loss = model.eval_iter(config, val_loader, loss_provider)
-            if with_training:
-                optimizer_scheduler.step(indicator_loss)
-            print("Validation losses (mean over entire validation set):")
-            for k, v in val_losses.items():
-                print(f" - {k}: {v}")
+            val_losses = dict()
+            if with_validation:
+                print("Validating...")
+                val_losses, indicator_loss = model.eval_iter(config, val_loader, loss_provider)
+                if with_training:
+                    optimizer_scheduler.step(indicator_loss)
+                print("Validation losses (mean over entire validation set):")
+                for k, v in val_losses.items():
+                    print(f" - {k}: {v}")
 
-            # save model if last epoch improved indicator loss
-            cur_val_loss = indicator_loss.item()
-            if loss_improved(cur_val_loss, best_val_loss):
-                best_val_loss = cur_val_loss
-                torch.save(model, best_model_path)
-                print(f"Minimum indicator loss ({config['val_rec_criterion']}) reduced -> model saved!")
+                # save model if last epoch improved indicator loss
+                cur_val_loss = indicator_loss.item()
+                if loss_improved(cur_val_loss, best_val_loss):
+                    best_val_loss = cur_val_loss
+                    torch.save(model, best_model_path)
+                    print(f"Minimum indicator loss ({config['val_rec_criterion']}) reduced -> model saved!")
+            else:
+                print("Skipping validation loop.")
 
             # visualize current model performance every nth epoch, using eval mode and validation data.
             if (epoch+1) % config["vis_every"] == 0 and not config["no_vis"]:
@@ -349,14 +356,14 @@ class VPSuite:
                 visualize_vid(val_data, config["context_frames"], config["pred_frames"], model,
                               config["device"], vis_out_path, num_vis=10)
 
-                if not config["no_wandb"]:
+                if with_wandb:
                     vid_filenames = sorted(os.listdir(str(vis_out_path)))
                     log_vids = {fn: wandb.Video(str(vis_out_path / fn), fps=4, format=fn.split(".")[-1])
                                 for i, fn in enumerate(vid_filenames)}
                     wandb.log(log_vids, commit=False)
 
             # final bookkeeping
-            if not config["no_wandb"]:
+            if with_validation and with_wandb:
                 wandb.log(val_losses, commit=True)
 
         # finishing
@@ -463,6 +470,7 @@ class VPSuite:
 
         # assemble and save combined configuration
         config = {**run_config, **dataset.config, "device": self.device}
+        with_wandb = not config["no_wandb"]
 
         # evaluation / metric calc.
         iter_loader = iter(test_loader)
@@ -514,7 +522,7 @@ class VPSuite:
                 ]
 
                 # Log model to WandB
-                if not config["no_wandb"]:
+                if with_wandb:
                     print("Logging test results to WandB for all models...")
                     wandb.init(config={"test_mode": test_mode, "model_dir": model.model_dir},
                                project="vp-suite-testing", name=f"{model.NAME}{wandb_full_suffix}",

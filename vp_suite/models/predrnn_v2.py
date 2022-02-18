@@ -234,8 +234,8 @@ class PredRNN_V2(VideoPredictionModel):
             next_frames.append(x_gen)
 
         # finalize
-        predictions_patch = torch.stack(next_frames, dim=1)  # [b, t', cpp, h_, w_]
-        predictions = self._reshape_patch_back(predictions_patch)[:, -pred_frames:]  # [b, t_pred, c, h, w]
+        predictions_patch = torch.stack(next_frames[-pred_frames:], dim=1)  # [b, t_pred, cpp, h_, w_]
+        predictions = self._reshape_patch_back(predictions_patch)  # [b, t_pred, c, h, w]
         decouple_loss = torch.mean(torch.stack(decouple_loss, dim=0))
         return predictions, {"ST-LSTM decouple loss": decouple_loss}
 

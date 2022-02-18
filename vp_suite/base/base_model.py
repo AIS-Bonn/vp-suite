@@ -98,12 +98,16 @@ class VideoPredictionModel(nn.Module):
         shape the model expects as input later.
         """
         img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
-        actions = data["actions"].to( config["device"])  # [b, T-1, a]. Action t happens between frame t and t+1
+        actions = data["actions"].to(config["device"])  # [b, T-1, a]. Action t happens between frame t and t+1
         if reverse:
             img_data = torch.flip(img_data, dims=[1])
             actions = torch.flip(actions, dims=[1])
-        input_frames = img_data if self.NEEDS_COMPLETE_INPUT else img_data[:, :config["context_frames"]]
-        target_frames = img_data[:, config["context_frames"]: config["context_frames"] + config["pred_frames"]]
+        T_in, T_pred = config["context_frames"], config["pred_frames"]
+        if self.NEEDS_COMPLETE_INPUT:
+            input_frames = img_data[:, :T_in+T_pred]
+            target_frames = input_frames[:, T_in:].clone()
+        else:
+            input_frames, target_frames = torch.split(img_data[:, :T_in+T_pred], [T_in, T_pred], dim=1)
         return input_frames, target_frames, actions
 
     def pred_1(self, x: torch.Tensor, **kwargs):
