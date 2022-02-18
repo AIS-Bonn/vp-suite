@@ -167,24 +167,17 @@ class PredRNN_V2(VideoPredictionModel):
 
         memory = torch.zeros([b, self.num_hidden[0], self.rnn_h, self.rnn_w], device=self.device)
         mask_true = self._scheduled_sampling(b, context_frames, pred_frames, train)
+        first_t_with_blending = 1 if self.reverse_scheduled_sampling else context_frames
         x_gen = None
 
         # actual fwd pass
         for t in range(total_frames - 1):
-            if self.reverse_scheduled_sampling:
-                # reverse schedule sampling
-                if t == 0:
-                    net = x_patch[:, t]
-                else:
-                    net = mask_true[:, t - 1] * x_patch[:, t] \
-                          + (1 - mask_true[:, t - 1]) * x_gen
+            if t < first_t_with_blending:
+                net = x_patch[:, t]
             else:
-                # schedule sampling
-                if t < context_frames:
-                    net = x_patch[:, t]
-                else:
-                    net = mask_true[:, t - context_frames] * x_patch[:, t] \
-                          + (1 - mask_true[:, t - context_frames]) * x_gen
+                mask_ = mask_true[:, t - first_t_with_blending]
+                net = mask_ * x_patch[:, t] + (1 - mask_) * x_gen
+
             if self.action_conditional:
                 action = a_patch[:, t]
 
