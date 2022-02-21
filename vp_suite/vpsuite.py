@@ -1,4 +1,4 @@
-import random, json, os
+import random, json, os, time
 import warnings
 from typing import List, Dict, Any
 from pathlib import Path
@@ -335,6 +335,7 @@ class VPSuite:
             def loss_improved(cur_loss, best_loss): return cur_loss < best_loss
 
         # --- MAIN LOOP ---
+        training_timeout = time.time() + config["max_training_hours"] * 3600
         for epoch in range(0, run_config["epochs"]):
             print(f"\nEpoch: {epoch+1} of {config['epochs']}")
 
@@ -383,6 +384,9 @@ class VPSuite:
             # final bookkeeping
             if with_validation and with_wandb:
                 wandb.log(val_losses, commit=True)
+            if time.time() > training_timeout:
+                print("Maximum training time exceeded, leaving training loop...")
+                break
 
         # finishing
         print("\nTraining done, cleaning up...")

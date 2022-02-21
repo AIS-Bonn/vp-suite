@@ -7,7 +7,8 @@
     "n_vis": 5,
     "seed": 42,
     "lr": 0.0001,
-    "epochs": 100,
+    "epochs": 1000000,
+    "max_training_hours": 48,
     "batch_size": 32,
     "losses_and_scales": {
         "mse": 1.0
