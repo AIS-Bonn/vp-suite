@@ -99,6 +99,9 @@ class VideoPredictionModel(nn.Module):
         """
         img_data = data["frames"].to(config["device"])  # [b, T, c, h, w], with T = total_frames
         actions = data["actions"].to(config["device"])  # [b, T-1, a]. Action t happens between frame t and t+1
+        if img_data.ndim == 4:  # prepend batch dimension if not given
+            img_data = img_data.unsqueeze(0)
+            actions = actions.unsqueeze(0)
         if reverse:
             img_data = torch.flip(img_data, dims=[1])
             actions = torch.flip(actions, dims=[1])

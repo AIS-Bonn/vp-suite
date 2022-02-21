@@ -1,12 +1,12 @@
 from typing import TypedDict, Union, Sequence, Optional, Generator, List
 from copy import deepcopy
 from pathlib import Path
+import random
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.transforms as TF
-from torch import randperm, default_generator
 from torch._utils import _accumulate
 from torch.utils.data import Subset
 from torch.utils.data.dataset import Dataset
@@ -64,6 +64,7 @@ class VPDataset(Dataset):
     # dataset hyper-parameters
     img_shape: (int, int, int) = NotImplemented  #: Shape of a single frame as returned by `__getitem()__`.
     train_to_val_ratio: float = 0.8  #: The ratio of files that will be training data (rest will be validation data). For bigger datasets, this ratio can be set closer to 1.
+    train_val_seed = 1234  #: Random seed used to separate training and validation data.
     transform: nn.Module = None  #: This module gets called in the preprocessing step and consists of pre-specified cropping, resizing and augmentation layers.
     split: str = None  #: The dataset's split identifier (i.e. whether it's a training/validation/test dataset).
     seq_step: int = 1  #: With a step N, every Nth frame is included in the returned sequence.
@@ -340,7 +341,7 @@ class VPDataset(Dataset):
             len_main = len(D_main)
             len_train = int(len_main * cls.train_to_val_ratio)
             len_val = len_main - len_train
-            D_train, D_val = _random_split(D_main, [len_train, len_val])
+            D_train, D_val = _random_split(D_main, [len_train, len_val], cls.train_val_seed)
         else:
             D_train = cls("train", **dataset_kwargs)
             D_val = cls("val", **dataset_kwargs)
@@ -363,8 +364,7 @@ class VPDataset(Dataset):
         return D_test
 
 
-def _random_split(dataset: VPDataset, lengths: Sequence[int],
-                  generator: Optional[Generator] = default_generator) -> List[VPSubset]:
+def _random_split(dataset: VPDataset, lengths: Sequence[int], random_seed: int) -> List[VPSubset]:
     r"""
     Custom implementation of torch.utils.data.random_split that returns SubsetWrappers.
 
@@ -381,6 +381,7 @@ def _random_split(dataset: VPDataset, lengths: Sequence[int],
     if sum(lengths) != len(dataset):
         raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
 
-    indices = randperm(sum(lengths), generator=generator).tolist()
+    indices = list(range(sum(lengths)))
+    random.Random(random_seed).shuffle(indices)
     return [VPSubset(dataset, indices[offset - length: offset])
             for offset, length in zip(_accumulate(lengths), lengths)]

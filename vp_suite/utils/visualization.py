@@ -95,44 +95,49 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
             for out_fn in out_paths:
                 os.remove(out_fn)
 
+
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
-                  out_path, num_vis=5, vis_idx=None, mode="gif"):
+                  out_path, vis_idx, mode="gif"):
 
     out_fn_template = "vis_{}." + mode
+    data_unpack_config = {"device": device, "context_frames": context_frames, "pred_frames": pred_frames}
 
-    if vis_idx is None:
-        vis_idx = np.random.choice(len(dataset), num_vis, replace=False)
+    if vis_idx is None or any([x >= len(dataset) for x in vis_idx]):
+        raise ValueError(f"invalid vis_idx provided for visualization "
+                         f"(dataset len = {len(dataset)}): {vis_idx}")
 
+    pred_model.eval()
     for i, n in enumerate(vis_idx):
+
+        # prepare input and ground truth sequence
+        data = dataset[n]  # [T, c, h, w]
+        if pred_model.NEEDS_COMPLETE_INPUT:
+            input, _, actions = pred_model.unpack_data(data, data_unpack_config)
+            input_vis = dataset.postprocess(input.clone().squeeze(dim=0))
+        else:
+            input, target, actions = pred_model.unpack_data(data, data_unpack_config)
+            full = torch.cat([input.clone(), target.clone()], dim=1)
+            input_vis = dataset.postprocess(full.squeeze(dim=0))
+
+        # fwd
+        if pred_model is None:
+            raise ValueError("Need to provide a valid prediction model for visualization!")
+        with torch.no_grad():
+            pred, _ = pred_model(input, pred_frames, actions=actions)  # [1, T_pred, c, h, w]
+
+        # assemble prediction
+        if pred_model.NEEDS_COMPLETE_INPUT:  # replace original pred frames with actual prediction
+            input_and_pred = input
+            input_and_pred[:, -pred.shape[1]:] = pred
+        else:  # concat context frames and prediction
+            input_and_pred = torch.cat([input, pred], dim=1)  # [1, T, c, h, w]
+        pred_vis = dataset.postprocess(input_and_pred.squeeze(dim=0))  # [T, h, w, c]
+
+        # visualize
         out_filename = str(out_path / out_fn_template.format(str(i)))
-        data = dataset[n]  # [in_l + pred_l, c, h, w]
-        actions = data["actions"].clone().to(device).unsqueeze(dim=0)
-        in_traj = data["frames"][:context_frames].clone().to(device).unsqueeze(dim=0)  # [1, in_l, c, h, w]
-        colorized = data.get("colorized", None)
+        save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=input_vis, Pred=pred_vis, mode=mode)
 
-        gt_rgb_vis = dataset.postprocess(data["frames"][:context_frames + pred_frames])
-        if colorized is not None:
-            colorized = colorized.clone()
-            gt_colorized_vis = dataset.postprocess(colorized)  # [in_l, h, w, c]
-        else:
-            gt_colorized_vis = None
-
-        if pred_model is not None:
-            pred_model.eval()
-            with torch.no_grad():
-                pr_traj, _ = pred_model(in_traj, pred_frames, actions=actions)  # [1, pred_l, c, h, w]
-                pr_traj = torch.cat([in_traj, pr_traj], dim=1) # [1, in_l + pred_l, c, h, w]
-                pr_traj_vis = dataset.postprocess(pr_traj.squeeze(dim=0))  # [in_l + pred_l, h, w, c]
-
-                save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
-                    GT_Color=gt_colorized_vis, Pred=pr_traj_vis, mode=mode)
-
-            pred_model.train()
-
-        else:
-            save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=gt_rgb_vis,
-                GT_Color=gt_colorized_vis, mode=mode)
-
+    pred_model.train()
 
 def save_diff_hist(diff, diff_id):
     avg_diff, min_diff, max_diff = np.average(diff), np.min(diff), np.max(diff)

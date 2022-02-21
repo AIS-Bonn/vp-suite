@@ -35,7 +35,6 @@ class Human36MDataset(VPDataset):
                      'Waiting', 'WalkDog', 'WalkTogether', 'Walking', 'WalkingDog']  #: All recorded scenarios of the dataset.
 
     train_to_val_ratio = 0.96
-    train_val_seed = 1234  #: Random seed used to separate training and validation data.
     scenarios = None  #: Scenarios chosen for the current dataset instance (defaults to `self.ALL_SCENARIOS`)
 
     def __init__(self, split, **dataset_kwargs):

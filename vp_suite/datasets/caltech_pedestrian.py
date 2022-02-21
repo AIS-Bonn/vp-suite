@@ -32,7 +32,6 @@ class CaltechPedestrianDataset(VPDataset):
     TEST_SETS = [f"set{i:02d}" for i in range(6, 11)]  #: The official test sets.
 
     train_to_val_ratio = 0.9
-    train_val_seed = 1234  #: The random seed used to separate training and validation data.
 
     def __init__(self, split, **dataset_kwargs):
         super(CaltechPedestrianDataset, self).__init__(split, **dataset_kwargs)

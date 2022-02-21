@@ -32,7 +32,6 @@ class KITTIRawDataset(VPDataset):
     trainval_to_test_ratio = 0.8  #: The ratio of files that will be training/validation data (rest will be test data).
     train_to_val_ratio = 0.9
     trainval_test_seed = 1234  #: The random seed used to separate training/validation and testing data.
-    train_val_seed = 1234  #: The random seed used to separate training and validation data.
 
     def __init__(self, split, **dataset_kwargs):
         super(KITTIRawDataset, self).__init__(split, **dataset_kwargs)
@@ -55,12 +54,13 @@ class KITTIRawDataset(VPDataset):
 
         # slice accordingly
         slice_idx = max(1, int(len(sequence_dirs) * self.trainval_to_test_ratio))
-        random.Random(self.train_val_seed).shuffle(sequence_dirs)
+        random.Random(self.trainval_test_seed).shuffle(sequence_dirs)
         if self.split == "test":
             sequence_dirs = sequence_dirs[slice_idx:]
         else:
             sequence_dirs = sequence_dirs[:slice_idx]
             slice_idx = max(1, int(len(sequence_dirs) * self.train_to_val_ratio))
+            random.Random(self.train_val_seed).shuffle(sequence_dirs)
             if self.split == "train":
                 sequence_dirs = sequence_dirs[:slice_idx]
             else:
