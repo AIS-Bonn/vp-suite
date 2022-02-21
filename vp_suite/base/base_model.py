@@ -15,9 +15,7 @@ class VideoPredictionModel(nn.Module):
     utility methods (:meth:`train_iter()` for a single training epoch on a given dataset loader and, analogously,
     :meth:`eval_iter()` for a single epoch of validation iteration).
     """
-    NON_CONFIG_VARS = ["functions", "REQUIRED_ARGS", "PAPER_REFERENCE", "CODE_REFERENCE", "MATCHES_REFERENCE",
-                       "REQUIRED_ARGS", "CAN_HANDLE_ACTIONS", "TRAINABLE", "NEEDS_COMPLETE_INPUT",
-                       "MIN_CONTEXT_FRAMES"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
+    NON_CONFIG_VARS = ["functions"]  #: Variables that do not get included in the dict returned by :meth:`self.config()` (Constants are not included either).
 
     # MODEL CONSTANTS
     NAME = None  #: The model's name.

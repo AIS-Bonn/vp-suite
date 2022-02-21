@@ -304,7 +304,8 @@ class VPSuite:
                         run_config[param] = suggest(param, p_dict["min"], p_dict["max"], step=step)
 
         # assemble and save combined configuration
-        config: Dict[str, Any] = {**run_config, **model.config, **dataset.config, "device": self.device}
+        config: Dict[str, Any] = {**run_config, **model.config, **dataset.config, "device": self.device,
+                                  "model_name": model.NAME, "dataset_name": dataset.NAME}
         save_config = {"run": run_config, "model": model.config,
                        "dataset": dataset.config, "device": self.device}
         with open(str((out_path / 'run_cfg.json').resolve()), "w") as cfg_file:

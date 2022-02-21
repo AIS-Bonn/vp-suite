@@ -165,7 +165,7 @@ def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, mo
     """
     attr_dict = dict()
     instance_names = set(dir(obj))
-    instance_names = [n for n in instance_names if not n.startswith("_")]  # remove private fields and dunders
+    instance_names = [n for n in instance_names if not n.startswith("_") and not n[0].isupper()]  # remove private fields, dunders and constants (starting with capital letter)
     instance_names.remove(calling_method)  # remove name of calling method to avoid recursion
     for name in instance_names:
         value = getattr(obj, name)

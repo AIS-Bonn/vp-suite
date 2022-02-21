@@ -48,8 +48,7 @@ class VPDataset(Dataset):
         In order to fully prepare the dataset, :meth:`self.set_seq_len()` has to be called with the desired amount
         of frames and the seq_step. Afterwards, the VPDataset object. is ready to be queried for data.
     """
-    NON_CONFIG_VARS = ["functions", "VALID_SPLITS", "NON_CONFIG_VARS", "REFERENCE", "IS_DOWNLOADABLE",
-                       "ready_for_usage", "total_frames", "seq_len", "frame_offsets"]  #: Variables that do not get included in the dict returned by :meth:`self.config()`.
+    NON_CONFIG_VARS = ["functions",  "ready_for_usage", "total_frames", "seq_len", "frame_offsets"]  #: Variables that do not get included in the dict returned by :meth:`self.config()` (Constants are not included either).
 
     # DATASET CONSTANTS
     NAME: str = NotImplemented  #: The dataset's name.

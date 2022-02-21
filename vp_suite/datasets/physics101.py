@@ -41,7 +41,7 @@ class Physics101Dataset(VPDataset):
             **dataset_kwargs ():
         """
         super(Physics101Dataset, self).__init__(split, **dataset_kwargs)
-        self.NON_CONFIG_VARS.extend(["AVAILABLE_CAMERAS", "AVAILABLE_SUBSEQ", "vid_filepaths"])
+        self.NON_CONFIG_VARS.extend(["vid_filepaths"])
 
         # set attributes
         set_from_kwarg(self, dataset_kwargs, "camera", choices=self.AVAILABLE_CAMERAS)
