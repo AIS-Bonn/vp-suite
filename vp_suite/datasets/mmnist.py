@@ -2,6 +2,7 @@ from pathlib import Path
 
 import math
 import os
+import re
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -39,8 +40,11 @@ class MovingMNISTDataset(VPDataset):
         self.NON_CONFIG_VARS.extend(["data_ids", "data_fps"])
 
         self.data_dir = str((Path(self.data_dir) / split).resolve())
-        self.data_ids = sorted(os.listdir(self.data_dir))
+        self.data_ids = sorted([fn for fn in os.listdir(self.data_dir) if re.match(r"seq_[0-9]+\.npy", fn)])
         self.data_fps = [os.path.join(self.data_dir, image_id) for image_id in self.data_ids]
+        rgb_raw = np.load(self.data_fps[0])  # [t', h, w]
+        self.MIN_SEQ_LEN = rgb_raw.shape[0]  # TODO dirty hack
+        self.DATASET_FRAME_SHAPE = (*rgb_raw.shape[1:], 3)  # TODO dirty hack
 
     def __len__(self):
         return len(self.data_fps)
@@ -57,7 +61,7 @@ class MovingMNISTDataset(VPDataset):
 
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = { "frames": rgb, "actions": actions }
+        data = {"frames": rgb, "actions": actions}
         return data
 
     def download_and_prepare_dataset(self):
