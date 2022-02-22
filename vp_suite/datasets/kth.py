@@ -34,6 +34,8 @@ class KTHActionsDataset(VPDataset):
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 
+    first_frame_rng_seed = 1234  #: Seed value for the random number generator used to determine the first frame out of a bigger sequence.
+
     def __init__(self, split, **dataset_kwargs):
         super(KTHActionsDataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["data"])
@@ -64,7 +66,10 @@ class KTHActionsDataset(VPDataset):
         c, vid, seq = self.get_from_idx(i)
         dname = os.path.join(self.data_dir, c, vid[b'vid'].decode('utf-8'))
         frames = np.zeros((self.seq_len, *self.DATASET_FRAME_SHAPE))
-        first_frame = 0 if len(seq) <= self.seq_len else random.randint(0, len(seq) - self.seq_len)
+        if len(seq) <= self.seq_len:
+            first_frame = 0
+        else:
+            first_frame = random.Random(self.first_frame_rng_seed).randint(0, len(seq) - self.seq_len)
         last_frame = len(seq) - 1 if len(seq) <= self.seq_len else first_frame + self.seq_len - 1
         for i in range(first_frame, last_frame + 1):
             fname = os.path.join(dname, seq[i].decode('utf-8'))
