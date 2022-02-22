@@ -5,6 +5,7 @@
     "no_wandb": false,
     "vis_every": 10,
     "n_vis": 5,
+    "vis_mode": "gif",
     "seed": 42,
     "lr": 0.0001,
     "epochs": 1000000,

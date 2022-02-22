@@ -51,7 +51,7 @@ class MovingMNISTDataset(VPDataset):
 
         data_fp = self.data_fps[i]
         rgb_raw = np.load(data_fp)  # [t', h, w]
-        rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1) # [t', h, w, c]
+        rgb_raw = np.expand_dims(rgb_raw, axis=-1).repeat(3, axis=-1)  # [t', h, w, c]
         rgb_raw = rgb_raw[:self.seq_len:self.seq_step]  # [t, h, w, c]
         rgb = self.preprocess(rgb_raw)
 

@@ -13,35 +13,42 @@ COLORS = {
     "white": [255, 255, 255]
 }  # r, g, b
 
+
 def get_color_array(color):
     r_g_b = COLORS.get(color, COLORS["white"])
     return np.array(r_g_b, dtype=np.uint8)[np.newaxis, np.newaxis, np.newaxis, ...]
+
 
 def add_border_around_vid(vid, c_and_l, b_width=10):
 
     _, h, w, _ = vid.shape
     color_bars_vertical = [np.tile(get_color_array(c), (l, h, b_width, 1)) for (c, l) in c_and_l]
     cbv = np.concatenate(color_bars_vertical, axis=0)
-
     color_bars_horizontal = [np.tile(get_color_array(c), (l, b_width, w + 2 * b_width, 1)) for (c, l) in c_and_l]
     cbh = np.concatenate(color_bars_horizontal, axis=0)
-
     vid = np.concatenate([cbv, vid, cbv], axis=-2)   # add bars in the width dim
     vid = np.concatenate([cbh, vid, cbh], axis=-3)   # add bars in the height dim
     return vid
 
-def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
 
-    trajs = {k: v for k, v in trajs.items() if v is not None}  # filter out 'None' trajs
+def add_borders(trajs, context_frames):
     T, h, w, _ = list(trajs.values())[0].shape
-    T_in, T_pred = context_frames, T-context_frames
+    border_width = min(h, w) // 8
     for key, traj in trajs.items():
         if "true_" in key.lower() or "gt_" in key.lower() or key.lower() == "gt":
-            trajs[key] = add_border_around_vid(traj, [("green", T)], b_width=16)
+            trajs[key] = add_border_around_vid(traj, [("green", T)], b_width=border_width)
         elif "seg" in key.lower():
-            trajs[key] = add_border_around_vid(traj, [("yellow", T)], b_width=16)
+            trajs[key] = add_border_around_vid(traj, [("yellow", T)], b_width=border_width)
         else:
-            trajs[key] = add_border_around_vid(traj, [("green", T_in), ("red", T_pred)], b_width=16)
+            trajs[key] = add_border_around_vid(traj, [("green", context_frames), ("red", T - context_frames)],
+                                               b_width=border_width)
+    return trajs
+
+
+def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
+    trajs = {k: v for k, v in trajs.items() if v is not None}  # filter out 'None' trajs
+    T, h, w, _ = list(trajs.values())[0].shape
+    trajs = add_borders(trajs, context_frames)
 
     if mode == "gif":  # gif visualizations with matplotlib  # TODO fix it
         try:
@@ -82,24 +89,24 @@ def save_vid_vis(out_fp, context_frames, mode="gif", **trajs):
         except ImportError:
             raise ImportError("importing cv2 failed"
                               " -> please install opencv-python (cv2) or use the gif-mode for visualization.")
-        for name, traj in trajs.items():
-            frames = list(traj)
-            out_paths = []
-            for t, frame in enumerate(frames):
-                out_fn = f"{out_fp[:-4]}_{name}_t{t}.jpg"
-                out_paths.append(out_fn)
-                out_frame_BGR = frame[:, :, ::-1]
-                cv.imwrite(out_fn, out_frame_BGR)
-            clip = ImageSequenceClip(out_paths, fps=2)
-            clip.write_videofile(f"{out_fp[:-4]}_{name}.mp4", fps=2)
-            for out_fn in out_paths:
-                os.remove(out_fn)
+
+        combined_traj = np.concatenate(list(trajs.values()), axis=-2)  # put visualizations next to each other
+        out_paths = []
+        for t, frame in enumerate(list(combined_traj)):
+            out_fn = f"{out_fp[:-4]}_t{t}.jpg"
+            out_paths.append(out_fn)
+            out_frame_BGR = frame[:, :, ::-1]
+            cv.imwrite(out_fn, out_frame_BGR)
+        clip = ImageSequenceClip(out_paths, fps=2)
+        clip.write_videofile(f"{out_fp[:-4]}.mp4", fps=2)
+        for out_fn in out_paths:
+            os.remove(out_fn)
 
 
 def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
-                  out_path, vis_idx, mode="gif"):
+                  out_path, vis_idx, vis_mode):
 
-    out_fn_template = "vis_{}." + mode
+    out_fn_template = "vis_{}." + vis_mode
     data_unpack_config = {"device": device, "context_frames": context_frames, "pred_frames": pred_frames}
 
     if vis_idx is None or any([x >= len(dataset) for x in vis_idx]):
@@ -135,9 +142,10 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
 
         # visualize
         out_filename = str(out_path / out_fn_template.format(str(i)))
-        save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=input_vis, Pred=pred_vis, mode=mode)
+        save_vid_vis(out_fp=out_filename, context_frames=context_frames, GT=input_vis, Pred=pred_vis, mode=vis_mode)
 
     pred_model.train()
+
 
 def save_diff_hist(diff, diff_id):
     avg_diff, min_diff, max_diff = np.average(diff), np.min(diff), np.max(diff)

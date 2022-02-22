@@ -218,7 +218,7 @@ class VPSuite:
             raise ValueError(f"Only the following run arguments are supported: {run_config.keys()}")
         run_config.update(run_args)
 
-        # seed
+        # seeding. IMPORTANT: THIS SHOULD BE THE ONLY LOCATION WHERE THESE RANDOM SEEDS ARE SET!
         random.seed(run_config["seed"])
         np.random.seed(run_config["seed"])
         torch.manual_seed(run_config["seed"])
@@ -370,15 +370,15 @@ class VPSuite:
             # visualize current model performance every nth epoch, using eval mode and validation data.
             if (epoch+1) % config["vis_every"] == 0 and not config["no_vis"]:
                 print("Saving visualizations...")
-                vis_out_path = out_path / f"vis_ep_{epoch+1:03d}"
-                vis_out_path.mkdir()
+                vis_out_dir = out_path / f"vis_ep_{epoch+1:03d}"
+                vis_out_dir.mkdir()
                 vis_idx = np.random.choice(len(val_data), config["n_vis"], replace=False)
                 visualize_vid(val_data, config["context_frames"], config["pred_frames"], model,
-                              config["device"], vis_out_path, vis_idx)
+                              config["device"], vis_out_dir, vis_idx, config["vis_mode"])
 
                 if with_wandb:
-                    vid_filenames = sorted(os.listdir(str(vis_out_path)))
-                    log_vids = {fn: wandb.Video(str(vis_out_path / fn), fps=4, format=fn.split(".")[-1])
+                    vid_filenames = sorted(os.listdir(str(vis_out_dir)))
+                    log_vids = {fn: wandb.Video(str(vis_out_dir / fn), fps=4, format=fn.split(".")[-1])
                                 for i, fn in enumerate(vid_filenames)}
                     wandb.log(log_vids, commit=False)
 
@@ -436,7 +436,7 @@ class VPSuite:
         run_config = self._prepare_run("test", **run_kwargs)
 
         # prepare datasets for testing
-        test_sets : List[DatasetWrapper] = self.test_sets
+        test_sets: List[DatasetWrapper] = self.test_sets
         for test_set in test_sets:
             test_set.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
             assert test_set.is_ready, "test set is not ready even though set_seq_len has just been called"
@@ -515,16 +515,19 @@ class VPSuite:
                     model_metrics_per_dp.append(cur_metrics)
 
         # save visualizations
+        timestamp_test = timestamp('test')
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
             vis_idx = np.random.choice(len(test_data), config["n_vis"], replace=False)
             for i, (model, _, _, _) in enumerate(model_info_list):
                 if model.model_dir is None:
                     continue  # don't print for models that don't have a run dir (i.e. baseline models)
-                vis_out_dir = Path(model.model_dir) / f"vis_{timestamp('test')}"
+                vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
                 vis_out_dir.mkdir()
                 visualize_vid(test_data, config["context_frames"], config["pred_frames"],
-                              model, config["device"], vis_out_dir, vis_idx)
+                              model, config["device"], vis_out_dir, vis_idx, config["vis_mode"])
+
+
 
         # log or display metrics
         if eval_length > 0:
@@ -547,10 +550,16 @@ class VPSuite:
                 if with_wandb:
                     print("Logging test results to WandB for all models...")
                     wandb.init(config={"test_mode": test_mode, "model_dir": model.model_dir},
-                               project="vp-suite-testing", name=f"{model.NAME}{wandb_full_suffix}",
+                               project="vp-suite-testing", name=f"{model.NAME} ({wandb_full_suffix})",
                                dir=str(constants.WANDB_PATH.resolve()), reinit=(i > 0))
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         wandb.log({"pred_frames": f+1, **mean_metric_dict})
+                    if not config["no_vis"] and model.model_dir is not None:
+                        vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
+                        vid_filenames = sorted(os.listdir(str(vis_out_dir)))
+                        model_log_vids = {fn: wandb.Video(str(vis_out_dir / fn), fps=4, format=fn.split(".")[-1])
+                                          for i, fn in enumerate(vid_filenames)}
+                        wandb.log(model_log_vids)
                     if i == len(model_info_list) - 1:
                         wandb.finish()
 
