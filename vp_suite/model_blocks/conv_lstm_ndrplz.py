@@ -7,7 +7,6 @@ from vp_suite.base.base_model_block import ModelBlock
 class ConvLSTMCell(nn.Module):
     r"""
     Source: https://github.com/ndrplz/ConvLSTM_pytorch
-    Should be matching that implementation!
     """
     def __init__(self, input_dim, hidden_dim, kernel_size, bias):
         """
@@ -150,8 +149,7 @@ class ConvLSTM(ModelBlock):
             raise NotImplementedError()
         else:
             # Since the init is done in forward. Can send image size here
-            hidden_state = self._init_hidden(batch_size=b,
-                                             image_size=(h, w))
+            hidden_state = self._init_hidden(batch_size=b, image_size=(h, w))
 
         layer_output_list = []
         last_state_list = []

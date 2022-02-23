@@ -83,7 +83,7 @@ class VideoPredictionModel(nn.Module):
         }
         return {**attr_dict, **extra_config}
 
-    def unpack_data(self, data: VPData, config: dict, reverse: bool = False):
+    def unpack_data(self, data: VPData, config: dict, reverse: bool = False, complete: bool = False):
         r"""
         Extracts inputs and targets from a data blob.
 
@@ -91,6 +91,7 @@ class VideoPredictionModel(nn.Module):
             data (VPData): The given VPData data blob/dictionary containing frames and actions.
             config (dict): The current run configuration specifying how to extract the data from the given data blob.
             reverse (bool): If specified, reverses the input first
+            complete (bool): If specified, input_frames will also contain the to-be-predicted frames (just like with NEEDS_COMPLETE_INPUT)
 
         Returns: The specified amount of input/target frames as well as the actions. All inputs will come in the
         shape the model expects as input later.
@@ -104,7 +105,7 @@ class VideoPredictionModel(nn.Module):
             img_data = torch.flip(img_data, dims=[1])
             actions = torch.flip(actions, dims=[1])
         T_in, T_pred = config["context_frames"], config["pred_frames"]
-        if self.NEEDS_COMPLETE_INPUT:
+        if self.NEEDS_COMPLETE_INPUT or complete:
             input_frames = img_data[:, :T_in+T_pred]
             target_frames = input_frames[:, T_in:].clone()
         else:

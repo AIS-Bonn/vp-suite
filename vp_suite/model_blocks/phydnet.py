@@ -6,8 +6,8 @@ from scipy.special import factorial
 from torch import nn as nn
 
 from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.model_blocks.conv_lstm_ndrplz import ConvLSTMCell
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
-from vp_suite.model_blocks.enc import DCGANEncoder, DCGANDecoder
 
 
 class PhyCell_Cell(ModelBlock):
@@ -19,14 +19,14 @@ class PhyCell_Cell(ModelBlock):
     CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
     MATCHES_REFERENCE = "Not Yet"
 
-    def __init__(self, input_dim, action_conditional, action_size, F_hidden_dim, kernel_size, bias=1):
+    def __init__(self, input_dim, action_conditional, action_size, hidden_dim, kernel_size, bias=True):
         r"""
 
         Args:
             input_dim ():
             action_conditional ():
             action_size ():
-            F_hidden_dim ():
+            hidden_dim ():
             kernel_size ():
             bias ():
         """
@@ -34,31 +34,26 @@ class PhyCell_Cell(ModelBlock):
         self.input_dim = input_dim
         self.action_size = action_size
         self.action_conditional = action_conditional
-        self.F_hidden_dim = F_hidden_dim
+        self.F_hidden_dim = hidden_dim
         self.kernel_size = kernel_size
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
 
         self.F = nn.Sequential()
-        self.F.add_module('conv1',
-                          nn.Conv2d(in_channels=input_dim, out_channels=F_hidden_dim, kernel_size=self.kernel_size,
-                                    stride=(1, 1), padding=self.padding))
-        self.F.add_module('bn1', nn.GroupNorm(find_divisor_for_group_norm(F_hidden_dim), F_hidden_dim))
-        self.F.add_module('conv2',
-                          nn.Conv2d(in_channels=F_hidden_dim, out_channels=input_dim, kernel_size=(1, 1), stride=(1, 1),
-                                    padding=(0, 0)))
+        self.F.add_module('conv1', nn.Conv2d(in_channels=input_dim, out_channels=hidden_dim,
+                                             kernel_size=self.kernel_size, stride=(1, 1), padding=self.padding))
+        self.F.add_module('bn1', nn.GroupNorm(find_divisor_for_group_norm(hidden_dim), hidden_dim))
+        self.F.add_module('conv2', nn.Conv2d(in_channels=hidden_dim, out_channels=input_dim,
+                                             kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)))
 
-        self.convgate = nn.Conv2d(in_channels=2*self.input_dim,
-                                  out_channels=self.input_dim,
-                                  kernel_size=(3, 3),
-                                  padding=(1, 1), bias=self.bias)
+        self.convgate = nn.Conv2d(in_channels=2*self.input_dim, out_channels=self.input_dim,
+                                  kernel_size=(3, 3), padding=(1, 1), bias=self.bias)
 
         if self.action_conditional:
             self.frame_action_conv = nn.Conv2d(in_channels=self.input_dim+self.action_size,
                                                out_channels=self.input_dim, kernel_size=(1, 1))
             self.hidden_action_conv = nn.Conv2d(in_channels=self.input_dim+self.action_size,
-                                               out_channels=self.input_dim, kernel_size=(1, 1))
-
+                                                out_channels=self.input_dim, kernel_size=(1, 1))
 
     def forward(self, frame, action, hidden):
         r"""
@@ -83,8 +78,7 @@ class PhyCell_Cell(ModelBlock):
         combined_conv = self.convgate(combined)
         K = torch.sigmoid(combined_conv)
         hidden_tilde = hidden + self.F(hidden)  # prediction
-        next_hidden = hidden_tilde + K * (frame - hidden_tilde)  # correction , Haddamard product
-
+        next_hidden = hidden_tilde + K * (frame - hidden_tilde)  # correction , Hadamard product
         return next_hidden
 
 
@@ -97,14 +91,14 @@ class PhyCell(ModelBlock):
     CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
     MATCHES_REFERENCE = "Not Yet"
 
-    def __init__(self, input_shape, input_dim, F_hidden_dims, n_layers, kernel_size, action_conditional,
-                 action_size, device):
+    def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size,
+                 action_conditional, action_size, device):
         r"""
 
         Args:
             input_shape ():
             input_dim ():
-            F_hidden_dims ():
+            hidden_dims ():
             n_layers ():
             kernel_size ():
             action_conditional ():
@@ -114,7 +108,7 @@ class PhyCell(ModelBlock):
         super(PhyCell, self).__init__()
         self.input_shape = input_shape
         self.input_dim = input_dim
-        self.F_hidden_dims = F_hidden_dims
+        self.hidden_dims = hidden_dims
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.H = []
@@ -122,11 +116,11 @@ class PhyCell(ModelBlock):
 
         cell_list = []
         for i in range(0, self.n_layers):
-            print('PhyCell layer ', i, 'input dim ', self.input_dim, ' hidden dim ', self.F_hidden_dims[i])
+            print('PhyCell layer ', i, 'input dim ', self.input_dim, ' hidden dim ', self.hidden_dims[i])
             cell_list.append(PhyCell_Cell(input_dim=self.input_dim,
                                           action_conditional=action_conditional,
                                           action_size=action_size,
-                                          F_hidden_dim=self.F_hidden_dims[i],
+                                          hidden_dim=self.hidden_dims[i],
                                           kernel_size=self.kernel_size))
         self.cell_list = nn.ModuleList(cell_list)
 
@@ -180,61 +174,16 @@ class PhyCell(ModelBlock):
         self.H = H
 
 
-class ConvLSTM_Cell(nn.Module):
+class SingleStepConvLSTM(nn.Module):
     r"""
 
     """
-    def __init__(self, input_shape, input_dim, hidden_dim, kernel_size, bias=1):
+    def __init__(self, input_size, input_dim, hidden_dims, n_layers, kernel_size,
+                 action_conditional, action_size, device):
         r"""
 
         Args:
-            input_shape ((int, int)): Height and width of input tensor as (height, width).
-            input_dim (int): Number of channels of input tensor.
-            hidden_dim (int): Number of channels of hidden state.
-            kernel_size (int): Size of the convolutional kernel.
-            bias (bool): Whether or not to add the bias.
-        """
-        super(ConvLSTM_Cell, self).__init__()
-
-        self.height, self.width = input_shape
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
-        self.kernel_size = kernel_size
-        self.padding = kernel_size[0] // 2, kernel_size[1] // 2
-        self.bias = bias
-
-        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
-                              kernel_size=self.kernel_size,
-                              padding=self.padding, bias=self.bias)
-
-    # we implement LSTM that process only one timestep
-    def forward(self, x, hidden):  # x [batch, hidden_dim, width, height]
-        h_cur, c_cur = hidden
-
-        combined = torch.cat([x, h_cur], dim=1)  # concatenate along channel axis
-        combined_conv = self.conv(combined)
-        cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
-        i = torch.sigmoid(cc_i)
-        f = torch.sigmoid(cc_f)
-        o = torch.sigmoid(cc_o)
-        g = torch.tanh(cc_g)
-
-        c_next = f * c_cur + i * g
-        h_next = o * torch.tanh(c_next)
-        return h_next, c_next
-
-
-class ConvLSTM(nn.Module):
-    r"""
-
-    """
-    def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size, action_conditional,
-                 action_size, device):
-        r"""
-
-        Args:
-            input_shape ():
+            input_size ():
             input_dim ():
             hidden_dims ():
             n_layers ():
@@ -243,8 +192,8 @@ class ConvLSTM(nn.Module):
             action_size ():
             device ():
         """
-        super(ConvLSTM, self).__init__()
-        self.input_shape = input_shape
+        super(SingleStepConvLSTM, self).__init__()
+        self.input_size = input_size
         self.input_dim = input_dim
         self.hidden_dims = hidden_dims
         self.n_layers = n_layers
@@ -257,11 +206,10 @@ class ConvLSTM(nn.Module):
         cell_list = []
         cur_input_dim = self.input_dim + (self.action_size if self.action_conditional else 0)
         for i in range(0, self.n_layers):
-            print('ConvLSTM layer ', i, 'input dim ', cur_input_dim, ' hidden dim ', self.hidden_dims[i])
-            cell_list.append(ConvLSTM_Cell(input_shape=self.input_shape,
-                                           input_dim=cur_input_dim,
-                                           hidden_dim=self.hidden_dims[i],
-                                           kernel_size=self.kernel_size))
+            cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
+                                          hidden_dim=self.hidden_dims[i],
+                                          kernel_size=self.kernel_size,
+                                          bias=True))
             cur_input_dim = self.hidden_dims[i]
         self.cell_list = nn.ModuleList(cell_list)
 
@@ -283,7 +231,7 @@ class ConvLSTM(nn.Module):
 
         input = frame
         if self.action_conditional:
-            inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *self.input_shape)
+            inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *self.input_size)
             input = torch.cat([input, inflated_action], dim=-3)
 
         for j, cell in enumerate(self.cell_list):
@@ -306,9 +254,9 @@ class ConvLSTM(nn.Module):
         self.H, self.C = [], []
         for i in range(self.n_layers):
             self.H.append(
-                torch.zeros(batch_size, self.hidden_dims[i], self.input_shape[0], self.input_shape[1]).to(self.device))
+                torch.zeros(batch_size, self.hidden_dims[i], self.input_size[0], self.input_size[1]).to(self.device))
             self.C.append(
-                torch.zeros(batch_size, self.hidden_dims[i], self.input_shape[0], self.input_shape[1]).to(self.device))
+                torch.zeros(batch_size, self.hidden_dims[i], self.input_size[0], self.input_size[1]).to(self.device))
 
     def set_hidden(self, hidden):
         r"""
@@ -381,84 +329,17 @@ class DecoderSplit(nn.Module):
         return d2
 
 
-class EncoderRNN(torch.nn.Module):
-    r"""
-
+class K2M(nn.Module):
     """
-    def __init__(self, img_shape, phy_cell_channels, phy_kernel_size, action_conditional, action_size, device):
-        r"""
+    convert convolution kernel to moment matrix
 
-        Args:
-            img_shape ():
-            phy_cell_channels ():
-            phy_kernel_size ():
-            action_conditional ():
-            action_size ():
-            device ():
-        """
-        super(EncoderRNN, self).__init__()
-        img_c, _, _ = img_shape
-        self.encoder_E = DCGANEncoder(nc=img_c).to(device)
-        self.encoder_Ep = EncoderSplit().to(device)
-        self.encoder_Er = EncoderSplit().to(device)
+    Arguments:
+        shape (tuple of int): kernel shape
 
-        zeros = torch.zeros((1, *img_shape), device=device)
-        encoded_zeros = self.encoder_E(zeros)
-        self.shape_Ep = self.encoder_Ep(encoded_zeros).shape[1:]
-        self.shape_Er = self.encoder_Er(encoded_zeros).shape[1:]
-
-        self.decoder_Dp = DecoderSplit().to(device)
-        self.decoder_Dr = DecoderSplit().to(device)
-        self.decoder_D = DCGANDecoder(out_size=img_shape[1:], nc=img_c).to(device)
-
-        phy_hidden_dims = [phy_cell_channels, phy_cell_channels, phy_cell_channels]
-        self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0], F_hidden_dims=phy_hidden_dims,
-                               n_layers=3, kernel_size=phy_kernel_size, action_conditional=action_conditional,
-                               action_size=action_size, device=device)
-        self.phycell.to(device)
-        self.convcell = ConvLSTM(input_shape=self.shape_Er[1:], input_dim=self.shape_Ep[0], hidden_dims=[128, 128, 64],
-                                 n_layers=3, kernel_size=(3, 3), action_conditional=action_conditional,
-                                 action_size=action_size, device=device)
-        self.convcell.to(device)
-        self.device = device
-
-
-    def forward(self, frame, action, first_timestep=False, decoding=False):
-        r"""
-
-        Args:
-            frame ():
-            action ():
-            first_timestep ():
-            decoding ():
-
-        Returns:
-
-        """
-        frame = self.encoder_E(frame)  # general encoder 64x64x1 -> 32x32x32
-
-        if decoding:  # input=None in decoding phase
-            input_phys = None
-        else:
-            input_phys = self.encoder_Ep(frame)
-        input_conv = self.encoder_Er(frame)
-        hidden1, output1 = self.phycell(input_phys, action, first_timestep)
-        hidden2, output2 = self.convcell(input_conv, action, first_timestep)
-
-        decoded_Dp = self.decoder_Dp(output1[-1])
-        decoded_Dr = self.decoder_Dr(output2[-1])
-
-        out_phys = torch.sigmoid(self.decoder_D(decoded_Dp))  # partial reconstructions for vizualization
-        out_conv = torch.sigmoid(self.decoder_D(decoded_Dr))
-
-        concat = decoded_Dp + decoded_Dr
-        output_image = torch.sigmoid(self.decoder_D(concat))
-        return out_phys, hidden1, output_image, out_phys, out_conv
-
-
-class _MK(nn.Module):
-    r"""
-
+    Examples:
+        >>> k2m = K2M([5,5])
+        >>> k = torch.randn(5,5,dtype=torch.float64)
+        >>> m = k2m(k)
     """
     def __init__(self, shape):
         r"""
@@ -466,7 +347,7 @@ class _MK(nn.Module):
         Args:
             shape ():
         """
-        super(_MK, self).__init__()
+        super(K2M, self).__init__()
         self._size = torch.Size(shape)
         self._dim = len(shape)
         M = []
@@ -532,13 +413,20 @@ class _MK(nn.Module):
         x = x.view([-1,]+list(x.size()[-self.dim():]))
         return x
 
-    def forward(self):
+    def forward(self, k):
         r"""
+
+        Args:
+            k (Tensor): torch.size=[...,*self.shape]
 
         Returns:
 
         """
-        pass
+        sizek = k.size()
+        k = self._packdim(k)
+        k = _apply_axis_left_dot(k, self.M)
+        k = k.view(sizek)
+        return k
 
 
 def _apply_axis_left_dot(x, mats):
@@ -560,41 +448,6 @@ def _apply_axis_left_dot(x, mats):
     x = x.view(sizex)
     return x
 
-
-class K2M(_MK):
-    """
-    convert convolution kernel to moment matrix
-
-    Arguments:
-        shape (tuple of int): kernel shape
-
-    Examples:
-        >>> k2m = K2M([5,5])
-        >>> k = torch.randn(5,5,dtype=torch.float64)
-        >>> m = k2m(k)
-    """
-    def __init__(self, shape):
-        r"""
-
-        Args:
-            shape ():
-        """
-        super(K2M, self).__init__(shape)
-
-    def forward(self, k):
-        r"""
-
-        Args:
-            k (Tensor): torch.size=[...,*self.shape]
-
-        Returns:
-
-        """
-        sizek = k.size()
-        k = self._packdim(k)
-        k = _apply_axis_left_dot(k, self.M)
-        k = k.view(sizek)
-        return k
 
 def tensordot(a,b,dim):
     r"""
@@ -649,6 +502,7 @@ def tensordot(a,b,dim):
     c = a@b
     return c.view(sizea0+sizeb1)
 
+
 def find_divisor_for_group_norm(x):
     r"""
 
@@ -660,5 +514,6 @@ def find_divisor_for_group_norm(x):
     """
     sq = math.floor(math.sqrt(x))
     while True:
-        if x // sq == x / sq: return x // sq
+        if x // sq == x / sq:
+            return x // sq
         sq -= 1

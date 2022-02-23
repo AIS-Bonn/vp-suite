@@ -65,7 +65,7 @@ class STPhy(VideoPredictionModel):
             st_cells.append(self.recurrent_cell(st_in_channel, self.dim_st_hidden[i], self.enc_h, self.enc_w,
                                        filter_size=5, stride=1, layer_norm=True))
             phy_cells.append(PhyCell_Cell(input_dim=self.st_cell_channels, action_conditional=self.action_conditional,
-                                          action_size=self.action_size, F_hidden_dim=self.dim_phy_hidden[i],
+                                          action_size=self.action_size, hidden_dim=self.dim_phy_hidden[i],
                                           kernel_size=self.phy_kernel_size).to(self.device))
             hc_bias = i < self.num_layers - 1
             hidden_convs.append(nn.Conv2d(in_channels=self.st_cell_channels + self.dim_st_hidden[i],
