@@ -492,7 +492,7 @@ class VPSuite:
         eval_length = min(len(test_loader), 10) if test_mode == "brief" else len(test_loader)
 
         # assemble and save combined configuration
-        config = {**run_config, **dataset.config, "device": self.device}
+        config: Dict[str, Any] = {**run_config, **dataset.config, "device": self.device, "dataset_name": dataset.NAME}
         with_wandb = not config["no_wandb"]
 
         # evaluation / metric calc.
