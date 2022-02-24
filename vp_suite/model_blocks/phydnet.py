@@ -116,7 +116,6 @@ class PhyCell(ModelBlock):
 
         cell_list = []
         for i in range(0, self.n_layers):
-            print('PhyCell layer ', i, 'input dim ', self.input_dim, ' hidden dim ', self.hidden_dims[i])
             cell_list.append(PhyCell_Cell(input_dim=self.input_dim,
                                           action_conditional=action_conditional,
                                           action_size=action_size,

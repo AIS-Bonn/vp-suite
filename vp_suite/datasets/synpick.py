@@ -112,7 +112,7 @@ class SynpickMovingDataset(VPDataset):
         rgb = np.stack(imgs_, axis=0)  # [t, h, w, c]
         rgb = self.preprocess(rgb)
 
-        data = { "frames": rgb, "actions": actions }
+        data = {"frames": rgb, "actions": actions}
         return data
 
     def __len__(self):
