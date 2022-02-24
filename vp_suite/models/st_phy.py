@@ -192,10 +192,10 @@ class STPhy(VideoPredictionModel):
             # Moment regularization loss during training
             k2m = K2M(self.phycell_kernel_size).to(self.device)
             moment_loss = 0
-            for b in range(0, self.encoder.phycell.cell_list[0].input_dim):
-                filters = self.encoder.phycell.cell_list[0].F.conv1.weight[:, b]
+            for b in range(0, self.phycell_list[0].input_dim):
+                filters = self.phycell_list[0].F.conv1.weight[:, b]
                 moment = k2m(filters.double()).float()
-                moment_loss += self.moment_loss_scale * (moment - self.constraints) ** 2
+                moment_loss += torch.mean(self.moment_loss_scale * (moment - self.constraints) ** 2)
             model_losses = {
                 "moment regularization loss": moment_loss,
                 "memory decoupling loss": torch.mean(torch.stack(decouple_loss, dim=0)),
