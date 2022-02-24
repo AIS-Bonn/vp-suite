@@ -5,6 +5,7 @@ APPLIES TO ALL LOSSES:
 - expected shape: [b, t, c, h, w] ([b, t, 3, h, w] for LPIPS and SSIM)
 """
 
+import torch
 from torch import nn as nn
 import piqa
 
@@ -54,11 +55,15 @@ class PSNR(BaseMeasure):
 
     def __init__(self, device):
         super(PSNR, self).__init__(device)
-        self.criterion = piqa.psnr.PSNR().to(device)
+        self.criterion = nn.MSELoss(reduction="none").to(device)
 
     def forward(self, pred, target):
-        pred, target = self.reshape_clamp(pred, target)
-        return -self.criterion(pred, target)
+        if pred.ndim != 5 or target.ndim != 5:
+            raise ValueError(f"{self.NAME} expects 5-D inputs!")
+        b, t, _, _, _ = pred.shape
+        mses = self.criterion(pred, target).mean(dim=(-1, -2, -3))  # [b, t]
+        psnr_losses = torch.log10(mses) * 10
+        return psnr_losses.mean(dim=1).mean(dim=0)
 
     @classmethod
     def to_display(cls, x):
