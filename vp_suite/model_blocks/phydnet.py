@@ -91,12 +91,12 @@ class PhyCell(ModelBlock):
     CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
     MATCHES_REFERENCE = "Not Yet"
 
-    def __init__(self, input_shape, input_dim, hidden_dims, n_layers, kernel_size,
+    def __init__(self, input_size, input_dim, hidden_dims, n_layers, kernel_size,
                  action_conditional, action_size, device):
         r"""
 
         Args:
-            input_shape ():
+            input_size ():
             input_dim ():
             hidden_dims ():
             n_layers ():
@@ -106,7 +106,7 @@ class PhyCell(ModelBlock):
             device ():
         """
         super(PhyCell, self).__init__()
-        self.input_shape = input_shape
+        self.input_size = input_size
         self.input_dim = input_dim
         self.hidden_dims = hidden_dims
         self.n_layers = n_layers
@@ -160,7 +160,7 @@ class PhyCell(ModelBlock):
         self.H = []
         for i in range(self.n_layers):
             self.H.append(
-                torch.zeros(batch_size, self.input_dim, self.input_shape[0], self.input_shape[1]).to(self.device))
+                torch.zeros(batch_size, self.input_dim, self.input_size[0], self.input_size[1]).to(self.device))
 
     def _set_hidden(self, H):
         r"""

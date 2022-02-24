@@ -56,7 +56,7 @@ class PhyDNet(VideoPredictionModel):
         self.decoder_D = DCGANDecoder(out_size=self.img_shape[1:], nc=self.img_c).to(self.device)
 
         phycell_hidden_dims = [self.phycell_channels] * self.phycell_n_layers
-        self.phycell = PhyCell(input_shape=self.shape_Ep[1:], input_dim=self.shape_Ep[0],
+        self.phycell = PhyCell(input_size=self.shape_Ep[1:], input_dim=self.shape_Ep[0],
                                hidden_dims=phycell_hidden_dims, n_layers=self.phycell_n_layers,
                                kernel_size=self.phycell_kernel_size, action_conditional=self.action_conditional,
                                action_size=self.action_size, device=device).to(self.device)
@@ -115,14 +115,14 @@ class PhyDNet(VideoPredictionModel):
         """
         return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
-    def forward(self, frames, pred_frames=1, **kwargs):
+    def forward(self, x, pred_frames=1, **kwargs):
         r"""
 
         Note:
             For this model, forward() is used for inference only (no training).
 
         Args:
-            frames ():
+            x ():
             pred_frames ():
             **kwargs ():
 
@@ -134,8 +134,8 @@ class PhyDNet(VideoPredictionModel):
         # and the moment regularization loss is calculated.
         train = kwargs.get("train", False)
         teacher_forcing = kwargs.get("teacher_forcing", False) and train
-        context_frames = frames.shape[1] - pred_frames if train else frames.shape[1]
-        empty_actions = torch.zeros(frames.shape[0], context_frames+pred_frames-1, device=self.device)
+        context_frames = x.shape[1] - pred_frames if train else x.shape[1]
+        empty_actions = torch.zeros(x.shape[0], context_frames + pred_frames - 1, device=self.device)
         actions = kwargs.get("actions", empty_actions)
         if self.action_conditional:
             if actions.equal(empty_actions) or actions.shape[-1] != self.action_size:
@@ -145,18 +145,18 @@ class PhyDNet(VideoPredictionModel):
         ac_index = 0
         for ei in range(context_frames - 1):
             encoder_output, encoder_hidden, output_image, _, _ = \
-                self.encoder_fwd(frames[:, ei], actions[:, ac_index], (ac_index == 0))
+                self.encoder_fwd(x[:, ei], actions[:, ac_index], (ac_index == 0))
             if train:
                 out_frames.append(output_image)
             ac_index += 1
 
-        decoder_input = frames[:, context_frames-1]  # first decoder input = last context frame
+        decoder_input = x[:, context_frames - 1]  # first decoder input = last context frame
 
         for di in range(pred_frames):
             decoder_output, decoder_hidden, output_image, _, _ = \
                 self.encoder_fwd(decoder_input, actions[:, ac_index], (ac_index == 0))
             out_frames.append(output_image)
-            decoder_input = frames[:, context_frames + di] if teacher_forcing else output_image
+            decoder_input = x[:, context_frames + di] if teacher_forcing else output_image
             ac_index += 1
         out_frames = torch.stack(out_frames, dim=1)
 
