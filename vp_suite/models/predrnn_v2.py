@@ -40,7 +40,6 @@ class PredRNN_V2(VideoPredictionModel):
     stride = 1  #: stride for ST Cell
     layer_norm: bool = False
     reverse_input: bool = True
-    reconstruction_loss_scale = 0.1
     decoupling_loss_scale = 100.0
     inflated_action_dim = 3
 
