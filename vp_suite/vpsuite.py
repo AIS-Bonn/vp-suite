@@ -19,7 +19,7 @@ from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure import LOSS_CLASSES
 from vp_suite.measure.loss_provider import PredictionLossProvider
 from vp_suite.measure.metric_provider import PredictionMetricProvider
-from vp_suite.utils.visualization import visualize_vid
+from vp_suite.utils.visualization import visualize_vid, visualize_sequences
 from vp_suite.utils.utils import timestamp
 from vp_suite.utils.compatibility import check_model_and_data_compat, check_run_and_model_compat
 
@@ -496,6 +496,8 @@ class VPSuite:
         with_wandb = not config["no_wandb"]
 
         # evaluation / metric calc.
+        context_frames = config["context_frames"]
+        pred_frames = config["pred_frames"]
         iter_loader = iter(test_loader)
         with torch.no_grad():
             metric_provider = PredictionMetricProvider(config)
@@ -507,9 +509,9 @@ class VPSuite:
                     input, target, actions = model.unpack_data(data, config)
                     input = preprocess(input)  # test format to model format
                     if getattr(model, "use_actions", False):
-                        pred, _ = model(input, pred_frames=config["pred_frames"], actions=actions)
+                        pred, _ = model(input, pred_frames=pred_frames, actions=actions)
                     else:
-                        pred, _ = model(input, pred_frames=config["pred_frames"])
+                        pred, _ = model(input, pred_frames=pred_frames)
                     pred = postprocess(pred)  # model format to test format
                     cur_metrics = metric_provider.get_metrics(pred, target, all_frame_cnts=True)
                     model_metrics_per_dp.append(cur_metrics)
@@ -519,22 +521,28 @@ class VPSuite:
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
             vis_idx = np.random.choice(len(test_data), config["n_vis"], replace=False)
+            if config["vis_compare"]:
+                models = [m_info[0] for m_info in model_info_list]
+                vis_out_dir = constants.OUT_PATH / timestamp_test
+                vis_out_dir.mkdir()
+                vis_context_frame_idx = config["vis_context_frame_idx"] or list(range(context_frames))
+                visualize_sequences(test_data, context_frames, pred_frames, models,
+                                    config["device"], vis_out_dir, vis_idx, vis_context_frame_idx)
+
             for i, (model, _, _, _) in enumerate(model_info_list):
                 if model.model_dir is None:
                     continue  # don't print for models that don't have a run dir (i.e. baseline models)
                 vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
                 vis_out_dir.mkdir()
-                visualize_vid(test_data, config["context_frames"], config["pred_frames"],
-                              model, config["device"], vis_out_dir, vis_idx, config["vis_mode"])
-
-
+                visualize_vid(test_data, context_frames, pred_frames, model,
+                              config["device"], vis_out_dir, vis_idx, config["vis_mode"])
 
         # log or display metrics
         if eval_length > 0:
             wandb_full_suffix = f"{test_mode} test"
             for i, (model, _, _, model_metrics_per_dp) in enumerate(model_info_list):
                 # model_metrics_per_dp: list of N lists of F metric dicts (called D).
-                # each D_{n, f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
+                # each D_{n,f} contains all calculated metrics for datapoint 'n' and a prediction horizon of 'f' frames.
                 # -> Aggregate these metrics over all n, keeping the specific metrics/prediction horizons separate
                 datapoint_range = range(len(model_metrics_per_dp))
                 frame_range = range(len(model_metrics_per_dp[0]))
