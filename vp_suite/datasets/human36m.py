@@ -78,14 +78,14 @@ class Human36MDataset(VPDataset):
                 self.sequences_with_frame_index.append((vfp, idx))
 
     def __getitem__(self, i) -> VPData:
-        vid_fp, start_idx = self.sequences_with_frame_index[i]
-        vid = read_video(vid_fp, img_size=self.img_shape[1:],
+        sequence_path, start_idx = self.sequences_with_frame_index[i]
+        vid = read_video(sequence_path, img_size=self.img_shape[1:],
                          start_index=start_idx, num_frames=self.seq_len)  # [T, h, w, c]
         vid = vid[::self.seq_step]  # [t, h, w, c]
         vid = self.preprocess(vid)  # [t, c, h, w]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = {"frames": vid, "actions": actions}
+        data = {"frames": vid, "actions": actions, "origin": f"{sequence_path}, start frame: {start_idx}"}
         return data
 
     def __len__(self):

@@ -59,7 +59,8 @@ class Physics101Dataset(VPDataset):
 
     def __getitem__(self, i) -> VPData:
         # loaded video shape: [T, h, w, c], sitting in index 0 of the object returned by read_video()
-        vid = read_video(self.vid_filepaths[i], num_frames=self.total_frames)  # [T, h, w, c]
+        vid_fp = self.vid_filepaths[i]
+        vid = read_video(vid_fp, num_frames=self.total_frames)  # [T, h, w, c]
         if self.seq_step > 1:
             vid = vid[::self.seq_step]  # [t, h, w, c]
 
@@ -74,7 +75,7 @@ class Physics101Dataset(VPDataset):
         vid = self.preprocess(vid)
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = { "frames": vid, "actions": actions }
+        data = {"frames": vid, "actions": actions, "origin": f"{vid_fp}, subseq mode: {self.subseq}"}
         return data
 
     def __len__(self):

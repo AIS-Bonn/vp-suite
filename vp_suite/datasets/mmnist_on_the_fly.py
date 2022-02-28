@@ -21,7 +21,7 @@ class MovingMNISTOnTheFly(VPDataset):
     MIN_SEQ_LEN = 1e8  #: Sequence length unbounded, depends on input sequence length
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
-    DEFAULT_N_SEQS = {"train": 57600, "val": 2400, "test": 10000}
+    DEFAULT_N_SEQS = {"train": 9600, "val": 400, "test": 10000}
     SPLIT_SEED_OFFSETS = {"train": lambda x: 3*x+2, "val": lambda x: 3*x+1, "test": lambda x: 3*x}  #: passing the seed value to these functions guarantees unique RNG for all splits
 
     min_speed = 2
@@ -94,7 +94,7 @@ class MovingMNISTOnTheFly(VPDataset):
         frames = self.preprocess(frames * 255)
 
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
-        data = {"frames": frames, "actions": actions}
+        data = {"frames": frames, "actions": actions, "origin": ""}
 
         return data
 

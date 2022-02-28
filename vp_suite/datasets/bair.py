@@ -52,14 +52,15 @@ class BAIRPushingDataset(VPDataset):
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
-        rgb_raw = np.load(self.obs_fps[i])
+        obs_fp = self.obs_fps[i]
+        rgb_raw = np.load(obs_fp)
         rgb_raw = rgb_raw[:self.seq_len:self.seq_step]
         rgb = self.preprocess(rgb_raw)  # [t, c, h, w]
 
         actions = torch.from_numpy(np.load(self.actions_fps[i])).float()
         actions = actions[:self.seq_len:self.seq_step]  # [t, a]
 
-        data = { "frames": rgb, "actions": actions }
+        data = {"frames": rgb, "actions": actions, "origin": obs_fp}
         return data
 
     @classmethod

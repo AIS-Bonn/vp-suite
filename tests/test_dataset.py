@@ -18,7 +18,7 @@ def test_dataset(dataset_str):
                     test_wrapper.test_data[0]]  # train, val, test
     for ex_ in example_data:
         assert isinstance(ex_, dict)
-        assert set(ex_.keys()) == {"frames", "actions"}
+        assert set(ex_.keys()) == {"frames", "actions", "origin"}
         assert ex_["frames"].shape[-3:] == train_wrapper.img_shape
         if train_wrapper.action_size > 0:
             assert ex_["actions"].shape[-1] == train_wrapper.action_size

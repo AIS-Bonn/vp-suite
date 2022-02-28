@@ -80,7 +80,7 @@ class KTHActionsDataset(VPDataset):
         rgb = self.preprocess(np.array(frames))  # [t, c, h, w]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = { "frames": rgb, "actions": actions }
+        data = {"frames": rgb, "actions": actions, "origin": f"{dname}, start frame: {first_frame}"}
         return data
 
     def __len__(self):

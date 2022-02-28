@@ -28,6 +28,7 @@ class VPData(TypedDict):
     """
     frames: torch.Tensor  #: Video frames: torch tensors of shape [t, c, h, w].
     actions: torch.Tensor  #: Actions per frame: torch tensors of shape [t, a].
+    origin: str  #: A string specifying the source of the data.
 
 
 class VPSubset(Subset):

@@ -61,7 +61,7 @@ class MovingMNISTDataset(VPDataset):
 
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = {"frames": rgb, "actions": actions}
+        data = {"frames": rgb, "actions": actions, "origin": data_fp}
         return data
 
     def download_and_prepare_dataset(self):

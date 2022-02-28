@@ -91,7 +91,7 @@ class KITTIRawDataset(VPDataset):
         vid = self.preprocess(vid)  # [t, *self.img_shape]
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
 
-        data = {"frames": vid, "actions": actions}
+        data = {"frames": vid, "actions": actions, "origin": f"{sequence_path}, start frame: {start_idx}"}
         return data
 
     def __len__(self):
