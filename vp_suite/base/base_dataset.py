@@ -55,6 +55,7 @@ class VPDataset(Dataset):
     NAME: str = NotImplemented  #: The dataset's name.
     REFERENCE: str = None  #: The reference (publication) where the original dataset is introduced.
     IS_DOWNLOADABLE: str = None  #: A string identifying whether the dataset can be (freely) downloaded.
+    ON_THE_FLY: bool = False  #: If true, accessing the dataset means data is generated on the fly rather than fetched from storage.
     DEFAULT_DATA_DIR: Path = NotImplemented  #: The default save location of the dataset files.
     VALID_SPLITS = ["train", "test"]  #: The valid arguments for specifying splits.
     MIN_SEQ_LEN: int = NotImplemented  #: The minimum sequence length provided by the dataset.
@@ -182,6 +183,14 @@ class VPDataset(Dataset):
 
     def _set_seq_len(self):
         r""" Optional dataset-specific logic for :meth:`self.set_seq_len()`. """
+        pass
+
+    def reset_rng(self):
+        r"""
+
+        Returns:
+
+        """
         pass
 
     def __len__(self) -> int:

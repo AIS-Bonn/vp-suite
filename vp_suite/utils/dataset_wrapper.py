@@ -155,3 +155,11 @@ class DatasetWrapper:
         if self.is_training_set() and not isinstance(self.val_data, Subset):
             self.val_data.set_seq_len(context_frames, pred_frames, seq_step)
         self.is_ready = True
+
+    def reset_rng(self):
+        r"""
+
+        """
+        self.datasets["main"].reset_rng()
+        if self.is_training_set() and not isinstance(self.val_data, Subset):
+            self.val_data.reset_rng()

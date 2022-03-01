@@ -108,7 +108,7 @@ class VPSuite:
             pred_frames = dataset_kwargs.pop("pred_frames", run_config["pred_frames"])
             seq_step = dataset_kwargs.pop("seq_step", run_config["seq_step"])
             dataset.set_seq_len(context_frames, pred_frames, seq_step)
-            
+
         self.datasets.append(dataset)
 
     def download_dataset(self, dataset):
@@ -218,16 +218,40 @@ class VPSuite:
             raise ValueError(f"Only the following run arguments are supported: {run_config.keys()}")
         run_config.update(run_args)
 
-        # seeding. IMPORTANT: THIS SHOULD BE THE ONLY LOCATION WHERE THESE RANDOM SEEDS ARE SET!
-        random.seed(run_config["seed"])
-        np.random.seed(run_config["seed"])
-        torch.manual_seed(run_config["seed"])
+        self._set_seeds(run_config["seed"])
 
         # opt. direction
         run_config["opt_direction"] = "maximize" if LOSS_CLASSES[run_config["val_rec_criterion"]].BIGGER_IS_BETTER \
             else "minimize"
 
         return run_config
+
+    def _set_seeds(self, seed):
+        r"""
+        seeding. IMPORTANT: THIS SHOULD BE THE ONLY LOCATION WHERE THESE RANDOM SEEDS ARE SET!
+
+        Args:
+            seed ():
+
+        Returns:
+
+        """
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+    def reset_rng(self, seed):
+        r"""
+
+        Args:
+            seed ():
+
+        Returns:
+
+        """
+        self._set_seeds(seed)
+        for dataset in self.datasets:
+            dataset.reset_rng()
 
 # ===== TRAINING ================================================================
 
@@ -523,7 +547,10 @@ class VPSuite:
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
             vis_idx = np.random.choice(len(test_data), config["n_vis"], replace=False)
+
             if config["vis_compare"]:
+                if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
+                    self.reset_rng(config["seed"])
                 models = [m_info[0] for m_info in model_info_list]
                 vis_out_dir = constants.OUT_PATH / timestamp_test
                 vis_out_dir.mkdir()
@@ -534,6 +561,8 @@ class VPSuite:
             for i, (model, _, _, _) in enumerate(model_info_list):
                 if model.model_dir is None:
                     continue  # don't print for models that don't have a run dir (i.e. baseline models)
+                if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
+                    self.reset_rng(config["seed"])
                 vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
                 vis_out_dir.mkdir()
                 visualize_vid(test_data, context_frames, pred_frames, model,

@@ -16,6 +16,7 @@ class MovingMNISTOnTheFly(VPDataset):
 
     NAME = "Moving MNIST - On the fly"
     IS_DOWNLOADABLE = "Yes (MNIST digits)"
+    ON_THE_FLY = True
     DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist_on_the_fly"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 1e8  #: Sequence length unbounded, depends on input sequence length
@@ -47,16 +48,11 @@ class MovingMNISTOnTheFly(VPDataset):
             raise ValueError("MMNIST only permits square images")
         self.DATASET_FRAME_SHAPE = (img_h, img_w, img_c)  # TODO dirty hack
 
-        # loading data
+        # loading data and rng
         self.data = MNIST(root=self.data_dir, train=(self.split == "train"), download=False)
         self.n_seqs = self.n_seqs or self.DEFAULT_N_SEQS[self.split]
-
-        # creating RNG-based generation helpers
-        split_rng_seed = self.SPLIT_SEED_OFFSETS[self.split](self.rng_seed)
-        self.digit_id_rng = np.random.default_rng(split_rng_seed)
-        self.speed_rng = np.random.default_rng(split_rng_seed)
-        self.acc_rng = np.random.default_rng(split_rng_seed)
-        self.pos_rng = np.random.default_rng(split_rng_seed)
+        self.digit_id_rng, self.speed_rng, self.acc_rng, self.pos_rng = None, None, None, None
+        self.reset_rng()
 
         self.get_digit_id = lambda: self.digit_id_rng.integers(len(self.data))
         self.get_speed = lambda: self.speed_rng.integers(-1*self.max_speed, self.max_speed+1)
@@ -66,6 +62,18 @@ class MovingMNISTOnTheFly(VPDataset):
 
     def __len__(self):
         return self.n_seqs
+
+    def reset_rng(self):
+        r"""
+        creating RNG-based generation helpers
+        Returns:
+
+        """
+        split_rng_seed = self.SPLIT_SEED_OFFSETS[self.split](self.rng_seed)
+        self.digit_id_rng = np.random.default_rng(split_rng_seed)
+        self.speed_rng = np.random.default_rng(split_rng_seed)
+        self.acc_rng = np.random.default_rng(split_rng_seed)
+        self.pos_rng = np.random.default_rng(split_rng_seed)
 
     def __getitem__(self, i) -> VPData:
         """ """
