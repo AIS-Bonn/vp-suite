@@ -57,12 +57,12 @@ class SynpickMovingDataset(VPDataset):
                 ep_dict = json.load(scene_json_file)
             gripper_pos = [ep_dict[frame_num][-1]["cam_t_m2c"] for frame_num in ep_dict.keys()]
             self.gripper_pos[ep] = gripper_pos
-        self.total_len = len(self.image_ids)
 
     def _set_seq_len(self):
         # Determine which dataset indices are valid for given sequence length T
         last_valid_idx = -1 * self.seq_len
-        for idx in range(self.total_len - self.seq_len + 1):
+        self.all_idx, self.valid_idx = [], []
+        for idx in range(len(self.image_ids) - self.seq_len + 1):
 
             self.all_idx.append(idx)
             ep_nums = [self._ep_num_from_id(self.image_ids[idx + offset]) for offset in self.frame_offsets]
