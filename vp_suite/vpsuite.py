@@ -135,6 +135,7 @@ class VPSuite:
         """
         model_ckpt = os.path.join(model_dir, ckpt_name)
         model = torch.load(model_ckpt)
+        model.model_dir = model_dir
         self._model_setup(model, loaded=True)
 
     def create_model(self, model_type, action_conditional=False, **model_kwargs):
@@ -299,10 +300,13 @@ class VPSuite:
                                   drop_last=True)
         val_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
         best_val_loss = float("inf")
-        out_path = Path(run_config["out_dir"]) if run_config["out_dir"] is not None \
-            else constants.OUT_PATH / timestamp('train')
-        out_path.mkdir(parents=True, exist_ok=True)
-        model.model_dir = str(out_path.resolve())
+        if model.model_dir is None:
+            out_dir = run_config.get("out_dir", constants.OUT_PATH / timestamp('train'))
+            out_path = Path(out_dir)
+            out_path.mkdir(parents=True, exist_ok=True)
+            model.model_dir = str(out_path.resolve())
+        else:  # e.g. pre-trained and loaded models
+            out_path = Path(model.model_dir)
         best_model_path = str((out_path / 'best_model.pth').resolve())
         with_training = model.TRAINABLE and not run_config["no_train"]
         with_validation = not run_config["no_val"]

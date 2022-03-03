@@ -199,7 +199,7 @@ def visualize_sequences(dataset, context_frames, pred_frames, models, device,
         ground_truth_vis = None
         preds_vis = []
         for pred_model in models:
-            if pred_model.model_dir is None:  # skip baseline models such as CopyLstFrame
+            if pred_model.model_dir is None:  # skip baseline models such as CopyLastFrame
                 continue
 
             input_vis, pred_vis = get_vis_from_model(dataset, data, pred_model,

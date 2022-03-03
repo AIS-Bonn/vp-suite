@@ -1,8 +1,5 @@
-import os
-import random
 import numpy as np
 import torch
-from pathlib import Path
 from torchvision.datasets import MNIST
 
 from vp_suite.base.base_dataset import VPDataset, VPData
@@ -39,7 +36,8 @@ class MovingMNISTOnTheFly(VPDataset):
         Initializer of the moving MNIST dataset
         """
         super(MovingMNISTOnTheFly, self).__init__(split, **dataset_kwargs)
-        self.NON_CONFIG_VARS.extend(["data", "rng", "get_speed", "get_acc", "get_init_pos"])
+        self.NON_CONFIG_VARS.extend(["data", "rng", "digit_id_rng", "speed_rng", "acc_rng", "pos_rng",
+                                     "get_digit_id", "get_speed", "get_acc", "get_init_pos"])
 
         if self.num_channels not in [1, 3]:
             raise ValueError("num_channels for dataset needs to be in [1, 3].")
@@ -98,12 +96,10 @@ class MovingMNISTOnTheFly(VPDataset):
                 cur_h, cur_w = cur_pos
                 frame[cur_h:cur_h+digit_size, cur_w:cur_w+digit_size] += digit
             frames[i] = np.clip(frame, 0, 1)
-
         frames = self.preprocess(frames * 255)
 
         actions = torch.zeros((self.total_frames, 1))  # [t, a], actions should be disregarded in training logic
-        data = {"frames": frames, "actions": actions, "origin": ""}
-
+        data = {"frames": frames, "actions": actions, "origin": "generated on-the-fly"}
         return data
 
     def _sample_digit(self):
