@@ -1,3 +1,4 @@
+import sys
 from typing import TypedDict, Union, Sequence, Optional, Generator, List
 from copy import deepcopy
 from pathlib import Path
@@ -93,9 +94,12 @@ class VPDataset(Dataset):
         self.data_dir = dataset_kwargs.get("data_dir", self.data_dir)
         if self.data_dir is None:
             if not self.default_available(self.split, **dataset_kwargs):
-                print(f"downloading/preparing dataset '{self.NAME}' "
-                      f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
-                self.download_and_prepare_dataset()
+                if "pytest" in sys.modules:  # don't download datasets if running this code from the test suite
+                    raise RuntimeError(f"Default for Dataset '{self.NAME}' is unavailable and pytest won't download it")
+                else:
+                    print(f"downloading/preparing dataset '{self.NAME}' "
+                          f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
+                    self.download_and_prepare_dataset()
             self.data_dir = str(self.DEFAULT_DATA_DIR.resolve())
 
         # DATA PREPROCESSING: convert -> permute -> scale -> crop -> resize -> augment
