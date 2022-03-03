@@ -300,13 +300,17 @@ class VPSuite:
                                   drop_last=True)
         val_loader = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
         best_val_loss = float("inf")
-        if model.model_dir is None:
-            out_dir = run_config.get("out_dir", constants.OUT_PATH / timestamp('train'))
+
+        # re-use model_dir of pre-loaded/pre-initialized models if no out_dir has been specified
+        if run_config["out_dir"] is None and model.model_dir is not None:
+            print(f"Using existing model save location ({model.model_dir})...")
+            out_path = Path(model.model_dir)
+        else:
+            out_dir = run_config["out_dir"] or constants.OUT_PATH / timestamp('train')  # fetch default if None
             out_path = Path(out_dir)
             out_path.mkdir(parents=True, exist_ok=True)
             model.model_dir = str(out_path.resolve())
-        else:  # e.g. pre-trained and loaded models
-            out_path = Path(model.model_dir)
+
         best_model_path = str((out_path / 'best_model.pth').resolve())
         with_training = model.TRAINABLE and not run_config["no_train"]
         with_validation = not run_config["no_val"]
@@ -608,7 +612,6 @@ class VPSuite:
 
                 # Per-model/per-pred.-horizon console log of the metrics
                 else:
-                    print("Printing out test results to terminal...")
                     print(f"\n{model.NAME} (path: {model.model_dir}): ")
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         print(f"pred_frames: {f + 1}")
