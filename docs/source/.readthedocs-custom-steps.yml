@@ -1,2 +1,5 @@
 steps:
+- pushd ..
+- echo $PWD
 - bash assemble_docs.sh
+- popd
