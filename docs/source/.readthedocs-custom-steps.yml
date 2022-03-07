@@ -1,5 +1,6 @@
 steps:
-- pushd ..
+- echo $PWD
+- cd ..
 - echo $PWD
 - bash assemble_docs.sh
-- popd
+- cd source
