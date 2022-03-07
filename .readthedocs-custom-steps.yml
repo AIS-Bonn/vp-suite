@@ -1,0 +1,2 @@
+steps:
+- bash assemble_docs.sh
