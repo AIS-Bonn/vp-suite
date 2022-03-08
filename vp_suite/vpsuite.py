@@ -397,13 +397,14 @@ class VPSuite:
                     torch.save(model, best_model_path)
                     print(f"Minimum indicator loss ({config['val_rec_criterion']}) reduced -> model saved!")
             else:
-                print("Skipping validation loop.")
+                print("Skipping validation loop and simply saving current model as the 'best' model.")
+                torch.save(model, best_model_path)
 
             # visualize current model performance every nth epoch, using eval mode and validation data.
             if (epoch+1) % config["vis_every"] == 0 and not config["no_vis"]:
                 print("Saving visualizations...")
                 vis_out_dir = out_path / f"vis_ep_{epoch+1:03d}"
-                vis_out_dir.mkdir()
+                vis_out_dir.mkdir(exist_ok=True)  # overrides existing visualizations (e.g. from previous runs)
                 vis_idx = np.random.choice(len(val_data), config["n_vis"], replace=False)
                 visualize_vid(val_data, config["context_frames"], config["pred_frames"], model,
                               config["device"], vis_out_dir, vis_idx, config["vis_mode"])
@@ -552,43 +553,21 @@ class VPSuite:
 
         # save visualizations
         timestamp_test = timestamp('test')
+        vis_out_dir = constants.OUT_PATH / timestamp_test
+        vis_out_dir.mkdir()
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
             vis_idx = np.random.choice(len(test_data), config["n_vis"], replace=False)
-            if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
+            if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG because the loaders could have mingled with it
                 self.reset_rng(config["seed"])
 
             models = [m_info[0] for m_info in model_info_list]
-            vis_out_dir = constants.OUT_PATH / timestamp_test
-            vis_out_dir.mkdir()
             if config["vis_compare"]:
                 vis_context_frame_idx = config["vis_context_frame_idx"] or list(range(context_frames))
             else:
                 vis_context_frame_idx = None
-            visualize_sequences(test_data, context_frames, pred_frames, models,
-                                config["device"], vis_out_dir, vis_idx, vis_context_frame_idx)
-
-
-
-            if config["vis_compare"]:
-                if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
-                    self.reset_rng(config["seed"])
-                models = [m_info[0] for m_info in model_info_list]
-                vis_out_dir = constants.OUT_PATH / timestamp_test
-                vis_out_dir.mkdir()
-                vis_context_frame_idx = config["vis_context_frame_idx"] or list(range(context_frames))
-                visualize_sequences(test_data, context_frames, pred_frames, models,
-                                    config["device"], vis_out_dir, vis_idx, vis_context_frame_idx)
-
-            for i, (model, _, _, _) in enumerate(model_info_list):
-                if model.model_dir is None:
-                    continue  # don't print for models that don't have a run dir (i.e. baseline models)
-                if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
-                    self.reset_rng(config["seed"])
-                vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
-                vis_out_dir.mkdir()
-                visualize_vid(test_data, context_frames, pred_frames, model,
-                              config["device"], vis_out_dir, vis_idx, config["vis_mode"])
+            visualize_sequences(test_data, context_frames, pred_frames, models, config["device"],
+                                vis_out_dir, vis_idx, vis_context_frame_idx, config["vis_mode"])
 
         # log or display metrics
         if eval_length > 0:
@@ -616,8 +595,8 @@ class VPSuite:
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         wandb.log({"pred_frames": f+1, **mean_metric_dict})
                     if not config["no_vis"] and model.model_dir is not None:
-                        vis_out_dir = Path(model.model_dir) / f"vis_{timestamp_test}"
-                        vid_filenames = sorted(os.listdir(str(vis_out_dir)))
+                        vid_filenames = [fn for fn in sorted(os.listdir(str(vis_out_dir)))
+                                         if fn.split(".")[-1] in ["mp4", "gif"]]
                         model_log_vids = {fn: wandb.Video(str(vis_out_dir / fn), fps=4, format=fn.split(".")[-1])
                                           for i, fn in enumerate(vid_filenames)}
                         wandb.log(model_log_vids)

@@ -132,7 +132,7 @@ def get_vis_from_model(dataset, data, pred_model, data_unpack_config, pred_frame
     return input_vis, pred_vis
 
 
-def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
+def visualize_vid(dataset, context_frames, pred_frames, model, device,
                   out_path, vis_idx, vis_mode):
 
     out_fn_template = "vis_{}." + vis_mode
@@ -144,7 +144,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
 
     for i, n in enumerate(vis_idx):
         # prepare input and ground truth sequence
-        input_vis, pred_vis = get_vis_from_model(dataset, dataset[n], pred_model,
+        input_vis, pred_vis = get_vis_from_model(dataset, dataset[n], model,
                                                  data_unpack_config, pred_frames)
         # visualize
         out_filename = str(out_path / out_fn_template.format(str(i)))
@@ -152,7 +152,7 @@ def visualize_vid(dataset, context_frames, pred_frames, pred_model, device,
                      GT=input_vis, Pred=pred_vis, mode=vis_mode)
 
 
-def save_frame_compare_vis(out_filename, T_context, ground_truth_vis,
+def save_frame_compare_img(out_filename, T_context, ground_truth_vis,
                            preds_vis, vis_context_frame_idx):
     border = 2
     all_seqs = [ground_truth_vis] + preds_vis
@@ -181,12 +181,11 @@ def save_frame_compare_vis(out_filename, T_context, ground_truth_vis,
 
 
 def visualize_sequences(dataset, context_frames, pred_frames, models, device,
-                        out_path, vis_idx, vis_context_frame_idx):
+                        out_path, vis_idx, vis_context_frame_idx, vis_vid_mode):
 
-    vis_out_fn_template = "vis_{}.png"
     data_unpack_config = {"device": device, "context_frames": context_frames, "pred_frames": pred_frames}
     info_file_lines = [f"DATASET: {dataset.NAME}", f"chosen dataset idx: {vis_idx}",
-                       f"Displayed context frames: {vis_context_frame_idx}",
+                       f"Displayed context frames: {list(range(context_frames))}, ({vis_context_frame_idx} in seq_img)",
                        f"Displayed pred frames: {list(range(context_frames, context_frames+pred_frames))}",
                        "Displayed rows (from top):", " - Ground Truth"]
 
@@ -198,23 +197,29 @@ def visualize_sequences(dataset, context_frames, pred_frames, models, device,
         data = dataset[n]  # [T, c, h, w]
         ground_truth_vis = None
         preds_vis = []
-        for pred_model in models:
-            if pred_model.model_dir is None:  # skip baseline models such as CopyLastFrame
+        for j, model in enumerate(models):
+            if model.model_dir is None:  # skip baseline models such as CopyLastFrame
                 continue
 
-            input_vis, pred_vis = get_vis_from_model(dataset, data, pred_model,
+            input_vis, pred_vis = get_vis_from_model(dataset, data, model,
                                                      data_unpack_config, pred_frames)
             if ground_truth_vis is None:
                 ground_truth_vis = input_vis
             preds_vis.append(pred_vis)
 
-            if i == 0:
-                info_file_lines.append(f" - {pred_model.NAME} (model dir: {pred_model.model_dir})")
+            # visualize as vid
+            vis_vid_out_fn = str(out_path / f"vis_{i}_model_{j}.{vis_vid_mode}")
+            save_vid_vis(out_fp=vis_vid_out_fn, context_frames=context_frames,
+                         GT=input_vis, Pred=pred_vis, mode=vis_vid_mode)
 
-        # visualize
-        vis_out_fn = str((out_path / vis_out_fn_template.format(str(i))).resolve())
-        save_frame_compare_vis(vis_out_fn, context_frames, ground_truth_vis,
-                               preds_vis, vis_context_frame_idx)
+            if i == 0:
+                info_file_lines.append(f" - model {j}: {model.NAME} (model dir: {model.model_dir})")
+
+        # visualize as img if context frame idx are given
+        if vis_context_frame_idx is not None:
+            vis_img_out_fn = str((out_path / f"vis_{i}.png").resolve())
+            save_frame_compare_img(vis_img_out_fn, context_frames, ground_truth_vis,
+                                   preds_vis, vis_context_frame_idx)
 
         info_file_lines.append(f"vis {i} (idx {n}) origin: {data['origin']}")
 
