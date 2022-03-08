@@ -151,6 +151,7 @@ In that case, consider e.g. reducing the number of training epochs._
 
 - When using this package, a folder `vp-suite` is created in your current working directory/current path 
 that will contain all downloaded data as well as run logs, outputs and trained models.
+- Use `VPSuite.list_available_models()` and `VPSuite.list_available_datasets()` to get an overview of which models and datasets are currently covered by the framework.
 - All training, testing and hyperparametrization calls can be heavily configured (adjusting training hyperparameters, logging behavior etc, ...).
   For a comprehensive list of all adjustable run configuration parameters see TODO.
 
