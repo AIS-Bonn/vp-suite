@@ -555,6 +555,20 @@ class VPSuite:
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
             vis_idx = np.random.choice(len(test_data), config["n_vis"], replace=False)
+            if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG
+                self.reset_rng(config["seed"])
+
+            models = [m_info[0] for m_info in model_info_list]
+            vis_out_dir = constants.OUT_PATH / timestamp_test
+            vis_out_dir.mkdir()
+            if config["vis_compare"]:
+                vis_context_frame_idx = config["vis_context_frame_idx"] or list(range(context_frames))
+            else:
+                vis_context_frame_idx = None
+            visualize_sequences(test_data, context_frames, pred_frames, models,
+                                config["device"], vis_out_dir, vis_idx, vis_context_frame_idx)
+
+
 
             if config["vis_compare"]:
                 if test_data.ON_THE_FLY:  # if data is generated on-the-fly, reset dataset's RNG

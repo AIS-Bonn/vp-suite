@@ -160,7 +160,7 @@ class InceptionI3d(nn.Module):
         Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed,
         Dragomir Anguelov, Dumitru Erhan, Vincent Vanhoucke, Andrew Rabinovich.
         https://arxiv.org/pdf/1409.4842v1.pdf.
-    MODIFIED by Andreas Boltres in 2022 for https://github.com/Flunzmas/vp-suite:
+    MODIFIED by Andreas Boltres in 2022 for https://github.com/AIS-Bonn/vp-suite:
       - extract_features() now returns the logits.
     """
 

@@ -47,7 +47,7 @@ setup(
     author=about.__author__,
     author_email=about.__author_email__,
     url=about.__homepage__,
-    download_url="https://github.com/Flunzmas/vp-suite",
+    download_url="https://github.com/AIS-Bonn/vp-suite",
     license=about.__license__,
     packages=find_packages(exclude=["tests*"]),
     package_data={'vp_suite': ['resources/*']},

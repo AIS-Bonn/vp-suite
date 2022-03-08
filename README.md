@@ -27,12 +27,12 @@ pip install vp-suite
 
 From source:
 ```
-pip install git+https://github.com/Flunzmas/vp-suite.git
+pip install git+https://github.com/AIS-Bonn/vp-suite.git
 ```
 
 If you want to contribute:
 ```
-git clone https://github.com/Flunzmas/vp-suite.git
+git clone https://github.com/AIS-Bonn/vp-suite.git
 cd vp-suite
 pip install -e .[dev,doc]
 ```
@@ -71,7 +71,7 @@ save model checkpoints on improvement and, optionally, generate and save predict
 
 1. Set up the tester
 2. Load one of the provided datasets or (will be downloaded automatically) [create your own](#training-on-custom-datasets)
-3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/Flunzmas/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded)
+3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/AIS-Bonn/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded)
 4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
 
 ```python
@@ -149,7 +149,7 @@ While this package comes with a few pre-defined models/datasets/metrics etc. for
 This project is always open to extension! It grows especially powerful with more models and datasets, so if you've made your code work on custom models/datasets/metrics/etc., feel free to submit a merge request!
 
 Other kinds of contributions are also very welcome - just check the open issues on the
-[tracker](https://github.com/Flunzmas/vp-suite/issues) or open up a new issue there.
+[tracker](https://github.com/AIS-Bonn/vp-suite/issues) or open up a new issue there.
 
 When submitting a merge request, please make sure all tests run through (execute from root folder):
 ```
@@ -171,7 +171,7 @@ All other sources are acknowledged in the documentation of the respective point 
 
 ### License
 
-This project comes with an [MIT License](https://github.com/Flunzmas/vp-suite/blob/main/LICENSE), except for the following components:
+This project comes with an [MIT License](https://github.com/AIS-Bonn/vp-suite/blob/main/LICENSE), except for the following components:
 
 - Module `vp_suite.measure.fvd.pytorch_i3d` (Apache 2.0 License, taken and modified from [here](https://github.com/piergiaj/pytorch-i3d))
 
