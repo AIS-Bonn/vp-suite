@@ -40,10 +40,10 @@ jobs:
       - name : publish docs to page
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SOURCE_DATE_EPOCH: ${{ git log -1 --pretty=%ct }}
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
           docroot=`mktemp -d`
           rsync -av "docs/build/html/" "${docroot}/"
           pushd "${docroot}"
