@@ -1,4 +1,4 @@
-name: docs_pages_workflow
+name: docs-pages-workflow
 
 on:
   push:
@@ -27,9 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git rsync
           python -m pip install --upgrade pip
-          pushd docs/
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          popd
+          pip install -e .[doc]
         shell: bash
         
       - name: assemble docs
@@ -45,24 +43,18 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
           docroot=`mktemp -d`
           rsync -av "docs/build/html/" "${docroot}/"
           pushd "${docroot}"
-
+          echo "This branch is automatically generated to host the repository's github page. It is not intended to be viewed on github.com." > README.md
           git init
           git remote add deploy "https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -b gh-pages
-          touch .nojekyll
-          
+          touch .nojekyll 
           git add .
-          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
-          msg="Updating Docs for commit ${GITHUB_SHA} made on `date -d"@${SOURCE_DATE_EPOCH}" --iso-8601=seconds` from ${GITHUB_REF} by ${GITHUB_ACTOR}"
+          msg="Updating docs for commit ${GITHUB_SHA} made on `date -d"@${SOURCE_DATE_EPOCH}" --iso-8601=seconds` from ${GITHUB_REF} by ${GITHUB_ACTOR}"
           git commit -am "${msg}"
           git push deploy gh-pages --force
-          
           popd
-          popd
-          
-        shell: bash
-          
+        shell: bash    
