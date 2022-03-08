@@ -1,4 +1,9 @@
-[📚 **Link to Documentation** 📚](https://flunzmas-vp-suite.readthedocs.io/en/latest/)
+[![PyPi](https://img.shields.io/pypi/v/vp-suite?color=blue&style=for-the-badge)](https://pypi.org/project/vp-suite/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/vp-suite?style=for-the-badge&color=blue)](https://pepy.tech/project/vp-suite)
+[![License Badge](https://img.shields.io/github/license/AIS-Bonn/vp-suite?color=brightgreen&style=for-the-badge)](https://github.com/AIS-Bonn/vp-suite#license)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/AIS-Bonn/vp-suite/docs_pages_workflow?label=Docs&style=for-the-badge)](https://ais-bonn.github.io/vp-suite/)
+[![PyTorch - Version](https://img.shields.io/badge/PYTORCH-1.10+-red?style=for-the-badge&logo=pytorch)](https://pepy.tech/project/vp-suite) 
+[![Python - Version](https://img.shields.io/badge/PYTHON-3.6+-red?style=for-the-badge&logo=python&logoColor=white)](https://pepy.tech/project/vp-suite)
 
 ### Introduction
 
@@ -14,85 +19,105 @@ Furthermore, while many contributors nowadays do share their code, seemingly min
 
 This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.
 
+
 ### Installation
 
-**Requirements**: 
-- `python >= 3.6` (code is tested with version `3.8`)
-- `pip`
+**Requires `pip` and `python >= 3.6` (code is tested with version `3.8`).**
 
-From PyPi: 
-```
-pip install vp-suite
-```
-
-From source:
-```
-pip install git+https://github.com/AIS-Bonn/vp-suite.git
-```
-
-If you want to contribute:
-```
-git clone https://github.com/AIS-Bonn/vp-suite.git
-cd vp-suite
-pip install -e .[dev,doc]
-```
+<details>
+<summary><b>From PyPi</b></summary>
+   
+   ```
+   pip install vp-suite
+   ```
+</details>
+<details>
+<summary><b>From source</b></summary>
+   
+   ```
+   pip install git+https://github.com/Flunzmas/vp-suite.git
+   ```
+</details>
+<details>
+<summary><b>If you want to contribute</b></summary>
+   
+   ```
+   git clone https://github.com/Flunzmas/vp-suite.git
+   cd vp-suite
+   pip install -e .[dev]
+   ```
+</details>
+<details>
+<summary><b>If you want to build docs</b></summary>
+   
+   ```
+   git clone https://github.com/Flunzmas/vp-suite.git
+   cd vp-suite
+   pip install -e .[doc]
+   ```
+</details>
 
 ### Usage
 
-When using this package, a folder `vp-suite` is created in your current working directory/current path 
-that will contain all downloaded data as well as run logs, outputs and trained models.
-
-#### Training models
-
-1. Set up the trainer:
-2. Load one of the provided datasets (will be downloaded automatically) [create your own](#training-on-custom-datasets):
-3. Create video prediction model (either from scratch or from a pretrained checkpoint, can be one of the provided models or your own):
-4. Run the training loop, optionally providing custom configuration
-
+<details>
+<summary><b>Training models</b></summary>
+   
 ```python
 from vp_suite import VPSuite
 
+# 1. Set up the VP Suite.
 suite = VPSuite()
+
+# 2. Load one of the provided datasets.
+#    They will be downloaded automatically if no downloaded data is found.
 suite.load_dataset("MM")  # load moving MNIST dataset from default location
 
-model_checkpoint = ""  # Set to valid model path to load a checkpoint
-if model_checkpoint != "":
-   suite.load_model(model_checkpoint)
-else:
-   suite.create_model('lstm')  # create a ConvLSTM-Based Prediction Model
+# 3. Create a video prediction model.
+suite.create_model('convlstm-shi')  # create a ConvLSTM-Based Prediction Model.
    
+# 4. Run the training loop, optionally providing custom configuration.
 suite.train(lr=2e-4, epochs=100)
 ```
 
-This will train the model, log training progress to the console (and optionally to [Weights & Biases](https://wandb.ai)),
-save model checkpoints on improvement and, optionally, generate and save prediction visualizations.
+This code snippet will train the model, log training progress to your [Weights & Biases](https://wandb.ai) account,
+save model checkpoints on improvement and generate and save prediction visualizations.
+</details>
 
-#### Evaluating models
-
-1. Set up the tester
-2. Load one of the provided datasets or (will be downloaded automatically) [create your own](#training-on-custom-datasets)
-3. Load the models you'd like to test (by default, a [CopyLastFrame](https://github.com/AIS-Bonn/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) baseline is already loaded)
-4. Run the testing on all models, optionally providing custom configuration of the evaluation protocol:
+<details>
+<summary><b>Evaluating models</b></summary>
 
 ```python
 from vp_suite import VPSuite
 
+# 1. Set up the VP Suite.
 suite = VPSuite()
-suite.load_dataset("MM")  # load moving MNIST dataset from default location
 
-# get the filepaths to the models you'd like to test
+# 2. Load one of the provided datasets in test mode.
+#    They will be downloaded automatically if no downloaded data is found.
+suite.load_dataset("MM", split="test")  # load moving MNIST dataset from default location
+
+# 3. Get the filepaths to the models you'd like to test and load the models
 model_dirs = ["out/model_foo/", "out/model_bar/"]
 for model_dir in model_dirs:
     suite.load_model(model_dir, ckpt_name="best_model.pth")
+    
+# 4. Test the loaded models on the loaded test sets.
 suite.test(context_frames=5, pred_frames=10)
 ```
 
-This code will evaluate the loaded models on the loaded dataset (its test portion, if avaliable), creating detailed summaries of prediction performance across a customizable set of metrics.
-Optionally, the results as well as prediction visualizations can be saved and logged to [Weights & Biases](https://wandb.ai).
+This code will evaluate the loaded models on the loaded dataset (its test portion, if avaliable), 
+creating detailed summaries of prediction performance across a customizable set of metrics.
+The results as well as prediction visualizations are saved and logged to [Weights & Biases](https://wandb.ai).
 
-_Note: if the specified evaluation protocol or the loaded dataset is incompatible with one of the models, this will raise an error with an explanation._ 
+_Note 1: If the specified evaluation protocol or the loaded dataset is incompatible with one of the models, 
+this will raise an error with an explanation._
 
-#### Hyperparameter Optimization
+_Note 2: By default, a [CopyLastFrame](https://github.com/AIS-Bonn/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py) 
+baseline is also loaded and tested with the other models._
+</details>
+
+<details>
+<summary><b>Hyperparameter Optimization</b></summary>
 
 This package uses [optuna](https://github.com/optuna/optuna) to provide hyperparameter optimization functionalities.
 The following snippet provides a full example:
@@ -117,32 +142,77 @@ _Note 1: For hyperopt, visualization, logging and model checkpointing is minimiz
 _Note 2: Despite optuna's trial pruning capabilities, running a high number of trials might still take a lot of time.
 In that case, consider e.g. reducing the number of training epochs._
 
+ Use `no_wandb=True`/`no_vis=True`
+ if you want to log outputs to the console instead/not generate and save visualizations.
+
+</details>
+
+**Notes:**
+
+- When using this package, a folder `vp-suite` is created in your current working directory/current path 
+that will contain all downloaded data as well as run logs, outputs and trained models.
+- All training, testing and hyperparametrization calls can be heavily configured (adjusting training hyperparameters, logging behavior etc, ...).
+  For a comprehensive list of all adjustable run configuration parameters see TODO.
+
 ### Customization
 
-While this package comes with a few pre-defined models/datasets/metrics etc. for your convenience, it was designed with quick extensibility in mind. See the sections below for how to add new models, datasets or metrics.
+This package is designed with quick extensibility in mind. See the sections below for how to add new components 
+(models, model blocks, datasets or measures).
 
-#### Creating new VP models or integrating existing external models 
+<details>
+<summary><b>New Models</b></summary>
 
-1. Create a file `model_<your name>.py` in the folder `vp_suite/models`.
-2. Create a class that derives from `vp_suite.models.base_model.VideoPredictionModel` and override the things you need.
+1. Create a file `<your name>.py` in the folder `vp_suite/models`.
+2. Create a class that derives from `vp_suite.base.base_model.VideoPredictionModel` and override/specify new constants you need.
 3. Write your model code or import existing code so that the superclass interface is still served.
-   If desired, you can implement a custom training loop iteration `train_iter(self, config, loader, optimizer, loss_provider, epoch)` that gets called instead of the default training loop iteration.
-4. Check training performance on different datasets, fix things and contribute to the project 😊
+   If desired, you can implement a custom training/evaluation loop iteration `train_iter()`/`eval_iter()` 
+   that gets called instead of the default training/evaluation loop iteration.
+4. Register your model in the `MODEL_CLASSES` dictionary of `vp_suite/models/__init__.py`, giving it a key that can be used by the suite.
+   By now, you should be able to create an instance of your model with `VPSuite.create_model()` and train it on a dataset with `VPSuite.train()`.
 
-#### Training on custom datasets
+</details>
 
-1. Create a file `dataset_<your name>.py` in the folder `vp_suite/dataset`.
-2. Create a class that derives from `vp_suite.dataset.base_dataset.BaseVPDataset` and override the things you need.
-3. Write your dataset code or import existing code so that the superclass interface is served and the dataset initialization with `vp_suite/dataset/factory.py` still works.
-4. Register it in the `DATASET_CLASSES` dict of `vp_suite/dataset/__init__.py`.
-5. Run pytest, check training performance with different models, fix things and contribute to the project 😊
+<details>
+<summary><b>New Model Blocks</b></summary>
 
-#### Custom losses, metrics and optimization
+1. Create a file `<your name>.py` in the folder `vp_suite/model_blocks`.
+2. Create a class that derives from `vp_suite.base.base_model_block.ModelBlock` and override/specify new constants you need.
+3. Write your model block code or import existing code so that the superclass interface is still served.
+4. If desired, add a local import of your model block to `vp_suite/model_blocks/__init__.py` (this registers the model block package-wide).
 
-1. Create a new file in `vp_suite/measure`, containing your loss or metric.
-2. Make `vp_suite.measure.base_measure.BaseMeasure` its superclass and provide all needed implementations and attributes.
+</details>
+
+<details>
+<summary><b>New Datasets</b></summary>
+
+1. Create a file `<your name>.py` in the folder `vp_suite/datasets`.
+2. Create a class that derives from `vp_suite.base.base_dataset.BaseVPDataset` and override/specify new constants you need.
+3. Write your dataset code or import existing code so that the superclass interface is served. 
+   If it's a public dataset, consider implementing methods to automatically download it.
+4. Register your dataset in the `DATASET_CLASSES` dict of `vp_suite/dataset/__init__.py`, giving it a key that can be used by the suite.
+   By now, you should be able to load your dataset with `VPSuite.load_dataset()` and train models on it with `VPSuite.train()`.
+
+</details>
+
+<details>
+<summary><b>New measures (losses and/or metrics)</b></summary>
+
+1. Create a new file `<your name>.py` in the folder `vp_suite/measure`, containing your loss or metric.
+2. Make `vp_suite.base.base_measure.BaseMeasure` its superclass and override/implement all needed implementations and constants.
 3. Register the measure in the `METRIC_CLASSES` dict of `vp_suite/measure/__init__.py` and, if it can also be used as a loss, in the `LOSS_CLASSES` dict.
-4. Run pytest, check training/evaluation performance with different models and datasets, fix things and contribute to the project 😊
+
+</details>
+
+**Notes:**
+
+- If you omit the docstring for a particular attribute/method/field, the docstring of the base class is used for documentation.
+- If implementing components that originate from publications/public repositories, please override the corresponding constants to specify the source!
+  Additionally, if you want to write automated tests checking implementation equality, 
+  have a look at how `tests/test_impl_match.py` fetches the tests of `tests/test_impl_match/` and executes these tests.
+- Basic unit tests for models, datasets and measures are executed on all registered models - 
+  you don't need to write such basic tests for your custom components! 
+  Same applies for documentation: The tables that list available components are filled automatically.
+
 
 ### Contributing
 
@@ -151,16 +221,24 @@ This project is always open to extension! It grows especially powerful with more
 Other kinds of contributions are also very welcome - just check the open issues on the
 [tracker](https://github.com/AIS-Bonn/vp-suite/issues) or open up a new issue there.
 
+#### Unit Testing
+
 When submitting a merge request, please make sure all tests run through (execute from root folder):
 ```
 python -m pytest --runslow --cov=vp_suite
 ```
 _Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
-Omit the `runslow` argument to speed up testing by removing the tests for the complete training/testing procedure._
+You will need to have `vp-suite` installed in development move, though ([see here](#installation))._
 
 #### API Documentation
 
-Updating the API documentation can be done by executing `build_docs.sh` from the `docs/` folder.
+The official API documentation is updated automatically upon push to the main branch.
+If you want to build the documentation locally, make sure you've installed the package [accordingly](#installation)
+and execute the following:
+```
+cd docs/
+bash assemble_docs.sh
+```
 
 ### Acknowledgements
 
