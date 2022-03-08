@@ -24,8 +24,8 @@ jobs:
           
       - name: prerequisites
         run: |
-          apt-get update
-          apt-get install -y git rsync
+          sudo apt-get update
+          sudo apt-get install -y git rsync
           python -m pip install --upgrade pip
           pushd docs/
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
