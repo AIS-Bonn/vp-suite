@@ -1,6 +1,4 @@
 steps:
-- echo $PWD
 - cd ..
-- echo $PWD
 - bash assemble_docs.sh
 - cd source
