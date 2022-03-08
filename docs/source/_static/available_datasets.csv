@@ -1,9 +1,0 @@
-Dataset,Abbreviation,Downloadable?,Reference
-Moving MNIST,``”MM”``,Yes,https://arxiv.org/abs/1502.04681v3
-BAIR Robot Pushing,``”BAIR”``,Yes,https://arxiv.org/abs/1710.05268
-KTH Actions,``”KTH”``,Yes,https://doi.org/10.1109/ICPR.2004.1334462
-SynPick – Videos,``”SPV”``,No,https://arxiv.org/abs/2107.04852
-Physics 101,``”P101”``,Yes,http://phys101.csail.mit.edu/
-Human 3.6M – Videos,``”H36M”``,With Registered Account,http://vision.imar.ro/human3.6m/description.php
-KITTI – Raw,``”KITTI”``,With Registered Account,http://www.cvlibs.net/datasets/kitti/raw_data.php
-Caltech Pedestrian,``”CP”``,Yes,http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/

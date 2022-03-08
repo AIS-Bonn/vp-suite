@@ -1,4 +1,0 @@
-steps:
-- cd ..
-- bash assemble_docs.sh
-- cd source

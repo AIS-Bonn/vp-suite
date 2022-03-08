@@ -1,8 +1,0 @@
-Loss,Abbreviation,Reference
-MSE / L2,``”mse”``,
-MAE / L1,``”l1”``,
-Smooth L1,``”smooth_l1”``,
-LPIPS,``”lpips”``,https://arxiv.org/abs/1801.03924
-SSIM,``”ssim”``,https://ieeexplore.ieee.org/document/1284395
-PSNR,``”psnr”``,
-FVD,``”fvd”``,https://arxiv.org/abs/1812.01717
