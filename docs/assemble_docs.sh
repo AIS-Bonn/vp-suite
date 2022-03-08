@@ -30,5 +30,5 @@ done
 python build_doc_tables.py
 
 # build HTML from api docs
-# make clean
-# make html
+make clean
+make html
