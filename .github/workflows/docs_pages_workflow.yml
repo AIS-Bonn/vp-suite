@@ -1,4 +1,4 @@
-name: docs_pages_workflow
+name: docs-pages-workflow
 
 on:
   push:
@@ -47,6 +47,7 @@ jobs:
           docroot=`mktemp -d`
           rsync -av "docs/build/html/" "${docroot}/"
           pushd "${docroot}"
+          echo "This branch is automatically generated to host the repository's github page. It is not intended to be viewed on github.com." > README.md
           git init
           git remote add deploy "https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -b gh-pages
