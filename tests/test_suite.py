@@ -21,7 +21,7 @@ model2 = "simple-v1"
 def test_creating_saving_loading_model():
     suite = VPSuite()
     suite.load_dataset(dataset=dataset1)
-    suite.create_model(model_type=model1)
+    suite.create_model(model_id=model1)
     with tempfile.TemporaryDirectory() as tmpdirname:
         suite.train(epochs=0, no_wandb=True, out_dir=tmpdirname)
         suite.clear_models()
@@ -32,7 +32,7 @@ def test_creating_saving_loading_model():
 def test_full_training_procedure():
     suite = VPSuite()
     suite.load_dataset(dataset=dataset1)
-    suite.create_model(model_type=model1)
+    suite.create_model(model_id=model1)
     suite.train(batch_size=16, epochs=1, vis_every=1, no_wandb=True)
 
 
@@ -40,7 +40,7 @@ def test_full_training_procedure():
 def test_hyperopt():
     suite = VPSuite()
     suite.load_dataset(dataset=dataset1)
-    suite.create_model(model_type=model1)
+    suite.create_model(model_id=model1)
     with open(str((constants.PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
         optuna_cfg = json.load(cfg_file)
     suite.hyperopt(optuna_cfg, batch_size=16, n_trials=1, epochs=1, no_wandb=True)
@@ -50,7 +50,7 @@ def test_hyperopt():
 def test_full_testing_single_dataset_single_model():
     suite = VPSuite()
     suite.load_dataset(dataset=dataset1, split="test")
-    suite.create_model(model_type=model1)
+    suite.create_model(model_id=model1)
     suite.test(context_frames=4, pred_frames=6, no_wandb=True)
 
 
@@ -60,6 +60,6 @@ def test_brief_testing_multi_dataset_multi_model():
     suite.load_dataset(dataset=dataset1, split="test")
     crop = TF.RandomCrop(size=1024)
     suite.load_dataset(dataset=dataset2, split="test", crop=crop, img_size=(64, 64))
-    suite.create_model(model_type=model1)
-    suite.create_model(model_type=model2, temporal_dim=3)
+    suite.create_model(model_id=model1)
+    suite.create_model(model_id=model2, temporal_dim=3)
     suite.test(brief_test=True, context_frames=4, pred_frames=6, no_wandb=True)

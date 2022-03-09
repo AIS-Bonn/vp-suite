@@ -25,24 +25,25 @@ from vp_suite.utils.compatibility import check_model_and_data_compat, check_run_
 
 
 class VPSuite:
-    r"""TODO.
-
-    TODO.
+    r"""
+    This class is the main workbench of `vp-suite`, in the sense that upon instantiating this class you've got access to
+    all the functionalities of `vp-suite`: Loading and using datasets, loading or instantiating new models and training
+    or testing them on the loaded datasets.
 
     Attributes:
-        device(str): A string specifying which device to work on ('cuda' or 'gpu')
+        device(str): A string specifying which device to work on ('cuda' for GPU usage or 'cpu' for CPU).
         datasets(List[:class:`DatasetWrapper`]): The loaded datasets.
         models(List[:class:`VideoPredictionModel`]): The loaded/created models.
-
     """
 
     _DEFAULT_RUN_CONFIG : Path = constants.PKG_RESOURCES / 'run_config.json'
 
-    def __init__(self, device="cuda"):
+    def __init__(self, device: str = "cuda"):
         r"""
+        Instantiates the `VPSuite`, setting device and clearing loaded models and datasets.
 
         Args:
-            device ():
+            device (str): A string identifying whether to use GPU or CPU.
         """
         self.device = "cuda" if device == "cuda" and torch.cuda.is_available() else "cpu"
 
@@ -52,50 +53,40 @@ class VPSuite:
     @property
     def training_sets(self):
         r"""
-
-        Returns:
-
+        Returns: A list of all loaded training sets (last one in list is last loaded training set).
         """
         return [d for d in self.datasets if d.is_training_set()]
 
     @property
     def test_sets(self):
         r"""
-
-        Returns:
-
+        Returns: A list of all loaded test sets (last one in list is last loaded test set).
         """
         return [d for d in self.datasets if d.is_test_set()]
 
     def clear_datasets(self):
         r"""
-
-        Returns:
-
+        Empties the list of loaded datasets.
         """
         self.datasets : List[DatasetWrapper] = []
 
     def clear_models(self):
         r"""
-
-        Returns:
-
+        Empties the list of loaded models.
         """
         self.models : List[VideoPredictionModel] = []
 
-    def load_dataset(self, dataset, split="train", **dataset_kwargs):
+    def load_dataset(self, dataset_id: str, split: str = "train", **dataset_kwargs):
         r"""
-
+        Creates the dataset specified by given dataset id and appends it to `VPSuite`'s list of loaded datasets.
+        
         Args:
-            dataset ():
-            split ():
-            **dataset_kwargs ():
-
-        Returns:
-
+            dataset_id (str): The string ID mapping of the desired dataset.
+            split (str): This string specifies whether to load the dataset in training or testing mode.
+            **dataset_kwargs (Any): Optional additional dataset configuration options.
         """
         # create dataset wrapper
-        dataset_class = DATASET_CLASSES[dataset]
+        dataset_class = DATASET_CLASSES[dataset_id]
         dataset = DatasetWrapper(dataset_class, split, **dataset_kwargs)
         print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
@@ -111,50 +102,59 @@ class VPSuite:
 
         self.datasets.append(dataset)
 
-    def download_dataset(self, dataset):
-        dataset_class = DATASET_CLASSES[dataset]
+    def download_dataset(self, dataset_id: str):
+        r"""
+        Downloads the dataset specified by given dataset ID.
+
+        Args:
+            dataset_id (str): The string ID mapping of the desired dataset.
+        """
+        dataset_class = DATASET_CLASSES[dataset_id]
         dataset_class.download_and_prepare_dataset()
 
     def list_available_datasets(self):
+        r"""
+        Prints a list of all available datasets and their corresponding string IDs.
+        """
         for dataset_id, dataset_class in DATASET_CLASSES.items():
             print(f"'{dataset_id}': {dataset_class.NAME}")
 
     def list_available_models(self):
+        r"""
+        Prints a list of all available models and their corresponding string IDs.
+        """
         for model_id, model_class in MODEL_CLASSES.items():
             print(f"'{model_id}': {model_class.NAME}")
 
-    def load_model(self, model_dir, ckpt_name="best_model.pth"):
+    def load_model(self, model_dir: str, ckpt_name: str = "best_model.pth"):
         r"""
+        Loads the model saved in the specified checkpoint file or the specified directory
+         and appends it to `VPSuite`'s list of loaded models.
 
         Args:
-            model_dir ():
-            ckpt_name ():
-
-        Returns:
-
+            model_dir (str): Relative path to the directory containing the saved model.
+            ckpt_name (str): File name of the saved model.
         """
         model_ckpt = os.path.join(model_dir, ckpt_name)
         model = torch.load(model_ckpt)
         model.model_dir = model_dir
         self._model_setup(model, loaded=True)
 
-    def create_model(self, model_type, action_conditional=False, **model_kwargs):
+    def create_model(self, model_id: str, action_conditional: bool = False, **model_kwargs):
         r"""
+        Creates the model specified by given string ID and appends it to `VPSuite`'s list of loaded models.
 
         Args:
-            model_type ():
-            action_conditional ():
-            **model_kwargs ():
-
-        Returns:
-
+            model_id (str): The string ID corresponding to your desired model.
+            action_conditional (bool): If the model supports actions, this variable determines whether the model will actually use provided actions for prediction.
+            **model_kwargs (Any): Optional additional model configuration options.
         """
 
         # parameter processing
-        if model_type not in AVAILABLE_MODELS:
+        if model_id not in AVAILABLE_MODELS:
             raise ValueError(f"invalid model type specified! Available model types: {AVAILABLE_MODELS}")
 
-        model_class = MODEL_CLASSES[model_type]
+        model_class = MODEL_CLASSES[model_id]
         for param in model_class.REQUIRED_ARGS:
             if param not in model_kwargs.keys():
                 print(f"model parameter '{param}' not specified -> trying to take from last loaded dataset...")
@@ -174,15 +174,13 @@ class VPSuite:
         model = model_class(self.device, **model_kwargs).to(self.device)
         self._model_setup(model)
 
-    def _model_setup(self, model, loaded=False):
+    def _model_setup(self, model: VideoPredictionModel, loaded: bool = False):
         r"""
+        Internal model setup, also appending the model to the list of loaded models.
 
         Args:
-            model ():
-            loaded ():
-
-        Returns:
-
+            model (VideoPredictionModel): The video prediction model.
+            loaded (bool): Identifies whether the model has been loaded (=True) or newly created (=False).
         """
         ac_str = "(action-conditional)" if model.config["action_conditional"] else ""
         loaded_str = "loaded" if loaded else "created new"
@@ -192,15 +190,13 @@ class VPSuite:
         print(f" - Model parameters (total / trainable): {total_params} / {trainable_params}")
         self.models.append(model)
 
-    def _prepare_run(self, split="train", **run_args):
+    def _prepare_run(self, split: str = "train", **run_kwargs):
         r"""
+        Prepares the upcoming run by fetching/setting configuration, models and datasets.
 
         Args:
-            split ():
-            **run_args ():
-
-        Returns:
-
+            split (str): Determines whether this run is going to be a training/hyperopt run or a test run.
+            **run_kwargs (Any): Optional specified run configuration parameters (will override the defaults).
         """
         if len(self.models) == 0:
             raise RuntimeError("No model available. Load a pretrained model "
@@ -215,9 +211,9 @@ class VPSuite:
             run_config = json.load(cfg_file)
 
         # update config
-        if not all([run_arg in run_config.keys() for run_arg in run_args.keys()]):
+        if not all([run_arg in run_config.keys() for run_arg in run_kwargs.keys()]):
             raise ValueError(f"Only the following run arguments are supported: {run_config.keys()}")
-        run_config.update(run_args)
+        run_config.update(run_kwargs)
 
         self._set_seeds(run_config["seed"])
 
@@ -227,28 +223,25 @@ class VPSuite:
 
         return run_config
 
-    def _set_seeds(self, seed):
+    def _set_seeds(self, seed: int):
         r"""
-        seeding. IMPORTANT: THIS SHOULD BE THE ONLY LOCATION WHERE THESE RANDOM SEEDS ARE SET!
+        Sets the general rng seeds for Python, numpy and PyTorch.
 
         Args:
-            seed ():
+            seed (int): The random seed for the rng's.
 
-        Returns:
-
+        Warning: This should remain the only code location where the general rng seeds are set!
         """
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-    def reset_rng(self, seed):
+    def reset_rng(self, seed: int):
         r"""
+        Resets the RNG for all datasets and rng.
 
         Args:
-            seed ():
-
-        Returns:
-
+            seed (int): The random seed for the rng's.
         """
         self._set_seeds(seed)
         for dataset in self.datasets:
@@ -256,16 +249,16 @@ class VPSuite:
 
 # ===== TRAINING ================================================================
 
-    def _prepare_training(self, dataset_idx, model_idx, **training_kwargs):
+    def _prepare_training(self, dataset_idx: int, model_idx: int, **run_kwargs):
         r"""
         Prepares a single dataset and a single model for training.
+
         Args:
-            **training_kwargs ():
-
-        Returns:
-
+            dataset_idx (int): The list index of the dataset that should be used for training.
+            model_idx (int) The list index of the model that should be trained on.
+            **run_kwargs (Any): Optional specified run configuration parameters (will override the defaults).
         """
-        run_config = self._prepare_run("train", **training_kwargs)
+        run_config = self._prepare_run("train", **run_kwargs)
 
         try:
             dataset: DatasetWrapper = self.training_sets[dataset_idx]
@@ -283,18 +276,27 @@ class VPSuite:
 
         return model, dataset, run_config
 
-    def train(self, trial=None, dataset_idx=-1, model_idx=-1, **training_kwargs):
+    def train(self, trial=None, dataset_idx: int = -1, model_idx: int = -1, **run_kwargs):
         r"""
+        Executes a training run on a single model and a single dataset.
+        After preparation, the main training loops run training epochs until the max number of epochs
+        or the time limit is reached.
+
+        During each epoch: 1. the whole dataset is iterated through in (model-specific)
+        training iterations that employ forward and backward passes. 2. Each model is validated on the whole validation
+        set and saved if it improved its performance on that set. 3. Every few epochs, prediction visualizations are
+        created and saved to the disk. 4. Current model performance is logged.
 
         Args:
-            trial ():
-            **training_kwargs ():
+            trial (Any): If calling this function within a hyperparameter optimization run, this object cantains the necessary parameters. Otherwise, it's None.
+            dataset_idx (int): The list index of the dataset that should be used for training.
+            model_idx (int) The list index of the model that should be trained on.
+            **run_kwargs (Any): Optional specified run configuration parameters (will override the defaults).
 
-        Returns:
-
+        Returns: The best obtained validation loss (the corresponding model is saved as 'best_model.pt').
         """
         # PREPARATION
-        model, dataset, run_config = self._prepare_training(dataset_idx, model_idx, **training_kwargs)
+        model, dataset, run_config = self._prepare_training(dataset_idx, model_idx, **run_kwargs)
         train_data, val_data = dataset.train_data, dataset.val_data
         train_loader = DataLoader(train_data, batch_size=run_config["batch_size"], shuffle=True, num_workers=4,
                                   drop_last=True)
@@ -422,22 +424,26 @@ class VPSuite:
                 print("Maximum training time exceeded, leaving training loop...")
                 break
 
-        # finishing
+        # finishing training by saving final model and returning best performance on validation set
         print("\nTraining done, cleaning up...")
         torch.save(model, str((out_path / 'final_model.pth').resolve()))
         wandb.finish()
         return best_val_loss  # return best validation loss for hyperparameter optimization
 
-    def hyperopt(self, optuna_config, n_trials=30, dataset_idx=-1, model_idx=-1, **run_kwargs):
+    def hyperopt(self, optuna_config: dict, n_trials: int = 30, dataset_idx: int = -1, model_idx: int = -1,
+                 **run_kwargs):
         r"""
+        Executes a hyperparameter optimization process using the bayesian optimization framework optuna.
+        A pre-defined number of training runs ("trials") are executed sequentially on the same model and datasets
+        under varying (hyperparameter) configurations. After the optimization, the best configuration is printed to the
+        terminal.
 
         Args:
-            optuna_config ():
-            n_trials ():
-            **run_kwargs ():
-
-        Returns:
-
+            optuna_config (dict): Optuna run configuration, specifies the search space (parameters and their search ranges) of the optimization.
+            n_trials (int): The number of training runs executed within the optimization.
+            dataset_idx (int): The list index of the dataset that should be used for training.
+            model_idx (int) The list index of the model that should be trained on.
+            **run_kwargs (Any): Optional specified run configuration parameters (will override the defaults). Apply to all runs within the optimizaion.
         """
         from functools import partial
         from vp_suite.utils.utils import check_optuna_config
@@ -459,12 +465,10 @@ class VPSuite:
 
     def _prepare_testing(self, **run_kwargs):
         r"""
-        Prepares multiple datasets and models for testing
+        Prepares all loaded datasets and models for testing
+
         Args:
-            **run_kwargs ():
-
-        Returns:
-
+            **run_kwargs (Any): Optional specified run configuration parameters (will override the defaults).
         """
         run_config = self._prepare_run("test", **run_kwargs)
 
@@ -504,17 +508,16 @@ class VPSuite:
         test_sets_and_model_lists = zip(test_sets, model_lists_all_test_sets)
         return test_sets_and_model_lists, run_config
 
-    def _test_on_dataset(self, model_info_list, dataset, run_config, brief_test):
+    def _test_on_dataset(self, model_info_list, dataset: DatasetWrapper, run_config: dict, brief_test: bool):
         r"""
+        Tests all models on a single dataset. Iterates through the whole dataset, retrieving the predictions of all
+        specified models on each data point and calculating pre-specified performance metrics.
 
         Args:
-            model_info_list ():
-            dataset ():
-            run_config ():
-            brief_test ():
-
-        Returns:
-
+            model_info_list (Any): A list containing the models to be tested as well as other needed information/objects such as adapters.
+            dataset (DatasetWrapper): The dataset to be tested on.
+            run_config (dict): The run configuration used for testing. For all unspecified run configuration parameters, the default configuration is used.
+            brief_test (bool): If specified, only a brief sample check is done instead of fully iterating over the test set.
         """
         # PREPARATION
         test_data = dataset.test_data
@@ -613,13 +616,15 @@ class VPSuite:
 
     def test(self, brief_test=False, **run_kwargs):
         r"""
+        Tests all loaded models and datasets, one dataset after the other.
+        For each dataset test, the whole test set is iterated through and each
+        data point is fed into each model to obtain performance metrics.
+        After iteration, visualizations are created of the predictions of all models on randomly selected
+        frame sequences, and performance metrics of each model on each dataset are logged in a comparable way.
 
         Args:
-            brief_test ():
-            **run_kwargs ():
-
-        Returns:
-
+            brief_test (bool): If specified, only a brief sample check is done instead of fully iterating over the test set.
+            **run_kwargs (Any): Optional testing configuration.
         """
         test_sets_and_model_lists, run_config = self._prepare_testing(**run_kwargs)
         for test_set, model_info_list in test_sets_and_model_lists:

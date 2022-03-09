@@ -190,11 +190,7 @@ class VPDataset(Dataset):
         pass
 
     def reset_rng(self):
-        r"""
-
-        Returns:
-
-        """
+        r""" Optional logic for resetting the RNG of a dataset. """
         pass
 
     def __len__(self) -> int:
@@ -387,7 +383,10 @@ def _random_split(dataset: VPDataset, lengths: Sequence[int], random_seed: int) 
     Args:
         dataset (Dataset): Dataset to be split.
         lengths (sequence): lengths of splits to be produced.
-        generator (Generator): Generator used for the random permutation.
+        random_seed (int): RNG seed used for the random permutation.
+
+    Returns:
+        A list of VPSubsets containing the randomly split datasets.
     """
 
     # Cannot verify that dataset is Sized
