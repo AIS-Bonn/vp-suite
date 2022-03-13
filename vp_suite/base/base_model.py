@@ -122,7 +122,6 @@ class VideoPredictionModel(nn.Module):
             **kwargs (Any): Optional input parameters such as actions.
 
         Returns: A single frame as a tensor of shape [b, c, h, w].
-
         """
         raise NotImplementedError
 
@@ -136,7 +135,6 @@ class VideoPredictionModel(nn.Module):
             **kwargs ():
 
         Returns: A batch of sequences of `p` predicted frames as a tensor of shape [b, p, c, h, w].
-
         """
         predictions = []
         for i in range(pred_frames):
@@ -192,7 +190,6 @@ class VideoPredictionModel(nn.Module):
 
         Returns: A dictionary containing the averages value for each loss type specified for usage,
         as well as the value for the 'indicator' loss (the loss used for determining overall model improvement).
-
         """
         self.eval()
         loop = tqdm(loader)

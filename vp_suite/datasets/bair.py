@@ -106,9 +106,6 @@ def split_bair_traj_files(data_dir: Path, delete_tfrecords: bool):
     Args:
         data_dir (Path): Specified path to dataset.
         delete_tfrecords (bool): If True, delete the .tfrecord files after extraction.
-
-    Returns:
-
     """
     bair_ep_length = 30
 

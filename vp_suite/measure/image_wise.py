@@ -1,7 +1,9 @@
-r"""Module for image-wise measures.
+r"""
+This module hosts several popular image-wise measures, such as Mean-Square Error (MSE),
+Structural Similarity Index (SSIM) or Learned Perceptual Image Patch Similarity (LPIPS).
 
 APPLIES TO ALL LOSSES:
-- expected data type: torch.tensor (torch.float)
+- expected data type: torch.Tensor (data type: torch.float)
 - expected shape: [b, t, c, h, w] ([b, t, 3, h, w] for LPIPS and SSIM)
 """
 
@@ -14,7 +16,7 @@ from vp_suite.base.base_measure import BaseMeasure
 
 class MSE(BaseMeasure):
     r"""
-
+    This class implements the pixel-wise Mean-Square Error (MSE/L2).
     """
     NAME = "Mean Squared Error (MSE) / L2 Loss"
 
@@ -25,7 +27,7 @@ class MSE(BaseMeasure):
 
 class L1(BaseMeasure):
     r"""
-
+    This class implements the pixel-wise Mean Absolute Error (MAE/L1).
     """
     NAME = "Mean Absolute Error (MAE) / L1 Loss"
 
@@ -36,7 +38,8 @@ class L1(BaseMeasure):
 
 class SmoothL1(BaseMeasure):
     r"""
-
+    This class implements a smoothed L1 Loss, resembling the MSE/L2 loss for smaller discrepancies and
+    transitioning to the MAE/L1 loss for larger discrepancies.
     """
     NAME = "Smooth L1 Loss"
     
@@ -47,7 +50,7 @@ class SmoothL1(BaseMeasure):
 
 class PSNR(BaseMeasure):
     r"""
-
+    This class implements the Peak Signal-to-Noise Ratio, which is related to the MSE.
     """
     NAME = "Peak Signal to Noise Ratio (PSNR)"
     BIGGER_IS_BETTER = True
@@ -72,7 +75,10 @@ class PSNR(BaseMeasure):
 
 class LPIPS(BaseMeasure):
     r"""
-
+    This class implements the "Learned Perceptual Image Patch Similarity (LPIPS)"
+    from Zhang et al. (https://arxiv.org/abs/1801.03924), a perceptual measure that uses a pre-trained CNN to obtain
+    features from the given prediction and ground truth.
+    These perceptual features are then compared to yield the actual measurement value.
     """
     NAME = "Learned Perceptual Image Patch Similarity (LPIPS)"
     REFERENCE = "https://arxiv.org/abs/1801.03924"
@@ -90,7 +96,8 @@ class LPIPS(BaseMeasure):
 
 class SSIM(BaseMeasure):
     r"""
-
+    This class implements the structural similarity index (SSIM),
+    as introduced in Zhou et al. (https://ieeexplore.ieee.org/document/1284395).
     """
     NAME = "Structural Similarity (SSIM)"
     REFERENCE = "https://ieeexplore.ieee.org/document/1284395"

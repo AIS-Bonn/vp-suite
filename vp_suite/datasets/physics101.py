@@ -34,12 +34,6 @@ class Physics101Dataset(VPDataset):
     trainval_test_seed = 1612 #: The random seed used to separate training/validation and testing data. Value from the 'Noether Networks' code
 
     def __init__(self, split, **dataset_kwargs):
-        r"""
-
-        Args:
-            split ():
-            **dataset_kwargs ():
-        """
         super(Physics101Dataset, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["vid_filepaths"])
 

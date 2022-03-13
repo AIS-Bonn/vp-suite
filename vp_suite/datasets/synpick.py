@@ -1,14 +1,11 @@
 import json
 import math
 import os
-import random
-import shutil
 from pathlib import Path
 
 import cv2
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from vp_suite.utils.utils import most
 from vp_suite.base.base_dataset import VPDataset, VPData
@@ -138,18 +135,10 @@ class SynpickMovingDataset(VPDataset):
 
     def download_and_prepare_dataset(self):
         self.DEFAULT_DATA_DIR.mkdir(parents=True, exist_ok=True)
-        d_path_processed = self.DEFAULT_DATA_DIR / "processed"
         d_path_raw = self.DEFAULT_DATA_DIR / "raw"
-        seed = 42
-        resize_ratio = 0.125  # yields imgs of size [135, 240]
-
         if not os.path.exists(str(d_path_raw)):
             print("downloading SynPick (might take a while)...")
             download_synpick(d_path_raw)
-
-        elif not os.path.exists(str(d_path_processed)):
-            print("preparing trajectory files...")
-            prepare_synpick(d_path_raw, d_path_processed, seed, resize_ratio, self.train_to_val_ratio)
 
 # === SynPick data preparation tools ===========================================
 
@@ -163,118 +152,3 @@ def download_synpick(d_path_raw: Path):
     raise NotImplementedError("SynPick dataset is not yet downloadable! "
                               "Please contact the paper authors to resolve this issue.")
     # d_path_raw.mkdir(parents=True)
-
-def prepare_synpick(in_path, out_path, seed, resize_ratio, train_to_val_ratio):
-    r"""
-    DEPRECATED
-
-    Args:
-        in_path ():
-        out_path ():
-        seed ():
-        resize_ratio ():
-        train_to_val_ratio ():
-
-    Returns:
-
-    """
-    random.seed(seed)
-    train_path = in_path / "train"
-    test_path = in_path / "test"
-
-    # get all training image FPs for rgb
-    rgbs = sorted(train_path.glob("*/rgb/*.jpg"))
-    segs = sorted(train_path.glob("*/class_index_masks/*.png"))
-    scene_gts = sorted(train_path.glob("*/scene_gt.json"))
-
-    num_ep = int(Path(rgbs[-1]).parent.parent.stem) + 1
-    train_eps = [i for i in range(num_ep)]
-    random.shuffle(train_eps)
-    cut = int(num_ep * train_to_val_ratio)
-    train_eps = train_eps[:cut]
-
-    # split rgb files into train and val by episode number only , as we need contiguous motions for video
-    train_rgbs, val_rgbs, train_segs, val_segs, train_scene_gts, val_scene_gts = [], [], [], [], [], []
-    for rgb, seg in zip(rgbs, segs):
-        ep = int(Path(rgb).parent.parent.stem) + 1
-        if ep in train_eps:
-            train_rgbs.append(rgb)
-            train_segs.append(seg)
-        else:
-            val_rgbs.append(rgb)
-            val_segs.append(seg)
-
-    for scene_gt in scene_gts:
-        ep = int(Path(scene_gt).parent.stem) + 1
-        if ep in train_eps:
-            train_scene_gts.append(scene_gt)
-        else:
-            val_scene_gts.append(scene_gt)
-
-    test_rgbs = sorted(test_path.glob("*/rgb/*.jpg"))
-    test_segs = sorted(test_path.glob("*/class_index_masks/*.png"))
-    test_scene_gts = sorted(test_path.glob("*/scene_gt.json"))
-
-    all_img_fps = [train_rgbs, train_segs, val_rgbs, val_segs, test_rgbs, test_segs]
-    all_scene_gts = [train_scene_gts, val_scene_gts, test_scene_gts]
-
-    copy_synpick_imgs(all_img_fps, out_path, resize_ratio)
-    copy_synpick_scene_gts(all_scene_gts, out_path)
-
-def copy_synpick_imgs(all_fps, out_path, resize_ratio):
-    r"""
-    DEPRECATED
-
-    Args:
-        all_fps ():
-        out_path ():
-        resize_ratio ():
-
-    Returns:
-
-    """
-
-    # prepare and execute file copying
-    all_out_paths = [(out_path / "train" / "rgb"), (out_path / "train" / "masks"),
-                     (out_path / "val" / "rgb"), (out_path / "val" / "masks"),
-                     (out_path / "test" / "rgb"), (out_path / "test" / "masks")]
-
-    for op in all_out_paths:
-        op.mkdir(parents=True)
-
-    # copy files to new folder structure
-    for fps, op in zip(all_fps, all_out_paths):
-        for fp in tqdm(fps, postfix=op.parent.stem + "/" + op.stem):
-            fp = Path(fp)
-            img = cv2.imread(str(fp.resolve()), cv2.IMREAD_COLOR if "jpg" in fp.suffix else cv2.IMREAD_GRAYSCALE)
-            resized_img = cv2.resize(img, None, fx=resize_ratio, fy=resize_ratio, interpolation=cv2.INTER_AREA)
-            ep_number = ''.join(filter(str.isdigit, fp.parent.parent.stem)).zfill(6)
-            out_fp = "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
-            cv2.imwrite(str((op / out_fp).resolve()), resized_img)
-
-def copy_synpick_scene_gts(all_fps, out_path):
-    r"""
-    DEPRECATED
-
-    Args:
-        all_fps ():
-        out_path ():
-
-    Returns:
-
-    """
-
-    # prepare and execute file copying
-    all_out_paths = [(out_path / "train" / "scene_gt"), (out_path / "val" / "scene_gt"),
-                     (out_path / "test" / "scene_gt")]
-
-    for op in all_out_paths:
-        op.mkdir(parents=True)
-
-    # copy files to new folder structure
-    for fps, op in zip(all_fps, all_out_paths):
-        for fp in fps:
-            ep_number = ''.join(filter(str.isdigit, fp.parent.stem)).zfill(6)
-            out_fp = op / "{}_{}{}".format(ep_number, fp.stem, ".".join(fp.suffixes))
-            print(fp, out_fp)
-            shutil.copyfile(fp, out_fp)

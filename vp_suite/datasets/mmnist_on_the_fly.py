@@ -7,10 +7,17 @@ import vp_suite.constants as constants
 
 
 class MovingMNISTOnTheFly(VPDataset):
-    """
-    Custom MovingMNIST dataset that generates data on-the-fly.
-    """
+    r"""
+    Dataset class for the dataset "Moving MNIST", as firstly encountered in
+    "Unsupervised Learning of Video Representations using LSTMs" by Srivastava et al.
+    (https://arxiv.org/pdf/1502.04681v3.pdf).
 
+    Each sequence depicts two digits from the MNIST dataset moving linearly in front of a black background,
+    occasionally bouncing off the wall and overlapping each other.
+
+    As opposed to the other Moving MNIST dataset, this one generates the digit sequences on-the-fly,
+    randomly sampling digits and velocities. Besides the digit templates, no data is downloaded.
+    """
     NAME = "Moving MNIST - On the fly"
     IS_DOWNLOADABLE = "Yes (MNIST digits)"
     ON_THE_FLY = True
@@ -32,9 +39,6 @@ class MovingMNISTOnTheFly(VPDataset):
     n_seqs = None
 
     def __init__(self, split, **dataset_kwargs):
-        """
-        Initializer of the moving MNIST dataset
-        """
         super(MovingMNISTOnTheFly, self).__init__(split, **dataset_kwargs)
         self.NON_CONFIG_VARS.extend(["data", "rng", "digit_id_rng", "speed_rng", "acc_rng", "pos_rng",
                                      "get_digit_id", "get_speed", "get_acc", "get_init_pos"])
@@ -63,9 +67,7 @@ class MovingMNISTOnTheFly(VPDataset):
 
     def reset_rng(self):
         r"""
-        creating RNG-based generation helpers
-        Returns:
-
+        Creates RNG-based generation helpers for the on-the-fly generation, re-setting the RNG.
         """
         split_rng_seed = self.SPLIT_SEED_OFFSETS[self.split](self.rng_seed)
         self.digit_id_rng = np.random.default_rng(split_rng_seed)
@@ -74,7 +76,6 @@ class MovingMNISTOnTheFly(VPDataset):
         self.pos_rng = np.random.default_rng(split_rng_seed)
 
     def __getitem__(self, i) -> VPData:
-        """ """
         if not self.ready_for_usage:
             raise RuntimeError("Dataset is not yet ready for usage (maybe you forgot to call set_seq_len()).")
 
@@ -104,7 +105,7 @@ class MovingMNISTOnTheFly(VPDataset):
 
     def _sample_digit(self):
         """
-        Sampling digit, original position and speed
+        Samples digit, initial position and speed.
         """
         digit_id = self.get_digit_id()
         cur_digit = np.array(self.data[digit_id][0]) / 255  # sample IDX, digit
@@ -131,7 +132,7 @@ class MovingMNISTOnTheFly(VPDataset):
 
     def _move_digit(self, speed, cur_pos, img_size, digit_size):
         """
-        Performing digit movement. Also producing bounce and making appropriate changes
+        Performs digit movement. Also produces bounces and makes appropriate changes.
         """
         next_pos = cur_pos + speed
         for i, p in enumerate(next_pos):
@@ -147,7 +148,7 @@ class MovingMNISTOnTheFly(VPDataset):
 
     def download_and_prepare_dataset(self):
         r"""
-        Downloads the MNIST data so that on-the-fly generation can take place.
+        Downloads the MNIST digit data so that on-the-fly generation can take place.
         """
         _ = MNIST(root=self.DEFAULT_DATA_DIR, train=True, download=True)
         _ = MNIST(root=self.DEFAULT_DATA_DIR, train=False, download=True)

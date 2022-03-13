@@ -26,6 +26,8 @@ class BaseMeasure(nn.Module):
     def __init__(self, device: str):
         r"""
         Instantiates the measure class by setting the device.
+        Additionally, for the derived measure classes,
+        instantiates the criterion that is used to calculate the measure value.
 
         Args:
             device (str): A string specifying whether to use the GPU for calculations (`cuda`) or the CPU (`cpu`).
