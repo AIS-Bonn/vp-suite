@@ -6,24 +6,10 @@ from vp_suite.base.base_model_block import ModelBlock
 
 class ConvLSTMCell(nn.Module):
     r"""
-    Source: https://github.com/ndrplz/ConvLSTM_pytorch
+    This class implements a single ConvLSTM cell for the ConvLSTM
+    implemented in https://github.com/ndrplz/ConvLSTM_pytorch.
     """
     def __init__(self, input_dim, hidden_dim, kernel_size, bias):
-        """
-        Initialize ConvLSTM cell.
-
-        Parameters
-        ----------
-        input_dim: int
-            Number of channels of input tensor.
-        hidden_dim: int
-            Number of channels of hidden state.
-        kernel_size: (int, int)
-            Size of the convolutional kernel.
-        bias: bool
-            Whether or not to add the bias.
-        """
-
         super(ConvLSTMCell, self).__init__()
 
         self.input_dim = input_dim
@@ -63,31 +49,10 @@ class ConvLSTMCell(nn.Module):
 
 
 class ConvLSTM(ModelBlock):
-
-    """
-
-    Parameters:
-        input_dim: Number of channels in input
-        hidden_dim: Number of hidden channels
-        kernel_size: Size of kernel in convolutions
-        num_layers: Number of LSTM layers stacked on each other
-        batch_first: Whether or not dimension 0 is the batch or not
-        bias: Bias or no bias in Convolution
-        return_all_layers: Return the list of computations for all layers
-        Note: Will do same padding.
-
-    Input:
-        A tensor of size B, T, C, H, W or T, B, C, H, W
-    Output:
-        A tuple of two lists of length num_layers (or length 1 if return_all_layers is False).
-            0 - layer_output_list is the list of lists of length T of each output
-            1 - last_state_list is the list of last states
-                    each element of the list is a tuple (h, c) for hidden state and memory
-    Example:
-        >> x = torch.rand((32, 10, 64, 128, 128))
-        >> convlstm = ConvLSTM(64, 16, 3, 1, True, True, False)
-        >> _, last_states = convlstm(x)
-        >> h = last_states[0][0]  # 0 for layer index, 0 for h index
+    r"""
+    This class implements a convolutional LSTM (which was introduced in Shi et al. (https://arxiv.org/abs/1506.04214)
+    and originally implemented in https://github.com/Hzzone/Precipitation-Nowcasting). This highly popular version
+     (implemented in https://github.com/ndrplz/ConvLSTM_pytorch) implements slightly different dynamics.
     """
     NAME = "ConvLSTM (Palazzi, Abati)"
     CODE_REFERENCE = "https://github.com/ndrplz/ConvLSTM_pytorch"
@@ -125,19 +90,6 @@ class ConvLSTM(ModelBlock):
         self.cell_list = nn.ModuleList(cell_list)
 
     def forward(self, input_tensor, hidden_state=None):
-        """
-
-        Parameters
-        ----------
-        input_tensor: todo
-            5-D Tensor either of shape (t, b, c, h, w) or (b, t, c, h, w)
-        hidden_state: todo
-            None. todo implement stateful
-
-        Returns
-        -------
-        last_state_list, layer_output
-        """
         if not self.batch_first:
             # (t, b, c, h, w) -> (b, t, c, h, w)
             input_tensor = input_tensor.permute(1, 0, 2, 3, 4)

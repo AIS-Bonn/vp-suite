@@ -8,25 +8,18 @@ from vp_suite.base.base_model import VideoPredictionModel
 
 class UNet3D(VideoPredictionModel):
     r"""
-
+    This Model is closely related to the UNet architecture (Ronneberger et al., arxiv.org/abs/1505.04597).
+    In contrast to the original Unet, the 2D Convolutions are replaced by 3D convolutions that also incorporate
+    the temporal dimension present in videos (which are sequences of video frames).
     """
-
-    # model-specific constants
     NAME = "UNet-3D"
     REQUIRED_ARGS = ["img_shape", "action_size", "tensor_value_range", "temporal_dim"]
     CAN_HANDLE_ACTIONS = True
 
-    # model hyperparameters
-    features = [8, 16, 32, 64]  #: TODO
-    temporal_dim = None  #: TODO
+    features = [8, 16, 32, 64]  #: Channel dimensionality per encoding/decoding stage
+    temporal_dim = None  #: Number of consecutive frames used for 3D convolution
 
     def __init__(self, device, **model_kwargs):
-        r"""
-
-        Args:
-            device ():
-            **model_kwargs ():
-        """
         super(UNet3D, self).__init__(device, **model_kwargs)
 
         self.MIN_CONTEXT_FRAMES = self.temporal_dim
@@ -48,7 +41,7 @@ class UNet3D(VideoPredictionModel):
                 pooled_zeros = self.pool(zeros)
                 cur_img_h, cur_img_w = pooled_zeros.shape[-2:]
                 cur_in_channels += self.action_size
-            self.downs.append(DoubleConv3d(in_c=cur_in_channels, out_c=feature))
+            self.downs.append(DoubleConv3d(in_channels=cur_in_channels, out_channels=feature))
             self.time3ds.append(nn.Conv3d(in_channels=feature, out_channels=feature, kernel_size=(self.temporal_dim, 1, 1)))
             cur_in_channels = feature
 
@@ -59,31 +52,20 @@ class UNet3D(VideoPredictionModel):
         if self.action_conditional:
             self.bottleneck_action_inflate = nn.Linear(in_features=self.action_size,
                                                        out_features=self.action_size * bn_h * bn_w)
-            self.bottleneck = DoubleConv2d(in_c=bn_feat + self.action_size, out_c=bn_feat * 2)
+            self.bottleneck = DoubleConv2d(in_channels=bn_feat + self.action_size, out_channels=bn_feat * 2)
         else:
-            self.bottleneck = DoubleConv2d(in_c=bn_feat, out_c=bn_feat * 2)
+            self.bottleneck = DoubleConv2d(in_channels=bn_feat, out_channels=bn_feat * 2)
 
         # up
         for feature in reversed(self.features):
             self.ups.append(nn.ConvTranspose2d(in_channels=feature * 2, out_channels=feature,
                                                kernel_size=(2, 2), stride=(2, 2)))
-            self.ups.append(DoubleConv2d(in_c=feature * 2, out_c=feature))
+            self.ups.append(DoubleConv2d(in_channels=feature * 2, out_channels=feature))
 
         # final
         self.final_conv = nn.Conv2d(in_channels=self.features[0], out_channels=self.img_c, kernel_size=(1, 1))
 
     def pred_1(self, x, **kwargs):
-        r"""
-        input: T frames: [b, T, c, h, w] and T actions: [b, T, a]
-        output: single frame: [b, c, h, w]
-
-        Args:
-            x ():
-            **kwargs ():
-
-        Returns:
-
-        """
         T_in = x.shape[1]
         x = x[:, -self.temporal_dim:].permute((0, 2, 1, 3, 4))  # [b, c, temporal_dim, h, w]
         actions = kwargs.get("actions", torch.zeros(1, 1))
@@ -132,18 +114,6 @@ class UNet3D(VideoPredictionModel):
         return self.final_conv(x)
 
     def forward(self, x, pred_frames=1, **kwargs):
-        r"""
-        input: T_in frames: [b, T_in, c, h, w]
-        output: pred_frames (P) frames: [b, P, c, h, w]
-
-        Args:
-            x ():
-            pred_frames ():
-            **kwargs ():
-
-        Returns:
-
-        """
         preds = []
 
         # actions

@@ -13,18 +13,11 @@ from vp_suite.base.base_model_block import ModelBlock
 
 class Autoencoder(ModelBlock):
     r"""
-
+    This class implements an autoencoder, consisting of a convolutional encoder and a decoder.
     """
     NAME = "Autoencoder"
 
     def __init__(self, img_shape, encoded_channels, device):
-        r"""
-
-        Args:
-            img_shape ():
-            encoded_channels ():
-            device ():
-        """
         super(Autoencoder, self).__init__()
 
         self.img_shape = img_shape
@@ -41,50 +34,23 @@ class Autoencoder(ModelBlock):
         self.encoded_numel = encoded_zeros.numel()
 
     def build_models(self):
-        r"""
-
-        Returns:
-
-        """
         self.encoder = Encoder(in_channels=self.img_c, out_channels=self.enc_c)
         self.decoder = Decoder(in_channels=self.enc_c, out_shape=self.img_shape)
 
     def encode(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.encoder(x)
 
     def decode(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.decoder(x)
 
 
 class Encoder(ModelBlock):
     r"""
-
+    This class implements a convolutional encoder.
     """
     NAME = "Encoder"
 
     def __init__(self, in_channels, out_channels):
-        r"""
-
-        Args:
-            in_channels ():
-            out_channels ():
-        """
         super().__init__()
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -96,14 +62,6 @@ class Encoder(ModelBlock):
         self.mean_layer = nn.Conv2d(in_channels=64, out_channels=self.out_channels, kernel_size=3, stride=1)
 
     def forward(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         x = self.act_fn(self.conv1(x))
         x = self.act_fn(self.conv2(x))
         x = self.act_fn(self.mean_layer(x))
@@ -113,17 +71,11 @@ class Encoder(ModelBlock):
 
 class Decoder(ModelBlock):
     r"""
-
+    This class implements a convolutional decoder.
     """
     NAME = "Decoder"
 
     def __init__(self, in_channels, out_shape):
-        r"""
-
-        Args:
-            in_channels ():
-            out_shape ():
-        """
         super().__init__()
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -138,14 +90,6 @@ class Decoder(ModelBlock):
 
 
     def forward(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         x = self.act_fn(self.fc1(x))
         x = self.act_fn(self.conv1(x))
         x = self.act_fn(self.conv2(x))
@@ -155,33 +99,20 @@ class Decoder(ModelBlock):
 
 class DCGANEncoder(ModelBlock):
     r"""
-
+    The class implements a DCGAN encoder, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
     NAME = "DCGAN Encoder"
+    PAPER_REFERENCE = "arxiv.org/abs/1511.06434"
 
-    def __init__(self, nc=1, nf=32):
-        r"""
-
-        Args:
-            nc ():
-            nf ():
-        """
+    def __init__(self, img_channels=1, enc_channels=32):
         super(DCGANEncoder, self).__init__()
         # input is (1) x 64 x 64
-        self.c1 = DCGANConv(nc, nf, stride=2)  # (32) x 32 x 32
-        self.c2 = DCGANConv(nf, nf, stride=1)  # (32) x 32 x 32
-        self.c3 = DCGANConv(nf, 2 * nf, stride=2)  # (64) x 16 x 16
+        self.c1 = DCGANConv(img_channels, enc_channels, stride=2)  # (32) x 32 x 32
+        self.c2 = DCGANConv(enc_channels, enc_channels, stride=1)  # (32) x 32 x 32
+        self.c3 = DCGANConv(enc_channels, 2 * enc_channels, stride=2)  # (64) x 16 x 16
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        h1 = self.c1(input)
+    def forward(self, x):
+        h1 = self.c1(x)
         h2 = self.c2(h1)
         h3 = self.c3(h2)
         return h3
@@ -189,28 +120,21 @@ class DCGANEncoder(ModelBlock):
 
 class DCGANDecoder(ModelBlock):
     r"""
-
+    The class implements a DCGAN decoder, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
     NAME = "DCGAN Decoder"
+    PAPER_REFERENCE = "arxiv.org/abs/1511.06434"
 
-    def __init__(self, out_size, nc=1, nf=32):
+    def __init__(self, out_size, img_channels=1, enc_channels=32):
         super(DCGANDecoder, self).__init__()
-        self.upc1 = DCGANConvTranspose(2 * nf, nf, stride=2)  # (32) x 32 x 32
-        self.upc2 = DCGANConvTranspose(nf, nf, stride=1)  # (32) x 32 x 32
-        self.upc3 = nn.ConvTranspose2d(in_channels=nf, out_channels=nc, kernel_size=(3, 3), stride=2, padding=1,
-                                       output_padding=1)  # (nc) x 64 x 64
+        self.upc1 = DCGANConvTranspose(2 * enc_channels, enc_channels, stride=2)  # (32) x 32 x 32
+        self.upc2 = DCGANConvTranspose(enc_channels, enc_channels, stride=1)  # (32) x 32 x 32
+        self.upc3 = nn.ConvTranspose2d(in_channels=enc_channels, out_channels=img_channels,
+                                       kernel_size=(3, 3), stride=2, padding=1, output_padding=1)  # (nc) x 64 x 64
         self.resize = Resize(size=out_size)
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        d1 = self.upc1(input)
+    def forward(self, x):
+        d1 = self.upc1(x)
         d2 = self.upc2(d1)
         d3 = self.upc3(d2)
         out = self.resize(d3)

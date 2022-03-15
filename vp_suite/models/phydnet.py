@@ -11,38 +11,34 @@ from vp_suite.model_blocks.phydnet import K2M, DecoderSplit, EncoderSplit, PhyCe
 
 class PhyDNet(VideoPredictionModel):
     r"""
-
+    This class implements the PhyDNet prediction model, as introduced by Le Guen and Thome in
+    https://arxiv.org/abs/2003.01460 and implemented in https://github.com/vincent-leguen/PhyDNet.
+    PhyDNet aims to disentangle physical dynamics such as movement parameters
+    from so-called 'residual' dynamics such as appearance.
+    For the physical dynamics, the PhyCell performs PDE-Constrained prediction in latent space.
+    For the residual dynamics, a modified version of the ConvLSTM cell is used that permits recurrent steps
+    one frame at a time.
     """
-
-    # model-specific constants
     NAME = "PhyDNet"
-    PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"  #: The paper where this model was introduced first.
-    CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"  #: The code location of the reference implementation.
-    MATCHES_REFERENCE: str = "No"  #: A comment indicating whether the implementation in this package matches the reference.
+    PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"
+    CODE_REFERENCE = "https://github.com/vincent-leguen/PhyDNet"
+    MATCHES_REFERENCE: str = "Not Yet"
     CAN_HANDLE_ACTIONS = True
 
-    # model hyperparameters
-    phycell_n_layers = 1
-    phycell_channels = 49
-    phycell_kernel_size = (7, 7)
-    convlstm_n_layers = 3
-    convlstm_hidden_dims = [128, 128, 64]
-    convlstm_kernel_size = (3, 3)
+    phycell_n_layers = 1  #: Number of PhyCell layers
+    phycell_channels = 49  #: Channel dimensionality for the PhyCells
+    phycell_kernel_size = (7, 7)  #: PhyCell kernel size
+    convlstm_n_layers = 3  #: Number of ConvCell layers
+    convlstm_hidden_dims = [128, 128, 64]  #: Channel dimensionality per ConvCell layer
+    convlstm_kernel_size = (3, 3)  #: ConvCell kernel size
 
-    # model training hyperparams
-    moment_loss_scale = 1.0
-    teacher_forcing_decay = 0.003
+    moment_loss_scale = 1.0  #: Scaling factor for the moment loss (for PDE-Constrained prediction by the PhyCells)
+    teacher_forcing_decay = 0.003  #: Per-Episode decrease of the teacher forcing ratio (Starts out at 1.0)
 
     def __init__(self, device, **model_kwargs):
-        r"""
-
-        Args:
-            device ():
-            **model_kwargs ():
-        """
         super(PhyDNet, self).__init__(device, **model_kwargs)
 
-        self.encoder_E = DCGANEncoder(nc=self.img_c).to(self.device)
+        self.encoder_E = DCGANEncoder(img_channels=self.img_c).to(self.device)
         self.encoder_Ep = EncoderSplit().to(self.device)
         self.encoder_Er = EncoderSplit().to(self.device)
 
@@ -53,7 +49,7 @@ class PhyDNet(VideoPredictionModel):
 
         self.decoder_Dp = DecoderSplit().to(self.device)
         self.decoder_Dr = DecoderSplit().to(self.device)
-        self.decoder_D = DCGANDecoder(out_size=self.img_shape[1:], nc=self.img_c).to(self.device)
+        self.decoder_D = DCGANDecoder(out_size=self.img_shape[1:], img_channels=self.img_c).to(self.device)
 
         phycell_hidden_dims = [self.phycell_channels] * self.phycell_n_layers
         self.phycell = PhyCell(input_size=self.shape_Ep[1:], input_dim=self.shape_Ep[0],
@@ -75,17 +71,6 @@ class PhyDNet(VideoPredictionModel):
                 ind += 1
 
     def encoder_fwd(self, frame, action, first_timestep=False, decoding=False):
-        r"""
-
-        Args:
-            frame ():
-            action ():
-            first_timestep ():
-            decoding ():
-
-        Returns:
-
-        """
         frame = self.encoder_E(frame)  # general encoder 64x64x1 -> 32x32x32
         input_phys = None if decoding else self.encoder_Ep(frame)
         input_conv = self.encoder_Er(frame)
@@ -104,32 +89,9 @@ class PhyDNet(VideoPredictionModel):
         return out_phys, hidden1, output_image, out_phys, out_conv
 
     def pred_1(self, x, **kwargs):
-        r"""
-
-        Args:
-            x ():
-            **kwargs ():
-
-        Returns:
-
-        """
         return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_frames=1, **kwargs):
-        r"""
-
-        Note:
-            For this model, forward() is used for inference only (no training).
-
-        Args:
-            x ():
-            pred_frames ():
-            **kwargs ():
-
-        Returns:
-
-        """
-
         # in training mode (default: False), returned sequence starts with 2nd context frame,
         # and the moment regularization loss is calculated.
         train = kwargs.get("train", False)
@@ -176,18 +138,16 @@ class PhyDNet(VideoPredictionModel):
 
     def train_iter(self, config, data_loader, optimizer, loss_provider, epoch):
         r"""
+        PhyDNet's training iteration utilizes a scheduled teacher forcing ratio.
+        Otherwise, the iteration logic is the same as in the default :meth:`train_iter()` function.
 
         Args:
-            config ():
-            data_loader ():
-            optimizer ():
-            loss_provider ():
-            epoch ():
-
-        Returns:
-
+            config (dict): The configuration dict of the current training run (combines model, dataset and run config)
+            data_loader (DataLoader): Training data is sampled from this loader.
+            optimizer (Optimizer): The optimizer to use for weight update calculations.
+            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
+            epoch (int): The current epoch.
         """
-
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * self.teacher_forcing_decay)
         loop = tqdm(data_loader)
         for batch_idx, data in enumerate(loop):

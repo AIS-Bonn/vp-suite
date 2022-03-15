@@ -12,7 +12,8 @@ from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
 
 class PhyCell_Cell(ModelBlock):
     r"""
-
+    This class implements a single Cell of the 'PhyCell' component, as introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
     """
     NAME = "PhyCell - Cell"
     PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"
@@ -20,16 +21,6 @@ class PhyCell_Cell(ModelBlock):
     MATCHES_REFERENCE = "Not Yet"
 
     def __init__(self, input_dim, action_conditional, action_size, hidden_dim, kernel_size, bias=True):
-        r"""
-
-        Args:
-            input_dim ():
-            action_conditional ():
-            action_size ():
-            hidden_dim ():
-            kernel_size ():
-            bias ():
-        """
         super(PhyCell_Cell, self).__init__()
         self.input_dim = input_dim
         self.action_size = action_size
@@ -56,17 +47,6 @@ class PhyCell_Cell(ModelBlock):
                                                 out_channels=self.input_dim, kernel_size=(1, 1))
 
     def forward(self, frame, action, hidden):
-        r"""
-        x [batch_size, hidden_dim, height, width]
-
-        Args:
-            frame ():
-            action ():
-            hidden ():
-
-        Returns:
-
-        """
         if self.action_conditional:
             inflated_action = action.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, *frame.shape[-2:])
             frame_action = torch.cat([frame, inflated_action], dim=1)  # concatenate along channel axis
@@ -84,7 +64,8 @@ class PhyCell_Cell(ModelBlock):
 
 class PhyCell(ModelBlock):
     r"""
-
+    This class implements the 'PhyCell' component, as introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
     """
     NAME = "PhyCell"
     PAPER_REFERENCE = "https://arxiv.org/abs/2003.01460"
@@ -93,18 +74,6 @@ class PhyCell(ModelBlock):
 
     def __init__(self, input_size, input_dim, hidden_dims, n_layers, kernel_size,
                  action_conditional, action_size, device):
-        r"""
-
-        Args:
-            input_size ():
-            input_dim ():
-            hidden_dims ():
-            n_layers ():
-            kernel_size ():
-            action_conditional ():
-            action_size ():
-            device ():
-        """
         super(PhyCell, self).__init__()
         self.input_size = input_size
         self.input_dim = input_dim
@@ -124,17 +93,6 @@ class PhyCell(ModelBlock):
         self.cell_list = nn.ModuleList(cell_list)
 
     def forward(self, frame, action, first_timestep=False):
-        r"""
-        in: [batch_size, channels, width, height]
-
-        Args:
-            frame ():
-            action ():
-            first_timestep ():
-
-        Returns:
-
-        """
         batch_size = frame.data.size()[0]
         if (first_timestep):
             self.init_hidden(batch_size)  # init Hidden at each forward start
@@ -144,53 +102,27 @@ class PhyCell(ModelBlock):
                 self.H[j] = cell(frame, action, self.H[j])
             else:
                 self.H[j] = cell(self.H[j - 1], action, self.H[j])
-
         return self.H, self.H
 
     def init_hidden(self, batch_size):
-        r"""
-
-        Args:
-            batch_size ():
-
-        Returns:
-
-        """
         self.H = []
         for i in range(self.n_layers):
             self.H.append(
                 torch.zeros(batch_size, self.input_dim, self.input_size[0], self.input_size[1]).to(self.device))
 
     def _set_hidden(self, H):
-        r"""
-
-        Args:
-            H ():
-
-        Returns:
-
-        """
         self.H = H
 
 
 class SingleStepConvLSTM(nn.Module):
     r"""
-
+    This class implements a ConvLSTM-Like module used by the PhyDNet introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
+    As opposed to a regular ConvLSTM, this module processes each frame in a separate :meth:`forward()` call.
     """
     def __init__(self, input_size, input_dim, hidden_dims, n_layers, kernel_size,
                  action_conditional, action_size, device):
-        r"""
 
-        Args:
-            input_size ():
-            input_dim ():
-            hidden_dims ():
-            n_layers ():
-            kernel_size ():
-            action_conditional ():
-            action_size ():
-            device ():
-        """
         super(SingleStepConvLSTM, self).__init__()
         self.input_size = input_size
         self.input_dim = input_dim
@@ -213,19 +145,8 @@ class SingleStepConvLSTM(nn.Module):
         self.cell_list = nn.ModuleList(cell_list)
 
     def forward(self, frame, action, first_timestep=False):
-        r"""
-        in: [batch_size, channels, width, height]
-
-        Args:
-            frame ():
-            action ():
-            first_timestep ():
-
-        Returns:
-
-        """
         batch_size = frame.data.size()[0]
-        if (first_timestep):
+        if first_timestep:
             self.init_hidden(batch_size)  # init Hidden at each forward start
 
         input = frame
@@ -242,14 +163,6 @@ class SingleStepConvLSTM(nn.Module):
         return (self.H, self.C), self.H  # (hidden, output)
 
     def init_hidden(self, batch_size):
-        r"""
-
-        Args:
-            batch_size ():
-
-        Returns:
-
-        """
         self.H, self.C = [], []
         for i in range(self.n_layers):
             self.H.append(
@@ -258,82 +171,49 @@ class SingleStepConvLSTM(nn.Module):
                 torch.zeros(batch_size, self.hidden_dims[i], self.input_size[0], self.input_size[1]).to(self.device))
 
     def set_hidden(self, hidden):
-        r"""
-
-        Args:
-            hidden ():
-
-        Returns:
-
-        """
         H, C = hidden
         self.H, self.C = H, C
 
 
 class EncoderSplit(nn.Module):
     r"""
-
+    This class implements an encoder as used by the PhyDNet introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
+    It is similar to the DCGANEncoder introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
-    def __init__(self, nc=64, nf=64):
-        r"""
-
-        Args:
-            nc ():
-            nf ():
-        """
+    def __init__(self, in_channels=64, enc_channels=64):
         super(EncoderSplit, self).__init__()
-        self.c1 = DCGANConv(nc, nf, stride=1)  # (64) x 16 x 16
-        self.c2 = DCGANConv(nf, nf, stride=1)  # (64) x 16 x 16
+        self.c1 = DCGANConv(in_channels, enc_channels, stride=1)  # (64) x 16 x 16
+        self.c2 = DCGANConv(enc_channels, enc_channels, stride=1)  # (64) x 16 x 16
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        h1 = self.c1(input)
+    def forward(self, x):
+        h1 = self.c1(x)
         h2 = self.c2(h1)
         return h2
 
 
 class DecoderSplit(nn.Module):
     r"""
-
+    This class implements a decoder as used by the PhyDNet introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
+    It is similar to the DCGANDecoder introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
-    def __init__(self, nc=64, nf=64):
-        r"""
-
-        Args:
-            nc ():
-            nf ():
-        """
+    def __init__(self, out_channels=64, enc_channels=64):
         super(DecoderSplit, self).__init__()
-        self.upc1 = DCGANConvTranspose(nf, nf, stride=1)  # (64) x 16 x 16
-        self.upc2 = DCGANConvTranspose(nf, nc, stride=1)  # (32) x 32 x 32
+        self.upc1 = DCGANConvTranspose(enc_channels, enc_channels, stride=1)  # (64) x 16 x 16
+        self.upc2 = DCGANConvTranspose(enc_channels, out_channels, stride=1)  # (32) x 32 x 32
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        d1 = self.upc1(input)
+    def forward(self, x):
+        d1 = self.upc1(x)
         d2 = self.upc2(d1)
         return d2
 
 
 class K2M(nn.Module):
     """
-    convert convolution kernel to moment matrix
-
-    Arguments:
-        shape (tuple of int): kernel shape
+    This class implements methods to convert convolution kernels to moment matrices.
+    Used by PhyDNet, which is introduced in Le Guen and Thome
+    (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
 
     Examples:
         >>> k2m = K2M([5,5])
@@ -341,11 +221,6 @@ class K2M(nn.Module):
         >>> m = k2m(k)
     """
     def __init__(self, shape):
-        r"""
-
-        Args:
-            shape ():
-        """
         super(K2M, self).__init__()
         self._size = torch.Size(shape)
         self._dim = len(shape)
@@ -365,45 +240,32 @@ class K2M(nn.Module):
     @property
     def M(self):
         r"""
-
-        Returns:
-
+        Returns: The moment matrix.
         """
         return list(self._buffers['_M'+str(j)] for j in range(self.dim()))
 
     @property
     def invM(self):
         r"""
-
-        Returns:
-
+        Returns: The inverse moment matrix.
         """
         return list(self._buffers['_invM'+str(j)] for j in range(self.dim()))
 
     def size(self):
         r"""
-
-        Returns:
-
+        Returns: The kernel size.
         """
         return self._size
 
     def dim(self):
         r"""
-
-        Returns:
-
+        Returns: The kernel dimensionality.
         """
         return self._dim
 
     def _packdim(self, x):
         r"""
-
-        Args:
-            x ():
-
-        Returns:
-
+        TODO
         """
         assert x.dim() >= self.dim()
         if x.dim() == self.dim():
@@ -414,12 +276,7 @@ class K2M(nn.Module):
 
     def forward(self, k):
         r"""
-
-        Args:
-            k (Tensor): torch.size=[...,*self.shape]
-
-        Returns:
-
+        TODO
         """
         sizek = k.size()
         k = self._packdim(k)
@@ -430,13 +287,7 @@ class K2M(nn.Module):
 
 def _apply_axis_left_dot(x, mats):
     r"""
-
-    Args:
-        x ():
-        mats ():
-
-    Returns:
-
+    TODO
     """
     assert x.dim() == len(mats) + 1
     sizex = x.size()
@@ -450,15 +301,7 @@ def _apply_axis_left_dot(x, mats):
 
 def tensordot(a,b,dim):
     r"""
-    tensordot in PyTorch, see numpy.tensordot?
-
-    Args:
-        a ():
-        b ():
-        dim ():
-
-    Returns:
-
+    TODO Tensordot in PyTorch, see numpy.tensordot?
     """
     l = lambda x,y:x*y
     if isinstance(dim,int):
@@ -502,14 +345,15 @@ def tensordot(a,b,dim):
     return c.view(sizea0+sizeb1)
 
 
-def find_divisor_for_group_norm(x):
+def find_divisor_for_group_norm(x: int):
     r"""
+    Find a good divisor for group norm layer initializations, looking for a value
+    that lies close to the square root of the input channel dims.
 
     Args:
-        x ():
+        x (int): Channel dims.
 
-    Returns:
-
+    Returns: The found divisor.
     """
     sq = math.floor(math.sqrt(x))
     while True:

@@ -6,6 +6,11 @@ from vp_suite.base.base_model_block import ModelBlock
 
 
 class Activation():
+    r"""
+    This class implements a customizable activation function, as used by the TrajGRU RNN
+    introduced in Shi et al. (https://arxiv.org/abs/1706.03458) and
+    implemented in https://github.com/Hzzone/Precipitation-Nowcasting.
+    """
     def __init__(self, act_type, negative_slope=0.2, inplace=True):
         super().__init__()
         self._act_type = act_type
@@ -24,6 +29,11 @@ class Activation():
 
 
 class BaseConvRNN(ModelBlock):
+    r"""
+    This class implements a base class for the TrajGRU RNN, as
+    introduced in Shi et al. (https://arxiv.org/abs/1706.03458) and
+    implemented in https://github.com/Hzzone/Precipitation-Nowcasting.
+    """
     def __init__(self, device, num_filter, in_h, in_w,
                  h2h_kernel=(3, 3), h2h_dilate=(1, 1),
                  i2h_kernel=(3, 3), i2h_stride=(1, 1),
@@ -58,7 +68,10 @@ class BaseConvRNN(ModelBlock):
 
 
 class TrajGRU(BaseConvRNN):
-
+    r"""
+    This class implements the TrajGRU RNN, as introduced in Shi et al. (https://arxiv.org/abs/1706.03458) and
+    implemented in https://github.com/Hzzone/Precipitation-Nowcasting.
+    """
     NAME = "TrajGRU"
     PAPER_REFERENCE = "https://arxiv.org/abs/1706.03458"
     CODE_REFERENCE = "https://github.com/Hzzone/Precipitation-Nowcasting"
@@ -199,6 +212,3 @@ class TrajGRU(BaseConvRNN):
             prev_h = next_h
 
         return torch.stack(outputs, dim=1), next_h
-
-
-

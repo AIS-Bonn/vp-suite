@@ -1,7 +1,6 @@
 r"""
 This module contains convolutional model blocks.
 """
-
 from torch import nn as nn
 
 from vp_suite.base.base_model_block import ModelBlock
@@ -9,135 +8,88 @@ from vp_suite.base.base_model_block import ModelBlock
 
 class DoubleConv2d(ModelBlock):
     r"""
-
+    This class implements a 2D double-conv block, as used in the popular UNet architecture
+    (Ronneberger et al., arxiv.org/abs/1505.04597).
     """
     NAME = "DoubleConv2d"
+    PAPER_REFERENCE = "arxiv.org/abs/1505.04597"
 
-    def __init__(self, in_c, out_c):
-        r"""
-
-        Args:
-            in_c ():
-            out_c ():
-        """
+    def __init__(self, in_channels, out_channels):
         super(DoubleConv2d, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=(3, 3), stride=(1, 1),
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
                       padding=1, padding_mode='replicate', bias=False),
-            nn.BatchNorm2d(out_c),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=(3, 3), stride=(1, 1),
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
                       padding=1, padding_mode='replicate', bias=False),
-            nn.BatchNorm2d(out_c),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.conv(x)
 
 
 class DoubleConv3d(ModelBlock):
     r"""
-
+    The class implements a 3D double-conv block, an extension of the :class:`DoubleConv2d` block
+    to also process the time dimension.
     """
     NAME = "DoubleConv3d"
 
-    def __init__(self, in_c, out_c):
+    def __init__(self, in_channels, out_channels):
         super(DoubleConv3d, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv3d(in_channels=in_c, out_channels=out_c, kernel_size=(3, 3, 3), stride=(1, 1, 1),
+            nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3, 3), stride=(1, 1, 1),
                       padding=1, padding_mode='replicate', bias=False),
-            nn.BatchNorm3d(out_c),
+            nn.BatchNorm3d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv3d(in_channels=out_c, out_channels=out_c, kernel_size=(3, 3, 3), stride=(1, 1, 1),
+            nn.Conv3d(in_channels=out_channels, out_channels=out_channels, kernel_size=(3, 3, 3), stride=(1, 1, 1),
                       padding=1, padding_mode='replicate', bias=False),
-            nn.BatchNorm3d(out_c),
+            nn.BatchNorm3d(out_channels),
             nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.conv(x)
 
 
 class DCGANConv(ModelBlock):
     r"""
-
+    The class implements a DCGAN conv layer, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
     NAME = "DCGAN - Conv"
+    PAPER_REFERENCE = "arxiv.org/abs/1511.06434"
 
-    def __init__(self, nin, nout, stride):
-        r"""
-
-        Args:
-            nin ():
-            nout ():
-            stride ():
-        """
+    def __init__(self, in_channels, out_channels, stride):
         super(DCGANConv, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(in_channels=nin, out_channels=nout, kernel_size=(3, 3), stride=stride, padding=1),
-            nn.GroupNorm(16, nout),
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), stride=stride, padding=1),
+            nn.GroupNorm(16, out_channels),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        return self.main(input)
+    def forward(self, x):
+        return self.main(x)
 
 
 class DCGANConvTranspose(ModelBlock):
     r"""
-
+    The class implements a DCGAN convTranspose layer, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
     NAME = "DCGAN - ConvTranspose"
+    PAPER_REFERENCE = "arxiv.org/abs/1511.06434"
 
-    def __init__(self, nin, nout, stride):
-        r"""
-
-        Args:
-            nin ():
-            nout ():
-            stride ():
-        """
+    def __init__(self, in_channels, out_channels, stride):
         super(DCGANConvTranspose, self).__init__()
         output_pad = int(stride == 2)
         self.main = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=nin, out_channels=nout, kernel_size=(3, 3), stride=stride, padding=1,
-                               output_padding=(output_pad, output_pad)),
-            nn.GroupNorm(16, nout),
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels,
+                               kernel_size=(3, 3), stride=stride, padding=1, output_padding=(output_pad, output_pad)),
+            nn.GroupNorm(16, out_channels),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-    def forward(self, input):
-        r"""
-
-        Args:
-            input ():
-
-        Returns:
-
-        """
-        return self.main(input)
+    def forward(self, x):
+        return self.main(x)

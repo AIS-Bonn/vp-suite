@@ -33,43 +33,43 @@ class EF_TrajGRU(Encoder_Forecaster):
 
     # convs
     enc_conv_names = ["conv1_leaky_1", "conv2_leaky_1", "conv3_leaky_1"]
-    enc_conv_k = [3, 3, 3]
-    enc_conv_s = [1, 2, 2]
-    enc_conv_p = [1, 1, 1]
+    enc_conv_k = [3, 3, 3]  #: Encoder conv block kernel sizes per layer
+    enc_conv_s = [1, 2, 2]  #: Encoder conv block strides per layer
+    enc_conv_p = [1, 1, 1]  #: Encoder conv block paddings per layer
 
     dec_conv_names = ["deconv1_leaky_1", "deconv2_leaky_1", "deconv3_leaky_1"]
-    dec_conv_k = [4, 4, 3]
-    dec_conv_s = [2, 2, 1]
-    dec_conv_p = [1, 1, 1]
+    dec_conv_k = [4, 4, 3]  #: Decoder conv block kernel sizes per layer
+    dec_conv_s = [2, 2, 1]  #: Decoder conv block strides per layer
+    dec_conv_p = [1, 1, 1]  #: Decoder conv block paddings per layer
 
     # rnns
-    enc_rnn_z = [0.0, 0.0, 0.0]
-    enc_rnn_L = [13, 13, 13]
-    enc_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]
-    enc_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]
-    enc_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]
-    enc_rnn_h2h_k = [(5, 5), (5, 5), (3, 3)]
-    enc_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]
+    enc_rnn_z = [0.0, 0.0, 0.0]  #: Encoder recurrent block zoneout
+    enc_rnn_L = [13, 13, 13]  #: Encoder recurrent block L parameter
+    enc_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]  #: Encoder recurrent block i2h kernel size
+    enc_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]  #: Encoder recurrent block i2h stride
+    enc_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]  #: Encoder recurrent block i2h padding
+    enc_rnn_h2h_k = [(5, 5), (5, 5), (3, 3)]  #: Encoder recurrent block h2h kernel size
+    enc_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]  #: Encoder recurrent block h2h dilation
 
-    dec_rnn_z = [0.0, 0.0, 0.0]  #: Zoneout
-    dec_rnn_L = [13, 13, 13]  #: L parameter
-    dec_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]
-    dec_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]
-    dec_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]
-    dec_rnn_h2h_k = [(3, 3), (5, 5), (5, 5)]
-    dec_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]
+    dec_rnn_z = [0.0, 0.0, 0.0]  #: Decoder recurrent block zoneout
+    dec_rnn_L = [13, 13, 13]  #: Decoder recurrent block L parameter
+    dec_rnn_i2h_k = [(3, 3), (3, 3), (3, 3)]  #: Decoder recurrent block i2h kernel size
+    dec_rnn_i2h_s = [(1, 1), (1, 1), (1, 1)]  #: Decoder recurrent block i2h stride
+    dec_rnn_i2h_p = [(1, 1), (1, 1), (1, 1)]  #: Decoder recurrent block i2h padding
+    dec_rnn_h2h_k = [(3, 3), (5, 5), (5, 5)]  #: Decoder recurrent block h2h kernel size
+    dec_rnn_h2h_d = [(1, 1), (1, 1), (1, 1)]  #: Decoder recurrent block h2h dilation
 
     # final convs
-    final_conv_1_name = "identity"
-    final_conv_1_c = 16
-    final_conv_1_k = 3
-    final_conv_1_s = 1
-    final_conv_1_p = 1
+    final_conv_1_name = "identity"  #: Final conv block 1 name
+    final_conv_1_c = 16  #: Final conv block 1 out channels
+    final_conv_1_k = 3  #: Final conv block 1 kernel size
+    final_conv_1_s = 1  #: Final conv block 1 stride
+    final_conv_1_p = 1  #: Final conv block 1 padding
 
-    final_conv_2_name = "conv3_3"
-    final_conv_2_k = 1
-    final_conv_2_s = 1
-    final_conv_2_p = 0
+    final_conv_2_name = "conv3_3"  #: Final conv block 2 name
+    final_conv_2_k = 1  #: Final conv block 2 kernel size
+    final_conv_2_s = 1  #: Final conv block 2 stride
+    final_conv_2_p = 0  #: Final conv block 2 padding
 
     def __init__(self, device, **model_kwargs):
         super(EF_TrajGRU, self).__init__(device, **model_kwargs)

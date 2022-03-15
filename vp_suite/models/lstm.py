@@ -7,29 +7,21 @@ from vp_suite.base.base_model import VideoPredictionModel
 
 class LSTM(VideoPredictionModel):
     r"""
-
+    This class implements a simple encoder-decoder-based video prediction architecture
+    which passes the vector-shaped encoded latents through several LSTM layers.
     """
-
-    # model-specific constants
     NAME = "NonConvLSTM"
-    PAPER_REFERENCE = None  #: The paper where this model was introduced first.
-    CODE_REFERENCE = None  #: The code location of the reference implementation.
-    MATCHES_REFERENCE: str = "No"  #: A comment indicating whether the implementation in this package matches the reference.
+    PAPER_REFERENCE = None
+    CODE_REFERENCE = None
+    MATCHES_REFERENCE: str = "Not Yet"
     CAN_HANDLE_ACTIONS = True
 
     # model hyperparameters
-    bottleneck_dim = 1024  #: TODO
-    lstm_hidden_dim = 1024  #: TODO
-    lstm_kernel_size = (5, 5)  #: TODO
-    lstm_num_layers = 3  #: TODO
+    bottleneck_dim = 1024  #: The dimensionality of the linearized latent space.
+    lstm_hidden_dim = 1024  #: The hidden dimensionality of the LSTM cells.
+    lstm_num_layers = 3  #: The number of LSTM cell layers.
 
     def __init__(self, device, **model_kwargs):
-        r"""
-
-        Args:
-            device ():
-            **model_kwargs ():
-        """
         super(LSTM, self).__init__(device, **model_kwargs)
 
         self.act_fn = nn.ReLU(inplace=True)
@@ -66,51 +58,15 @@ class LSTM(VideoPredictionModel):
         )
 
     def encode(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.to_linear(self.encoder(x).flatten(1, -1))  # respect batch size
 
     def decode(self, x):
-        r"""
-
-        Args:
-            x ():
-
-        Returns:
-
-        """
         return self.decoder(self.from_linear(x).reshape(x.shape[0], *self.encoded_shape))  # respect batch size
 
     def pred_1(self, x, **kwargs):
-        r"""
-
-        Args:
-            x ():
-            **kwargs ():
-
-        Returns:
-
-        """
         return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_frames=1, **kwargs):
-        r"""
-
-        Args:
-            x ():
-            pred_frames ():
-            **kwargs ():
-
-        Returns:
-
-        """
-
         # frames
         x = x.transpose(0, 1)  # imgs: [t, b, c, h, w]
         T_in, b, c, h, w = x.shape

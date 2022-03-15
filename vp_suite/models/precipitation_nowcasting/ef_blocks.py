@@ -1,3 +1,9 @@
+r"""
+This module contains the building blocks for the video prediction models implemented in
+https://github.com/Hzzone/Precipitation-Nowcasting (Encoder-Forecaster-based prediction models based on
+ConvLSTM/TrajGRU).
+"""
+
 from collections import OrderedDict
 
 import torch
@@ -6,7 +12,10 @@ import torch.nn as nn
 from vp_suite.base.base_model import VideoPredictionModel
 from vp_suite.utils.models import conv_output_shape, convtransp_output_shape
 
-def make_layers(block):
+def _make_layers(block):
+    r"""
+    Utility method to create the layers for the Encoder and Forecaster components.
+    """
     layers = []
     for layer_name, v in block.items():
         if 'identity' in layer_name:
@@ -41,6 +50,10 @@ def make_layers(block):
 
 
 class Encoder(nn.Module):
+    r"""
+    The Encoder component of the Encoder-Forecaster architecture wraps a recurrent model block to encode the input
+    frames into a state that can then be used for prediction.
+    """
     def __init__(self, subnets, rnns):
         super().__init__()
         assert len(subnets)==len(rnns)
@@ -48,7 +61,7 @@ class Encoder(nn.Module):
         self.blocks = len(subnets)
 
         for index, (params, rnn) in enumerate(zip(subnets, rnns), 1):
-            setattr(self, 'stage'+str(index), make_layers(params))
+            setattr(self, 'stage' + str(index), _make_layers(params))
             setattr(self, 'rnn'+str(index), rnn)
 
     def forward_by_stage(self, input, subnet, rnn):
@@ -70,6 +83,10 @@ class Encoder(nn.Module):
 
 
 class Forecaster(nn.Module):
+    r"""
+    The Decoder component of the Encoder-Forecaster architecture wraps a recurrent model block to decode the input
+    state into a specified number of predicted future frames.
+    """
     def __init__(self, subnets, rnns):
         super().__init__()
         assert len(subnets) == len(rnns)
@@ -78,7 +95,7 @@ class Forecaster(nn.Module):
 
         for index, (params, rnn) in enumerate(zip(subnets, rnns)):
             setattr(self, 'rnn' + str(self.blocks-index), rnn)
-            setattr(self, 'stage' + str(self.blocks-index), make_layers(params))
+            setattr(self, 'stage' + str(self.blocks-index), _make_layers(params))
 
     def forward_by_stage(self, input, state, pred_frames, subnet, rnn):
         input, state_stage = rnn(input, state, pred_frames)

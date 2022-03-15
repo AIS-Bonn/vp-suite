@@ -15,33 +15,27 @@ from vp_suite.model_blocks.phydnet import PhyCell_Cell, K2M
 
 class STPhy(VideoPredictionModel):
     r"""
-
+    This class implements a hybrid model that aims to unify the advantages of the
+    PhyDNet (Le Guen and Thome, https://arxiv.org/abs/2003.01460, https://github.com/vincent-leguen/PhyDNet) and the
+    PredRNN++ (Wang et al., https://arxiv.org/abs/2103.09504, https://github.com/thuml/predrnn-pytorch) models.
+    More specifically, it replaces PhyDNet's regular ConvLSTM cells with the ST Cells from PredRNN++
+    and integrates PhyDNet's teacher forcing and PredRNN++'s scheduled sampling techniques into training.
+    (TODO adjust model to cohere to this description)
     """
-
-    # model-specific constants
     NAME = "ST-Phy"
     CAN_HANDLE_ACTIONS = True
 
-    # model hyperparameters
-    num_layers = 3  #: TODO
-    phycell_kernel_size = (7, 7)  #: TODO
-    phycell_channels = 49  #: TODO
-    st_cell_channels = 64  #: TODO
-    inflated_action_dim = 3  #: TODO
+    num_layers = 3  #: Number of layers (1 PhyCell and 1 ST cell per layer)
+    phycell_channels = 49  #: Channel dimensionality for the PhyCells
+    phycell_kernel_size = (7, 7)  #: PhyCell kernel size
+    st_cell_channels = 64  #: Hidden layer dimensionality for the ST cell layers
+    inflated_action_dim = 3  #: Dimensionality of the 'inflated actions' (actions that have been transformed to tensors)
 
-    # model training hyperparams
-    reconstruction_loss_scale = 0.1  #: TODO
-    decoupling_loss_scale = 100.0  #: TODO
-    moment_loss_scale = 1.0  #: TODO
-    teacher_forcing_decay = 0.003
+    decoupling_loss_scale = 100.0  #: The scaling factor for the decoupling loss
+    moment_loss_scale = 1.0  #: Scaling factor for the moment loss (for PDE-Constrained prediction by the PhyCells)
+    teacher_forcing_decay = 0.003  #: Per-Episode decrease of the teacher forcing ratio (Starts out at 1.0)
 
     def __init__(self, device, **model_kwargs):
-        r"""
-
-        Args:
-            device ():
-            **model_kwargs ():
-        """
         super(STPhy, self).__init__(device, **model_kwargs)
 
         self.dim_st_hidden = [self.st_cell_channels] * self.num_layers
@@ -91,28 +85,9 @@ class STPhy(VideoPredictionModel):
                 ind += 1
 
     def pred_1(self, x, **kwargs):
-        r"""
-
-        Args:
-            x ():
-            **kwargs ():
-
-        Returns:
-
-        """
         return self(x, pred_frames=1, **kwargs)[0].squeeze(dim=1)
 
     def forward(self, x, pred_frames=1, **kwargs):
-        r"""
-
-        Args:
-            x ():
-            pred_frames ():
-            **kwargs ():
-
-        Returns:
-
-        """
         # in training mode (default: False), returned sequence starts with 2nd context frame,
         # and the moment regularization loss is calculated.
         train = kwargs.get("train", False)
@@ -206,16 +181,15 @@ class STPhy(VideoPredictionModel):
 
     def train_iter(self, config, data_loader, optimizer, loss_provider, epoch):
         r"""
+        ST-Phy's training iteration utilizes a scheduled teacher forcing ratio.
+        Otherwise, the iteration logic is the same as in the default :meth:`train_iter()` function.
 
         Args:
-            config ():
-            data_loader ():
-            optimizer ():
-            loss_provider ():
-            epoch ():
-
-        Returns:
-
+            config (dict): The configuration dict of the current training run (combines model, dataset and run config)
+            data_loader (DataLoader): Training data is sampled from this loader.
+            optimizer (Optimizer): The optimizer to use for weight update calculations.
+            loss_provider (PredictionLossProvider): An instance of the :class:`LossProvider` class for flexible loss calculation.
+            epoch (int): The current epoch.
         """
         teacher_forcing_ratio = np.maximum(0, 1 - epoch * self.teacher_forcing_decay)
         loop = tqdm(data_loader)

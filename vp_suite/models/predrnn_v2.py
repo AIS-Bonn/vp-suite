@@ -15,7 +15,7 @@ class PredRNN_V2(VideoPredictionModel):
     is based on the official PyTorch implementation on https://github.com/thuml/predrnn-pytorch.
 
     PredRNN-V aims at learning partly disentangled spatial/temporal dynamics of the input domain and use this to
-    render more accurate predicted frames. The "Spatio-Temporal LSTM Cell" forms the heart of this model.
+    render more accurate predicted frames. The "Spatio-Temporal LSTM Cell" (ST cell) forms the heart of this model.
 
     Note:
         This model will use the whole frame sequence as an input, including the frames to be predicted. If you do not
@@ -24,36 +24,34 @@ class PredRNN_V2(VideoPredictionModel):
         if using the action-conditional variant, reverse scheduled sampling as well as 'conv_on_input'
         has to be set to 1/True!
     """
-
-    # model-specific constants
     NAME = "PredRNN++"
-    PAPER_REFERENCE = "https://arxiv.org/abs/2103.09504"  #: The paper where this model was introduced first.
-    CODE_REFERENCE = "https://github.com/thuml/predrnn-pytorch"  #: The code location of the reference implementation.
-    MATCHES_REFERENCE: str = "Yes"  #: A comment indicating whether the implementation in this package matches the reference.
+    PAPER_REFERENCE = "https://arxiv.org/abs/2103.09504"
+    CODE_REFERENCE = "https://github.com/thuml/predrnn-pytorch"
+    MATCHES_REFERENCE: str = "Yes"
     CAN_HANDLE_ACTIONS = False
     NEEDS_COMPLETE_INPUT = True
 
-    patch_size = 4
-    num_layers = 3
-    num_hidden = [128, 128, 128, 128]
-    filter_size = 5
-    stride = 1  #: stride for ST Cell
-    layer_norm: bool = False
-    reverse_input: bool = True
-    decoupling_loss_scale = 100.0
-    inflated_action_dim = 3
+    patch_size = 4  #: During encoding, the image is sliced into patches of this size (height and width)
+    num_layers = 3  #: Number of ST Cell layers
+    num_hidden = [128, 128, 128, 128]  #: Hidden layer dimensionality per ST cell layer
+    filter_size = 5  #: Kernel size for ST cell and action-conditional convs
+    stride = 1  #: Stride for ST cell
+    inflated_action_dim = 3  #: Dimensionality of the 'inflated actions' (actions that have been transformed to tensors)
+    layer_norm: bool = False  #: Whether to use layer normalization in the ST cells
+    conv_actions_on_input: bool = True  #: Whether to convolve actions directly on the input
+    residual_on_action_conv: bool = True  #: Whether to use residual connections for the direct action convolution
 
-    scheduled_sampling: bool = True
-    sampling_stop_iter: int = 50000
-    sampling_changing_rate = 2e-5
-    reverse_scheduled_sampling: bool = False
-    r_sampling_step_1: int = 25000
-    r_sampling_step_2: int = 50000
-    r_exp_alpha: int = 5000
-    training_iteration: int = None
-    sampling_eta: float = None
-    conv_actions_on_input: bool = True
-    residual_on_action_conv: bool = True
+    reverse_input: bool = True  #: Whether to also train on the reversed version of training sequences
+    decoupling_loss_scale = 100.0  #: The scaling factor for the decoupling loss
+    scheduled_sampling: bool = True  #: Whether to use scheduled sampling during training
+    sampling_stop_iter: int = 50000  #: At which iteration to stop the scheduled sampling
+    sampling_changing_rate = 2e-5  #: Per-iteration changing rate for scheduled sampling
+    reverse_scheduled_sampling: bool = False  #: Whether to use reverse scheduled sampling
+    r_sampling_step_1: int = 25000  #: At which iteration to proceed to second reverse scheduled sampling phase
+    r_sampling_step_2: int = 50000  #: At which iteration to proceed to third reverse scheduled sampling phase
+    r_exp_alpha: int = 5000  #: Reverse scheduled sampling rate change regulator factor
+    training_iteration: int = None  #: Current number of training iteration (~how many training inferences were done so far)
+    sampling_eta: float = None  #: Sampling rate
 
     def __init__(self, device, **model_kwargs):
         super(PredRNN_V2, self).__init__(device, **model_kwargs)

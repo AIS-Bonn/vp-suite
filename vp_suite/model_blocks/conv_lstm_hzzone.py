@@ -5,16 +5,20 @@ from vp_suite.base.base_model_block import ModelBlock
 
 
 class ConvLSTM(ModelBlock):
+    r"""
+    This class implements a convolutional LSTM, as introduced in Shi et al. (https://arxiv.org/abs/1506.04214) and
+    implemented in https://github.com/Hzzone/Precipitation-Nowcasting. This is the 'original' ConvLSTM.
+    """
     NAME = "ConvLSTM (Shi et al.)"
     PAPER_REFERENCE = "https://arxiv.org/abs/1506.04214"
     CODE_REFERENCE = "https://github.com/Hzzone/Precipitation-Nowcasting"
     MATCHES_REFERENCE = "Yes"
 
-    def __init__(self, device, in_c, enc_c, state_h, state_w, kernel_size, stride=1, padding=1):
+    def __init__(self, device, in_channels, enc_channels, state_h, state_w, kernel_size, stride=1, padding=1):
         super().__init__()
         self.device = device
-        self._conv = nn.Conv2d(in_channels=in_c + enc_c,
-                               out_channels=enc_c * 4,
+        self._conv = nn.Conv2d(in_channels=in_channels + enc_channels,
+                               out_channels=enc_channels * 4,
                                kernel_size=kernel_size,
                                stride=stride,
                                padding=padding)
@@ -23,11 +27,11 @@ class ConvLSTM(ModelBlock):
         # if using requires_grad flag, torch.save will not save parameters in deed although it may be updated every epoch.
         # However, if you use declare an optimizer like Adam(model.parameters()),
         # parameters will not be updated forever.
-        self.Wci = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
-        self.Wcf = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
-        self.Wco = nn.Parameter(torch.zeros(1, enc_c, self.state_h, self.state_w)).to(self.device)
-        self.in_c = in_c
-        self.enc_c = enc_c
+        self.Wci = nn.Parameter(torch.zeros(1, enc_channels, self.state_h, self.state_w)).to(self.device)
+        self.Wcf = nn.Parameter(torch.zeros(1, enc_channels, self.state_h, self.state_w)).to(self.device)
+        self.Wco = nn.Parameter(torch.zeros(1, enc_channels, self.state_h, self.state_w)).to(self.device)
+        self.in_c = in_channels
+        self.enc_c = enc_channels
 
     # inputs and states should not be all none
     # inputs: [b, t, c, h, w]
