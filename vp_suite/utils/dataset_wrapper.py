@@ -1,6 +1,7 @@
 from torch.utils.data import Subset
 
-class DatasetWrapper:
+
+class VPDatasetWrapper:
     r"""A class that wraps torch Datasets to handle training and testing data in the same way
 
     """
@@ -15,7 +16,7 @@ class DatasetWrapper:
             split ():
             **dataset_kwargs ():
         """
-        super(DatasetWrapper, self).__init__()
+        super(VPDatasetWrapper, self).__init__()
 
         if split == "train":
             train_data, val_data = dataset_class.get_train_val(**dataset_kwargs)

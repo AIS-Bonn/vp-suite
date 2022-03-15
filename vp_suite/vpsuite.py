@@ -11,7 +11,7 @@ import wandb
 from tqdm import tqdm
 
 import vp_suite.constants as constants
-from vp_suite.utils.dataset_wrapper import DatasetWrapper
+from vp_suite.utils.dataset_wrapper import VPDatasetWrapper
 from vp_suite.datasets import DATASET_CLASSES
 from vp_suite.base import VPModel
 from vp_suite.models import MODEL_CLASSES, AVAILABLE_MODELS
@@ -32,7 +32,7 @@ class VPSuite:
 
     Attributes:
         device(str): A string specifying which device to work on ('cuda' for GPU usage or 'cpu' for CPU).
-        datasets(List[:class:`DatasetWrapper`]): The loaded datasets.
+        datasets(List[:class:`VPDatasetWrapper`]): The loaded datasets.
         models(List[:class:`VPModel`]): The loaded/created models.
     """
 
@@ -68,7 +68,7 @@ class VPSuite:
         r"""
         Empties the list of loaded datasets.
         """
-        self.datasets : List[DatasetWrapper] = []
+        self.datasets : List[VPDatasetWrapper] = []
 
     def clear_models(self):
         r"""
@@ -87,7 +87,7 @@ class VPSuite:
         """
         # create dataset wrapper
         dataset_class = DATASET_CLASSES[dataset_id]
-        dataset = DatasetWrapper(dataset_class, split, **dataset_kwargs)
+        dataset = VPDatasetWrapper(dataset_class, split, **dataset_kwargs)
         print(f"loaded dataset '{dataset.NAME}' from {dataset.data_dir} "
               f"(action size: {dataset.action_size})")
 
@@ -261,7 +261,7 @@ class VPSuite:
         run_config = self._prepare_run("train", **run_kwargs)
 
         try:
-            dataset: DatasetWrapper = self.training_sets[dataset_idx]
+            dataset: VPDatasetWrapper = self.training_sets[dataset_idx]
             model: VPModel = self.models[model_idx]
         except IndexError:
             raise ValueError("given indices for model and/or dataset are invalid")
@@ -473,7 +473,7 @@ class VPSuite:
         run_config = self._prepare_run("test", **run_kwargs)
 
         # prepare datasets for testing
-        test_sets: List[DatasetWrapper] = self.test_sets
+        test_sets: List[VPDatasetWrapper] = self.test_sets
         for test_set in test_sets:
             test_set.set_seq_len(run_config["context_frames"], run_config["pred_frames"], run_config["seq_step"])
             assert test_set.is_ready, "test set is not ready even though set_seq_len has just been called"
@@ -508,14 +508,14 @@ class VPSuite:
         test_sets_and_model_lists = zip(test_sets, model_lists_all_test_sets)
         return test_sets_and_model_lists, run_config
 
-    def _test_on_dataset(self, model_info_list, dataset: DatasetWrapper, run_config: dict, brief_test: bool):
+    def _test_on_dataset(self, model_info_list, dataset: VPDatasetWrapper, run_config: dict, brief_test: bool):
         r"""
         Tests all models on a single dataset. Iterates through the whole dataset, retrieving the predictions of all
         specified models on each data point and calculating pre-specified performance metrics.
 
         Args:
             model_info_list (Any): A list containing the models to be tested as well as other needed information/objects such as adapters.
-            dataset (DatasetWrapper): The dataset to be tested on.
+            dataset (VPDatasetWrapper): The dataset to be tested on.
             run_config (dict): The run configuration used for testing. For all unspecified run configuration parameters, the default configuration is used.
             brief_test (bool): If specified, only a brief sample check is done instead of fully iterating over the test set.
         """

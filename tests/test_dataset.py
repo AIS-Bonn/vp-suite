@@ -1,14 +1,14 @@
 import pytest
 from vp_suite.datasets import DATASET_CLASSES
-from vp_suite.utils.dataset_wrapper import DatasetWrapper
+from vp_suite.utils.dataset_wrapper import VPDatasetWrapper
 
 @pytest.mark.parametrize('dataset_str', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
 def test_dataset(dataset_str):
 
     dataset_class = DATASET_CLASSES[dataset_str]
-    train_wrapper = DatasetWrapper(dataset_class, "train")
+    train_wrapper = VPDatasetWrapper(dataset_class, "train")
     train_wrapper.set_seq_len(1, 1, 1)
-    test_wrapper = DatasetWrapper(dataset_class, "test")
+    test_wrapper = VPDatasetWrapper(dataset_class, "test")
     test_wrapper.set_seq_len(1, 1, 1)
     assert train_wrapper.img_shape == test_wrapper.img_shape
     assert train_wrapper.action_size == test_wrapper.action_size
