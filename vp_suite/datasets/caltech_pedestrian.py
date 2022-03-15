@@ -6,7 +6,7 @@ import cv2
 import torch
 from tqdm import tqdm
 
-from vp_suite.base.base_dataset import VPDataset, VPData
+from vp_suite.base import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_video
 

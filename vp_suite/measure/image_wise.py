@@ -11,7 +11,7 @@ import torch
 from torch import nn as nn
 import piqa
 
-from vp_suite.base.base_measure import VPMeasure
+from vp_suite.base import VPMeasure
 
 
 class MSE(VPMeasure):

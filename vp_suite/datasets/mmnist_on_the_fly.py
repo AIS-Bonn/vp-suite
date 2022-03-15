@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torchvision.datasets import MNIST
 
-from vp_suite.base.base_dataset import VPDataset, VPData
+from vp_suite.base import VPDataset, VPData
 import vp_suite.constants as constants
 
 

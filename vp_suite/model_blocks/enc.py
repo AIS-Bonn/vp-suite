@@ -8,7 +8,7 @@ from torchvision import transforms as TF
 from torchvision.transforms import Resize
 
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 
 
 class Autoencoder(VPModelBlock):

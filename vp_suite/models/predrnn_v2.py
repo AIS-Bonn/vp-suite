@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from vp_suite.model_blocks import SpatioTemporalLSTMCell as STCell,\
     ActionConditionalSpatioTemporalLSTMCell as ACSTCell
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 import torch.nn.functional as F
 from tqdm import tqdm
 

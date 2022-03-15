@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 from torchvision import transforms as TF
 
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 
 
 class LSTM(VPModel):

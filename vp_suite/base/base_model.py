@@ -5,7 +5,7 @@ from torch.optim.optimizer import Optimizer
 from tqdm import tqdm
 from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
 from vp_suite.measure.loss_provider import PredictionLossProvider
-from vp_suite.base.base_dataset import VPData
+from vp_suite.base import VPData
 
 
 class VPModel(nn.Module):

@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 
 
 class Activation():

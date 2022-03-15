@@ -4,7 +4,7 @@ This package contains model blocks that can be used by the video prediction mode
 import sys
 import inspect
 
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 
 from .conv import DoubleConv2d, DoubleConv3d, DCGANConv, DCGANConvTranspose
 from .enc import Autoencoder, Encoder, Decoder, DCGANEncoder, DCGANDecoder

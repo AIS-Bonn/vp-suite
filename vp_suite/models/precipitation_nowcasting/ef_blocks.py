@@ -9,7 +9,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 from vp_suite.utils.models import conv_output_shape, convtransp_output_shape
 
 def _make_layers(block):

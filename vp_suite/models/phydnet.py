@@ -4,7 +4,7 @@ import random
 
 from tqdm import tqdm
 
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 from vp_suite.model_blocks.enc import DCGANEncoder, DCGANDecoder
 from vp_suite.model_blocks.phydnet import K2M, DecoderSplit, EncoderSplit, PhyCell, SingleStepConvLSTM
 

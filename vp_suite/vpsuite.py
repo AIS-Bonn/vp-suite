@@ -13,7 +13,7 @@ from tqdm import tqdm
 import vp_suite.constants as constants
 from vp_suite.utils.dataset_wrapper import DatasetWrapper
 from vp_suite.datasets import DATASET_CLASSES
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 from vp_suite.models import MODEL_CLASSES, AVAILABLE_MODELS
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure import LOSS_CLASSES

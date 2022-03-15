@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 
 
 class ConvLSTMCell(nn.Module):

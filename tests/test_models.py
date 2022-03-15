@@ -2,7 +2,7 @@ import pytest
 import torch.cuda
 
 from vp_suite.models import MODEL_CLASSES
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 
 IMG_SHAPE = (3, 64, 64)
 ACTION_SIZE = 3

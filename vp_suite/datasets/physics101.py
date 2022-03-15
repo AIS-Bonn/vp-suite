@@ -4,7 +4,7 @@ import torch
 from torchvision.io import read_video
 from pathlib import Path
 
-from vp_suite.base.base_dataset import VPDataset, VPData
+from vp_suite.base import VPDataset, VPData
 import vp_suite.constants as constants
 from vp_suite.utils.utils import set_from_kwarg, read_video
 

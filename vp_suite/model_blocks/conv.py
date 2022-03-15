@@ -3,7 +3,7 @@ This module contains convolutional model blocks.
 """
 from torch import nn as nn
 
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 
 
 class DoubleConv2d(VPModelBlock):

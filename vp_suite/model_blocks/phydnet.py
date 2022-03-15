@@ -5,7 +5,7 @@ from functools import reduce
 from scipy.special import factorial
 from torch import nn as nn
 
-from vp_suite.base.base_model_block import VPModelBlock
+from vp_suite.base import VPModelBlock
 from vp_suite.model_blocks.conv_lstm_ndrplz import ConvLSTMCell
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
 

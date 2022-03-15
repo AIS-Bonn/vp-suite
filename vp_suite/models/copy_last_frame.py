@@ -1,4 +1,4 @@
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 
 
 class CopyLastFrame(VPModel):

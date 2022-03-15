@@ -3,7 +3,7 @@ from torch import nn as nn
 from torchvision.transforms import functional as TF
 
 from vp_suite.model_blocks import DoubleConv3d, DoubleConv2d
-from vp_suite.base.base_model import VPModel
+from vp_suite.base import VPModel
 
 
 class UNet3D(VPModel):
