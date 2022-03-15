@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
 class Activation():
@@ -28,7 +28,7 @@ class Activation():
             raise NotImplementedError
 
 
-class BaseConvRNN(ModelBlock):
+class BaseConvRNN(VPModelBlock):
     r"""
     This class implements a base class for the TrajGRU RNN, as
     introduced in Shi et al. (https://arxiv.org/abs/1706.03458) and

@@ -3,10 +3,10 @@ from torch import nn as nn
 from torchvision.transforms import functional as TF
 
 from vp_suite.model_blocks import DoubleConv3d, DoubleConv2d
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 
 
-class UNet3D(VideoPredictionModel):
+class UNet3D(VPModel):
     r"""
     This Model is closely related to the UNet architecture (Ronneberger et al., arxiv.org/abs/1505.04597).
     In contrast to the original Unet, the 2D Convolutions are replaced by 3D convolutions that also incorporate

@@ -1,7 +1,7 @@
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 
 
-class CopyLastFrame(VideoPredictionModel):
+class CopyLastFrame(VPModel):
     r"""
     A simple, non-trainable baseline model
     that simply returns the latest frame as the next predicted frame.

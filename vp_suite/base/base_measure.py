@@ -2,7 +2,7 @@ import torch
 from torch import nn as nn
 
 
-class BaseMeasure(nn.Module):
+class VPMeasure(nn.Module):
     r"""
     The base class for all measures (nn Modules taking as input a ground truth sequence and a predicted sequence and
     providing a numerical assessment of the prediction quality). Measures can be losses and/or metrics, depending on
@@ -32,7 +32,7 @@ class BaseMeasure(nn.Module):
         Args:
             device (str): A string specifying whether to use the GPU for calculations (`cuda`) or the CPU (`cpu`).
         """
-        super(BaseMeasure, self).__init__()
+        super(VPMeasure, self).__init__()
         self.device = device
         self.to(device)
 

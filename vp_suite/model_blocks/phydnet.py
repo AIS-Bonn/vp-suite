@@ -5,12 +5,12 @@ from functools import reduce
 from scipy.special import factorial
 from torch import nn as nn
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 from vp_suite.model_blocks.conv_lstm_ndrplz import ConvLSTMCell
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
 
 
-class PhyCell_Cell(ModelBlock):
+class PhyCell_Cell(VPModelBlock):
     r"""
     This class implements a single Cell of the 'PhyCell' component, as introduced in Le Guen and Thome
     (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.
@@ -62,7 +62,7 @@ class PhyCell_Cell(ModelBlock):
         return next_hidden
 
 
-class PhyCell(ModelBlock):
+class PhyCell(VPModelBlock):
     r"""
     This class implements the 'PhyCell' component, as introduced in Le Guen and Thome
     (https://arxiv.org/abs/2003.01460) and implemented in https://github.com/vincent-leguen/PhyDNet.

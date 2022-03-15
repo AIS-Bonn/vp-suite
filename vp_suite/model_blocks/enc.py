@@ -8,10 +8,10 @@ from torchvision import transforms as TF
 from torchvision.transforms import Resize
 
 from vp_suite.model_blocks.conv import DCGANConv, DCGANConvTranspose
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
-class Autoencoder(ModelBlock):
+class Autoencoder(VPModelBlock):
     r"""
     This class implements an autoencoder, consisting of a convolutional encoder and a decoder.
     """
@@ -44,7 +44,7 @@ class Autoencoder(ModelBlock):
         return self.decoder(x)
 
 
-class Encoder(ModelBlock):
+class Encoder(VPModelBlock):
     r"""
     This class implements a convolutional encoder.
     """
@@ -69,7 +69,7 @@ class Encoder(ModelBlock):
         return x
 
 
-class Decoder(ModelBlock):
+class Decoder(VPModelBlock):
     r"""
     This class implements a convolutional decoder.
     """
@@ -97,7 +97,7 @@ class Decoder(ModelBlock):
         return x
 
 
-class DCGANEncoder(ModelBlock):
+class DCGANEncoder(VPModelBlock):
     r"""
     The class implements a DCGAN encoder, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
@@ -118,7 +118,7 @@ class DCGANEncoder(ModelBlock):
         return h3
 
 
-class DCGANDecoder(ModelBlock):
+class DCGANDecoder(VPModelBlock):
     r"""
     The class implements a DCGAN decoder, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """

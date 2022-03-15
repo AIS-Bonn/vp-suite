@@ -1,10 +1,10 @@
 import torch
 from torch import nn as nn
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
-class SpatioTemporalLSTMCell(ModelBlock):
+class SpatioTemporalLSTMCell(VPModelBlock):
     r"""
     Spatio-Temporal LSTM Cell (v2) as introduced in
     "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.
@@ -83,7 +83,7 @@ class SpatioTemporalLSTMCell(ModelBlock):
         return h_new, c_new, m_new, delta_c, delta_m
 
 
-class ActionConditionalSpatioTemporalLSTMCell(ModelBlock):
+class ActionConditionalSpatioTemporalLSTMCell(VPModelBlock):
     r"""
     Action-Conditional Spatio-Temporal LSTM Cell (v2) as introduced in
     "PredRNN: A Recurrent Neural Network for Spatiotemporal Predictive Learning" by Wang et al.

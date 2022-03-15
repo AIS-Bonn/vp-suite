@@ -4,12 +4,12 @@ import random
 
 from tqdm import tqdm
 
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 from vp_suite.model_blocks.enc import DCGANEncoder, DCGANDecoder
 from vp_suite.model_blocks.phydnet import K2M, DecoderSplit, EncoderSplit, PhyCell, SingleStepConvLSTM
 
 
-class PhyDNet(VideoPredictionModel):
+class PhyDNet(VPModel):
     r"""
     This class implements the PhyDNet prediction model, as introduced by Le Guen and Thome in
     https://arxiv.org/abs/2003.01460 and implemented in https://github.com/vincent-leguen/PhyDNet.

@@ -2,10 +2,10 @@ import torch
 from torch import nn as nn
 from torchvision import transforms as TF
 
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 
 
-class LSTM(VideoPredictionModel):
+class LSTM(VPModel):
     r"""
     This class implements a simple encoder-decoder-based video prediction architecture
     which passes the vector-shaped encoded latents through several LSTM layers.

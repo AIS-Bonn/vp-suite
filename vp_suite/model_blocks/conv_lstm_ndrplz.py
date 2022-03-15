@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
 class ConvLSTMCell(nn.Module):
@@ -48,7 +48,7 @@ class ConvLSTMCell(nn.Module):
                 torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
 
 
-class ConvLSTM(ModelBlock):
+class ConvLSTM(VPModelBlock):
     r"""
     This class implements a convolutional LSTM (which was introduced in Shi et al. (https://arxiv.org/abs/1506.04214)
     and originally implemented in https://github.com/Hzzone/Precipitation-Nowcasting). This highly popular version

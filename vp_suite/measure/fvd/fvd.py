@@ -6,10 +6,10 @@ from torch import linalg as linalg
 import torchvision.transforms.functional as TF
 
 from vp_suite.measure.fvd._pytorch_i3d.pytorch_i3d import InceptionI3d
-from vp_suite.base.base_measure import BaseMeasure
+from vp_suite.base.base_measure import VPMeasure
 
 
-class FrechetVideoDistance(BaseMeasure):
+class FrechetVideoDistance(VPMeasure):
     r"""
     This measure calculates the Frechet Video Distance, as introduced in Unterthiner et al.
     (https://arxiv.org/abs/1812.01717). The Frechet Distance is a similarity measure between two curves,

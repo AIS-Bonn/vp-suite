@@ -2,7 +2,7 @@ import pytest
 import torch.cuda
 
 from vp_suite.models import MODEL_CLASSES
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 
 IMG_SHAPE = (3, 64, 64)
 ACTION_SIZE = 3
@@ -26,7 +26,7 @@ def test_models_without_actions(model_key):
         "action_conditional": False,
         "tensor_value_range": [0.0, 1.0]
     }
-    model: VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
+    model: VPModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
     t = p+3 if model_class.NEEDS_COMPLETE_INPUT else 3  # model.MIN_CONTEXT_FRAMES
     x = torch.randn(b, t, c, h, w, device=DEVICE)
     pred_1 = model.pred_1(x)
@@ -46,7 +46,7 @@ def test_models_with_actions(model_key):
         "action_conditional": model_class.CAN_HANDLE_ACTIONS,
         "tensor_value_range": [0.0, 1.0]
     }
-    model: VideoPredictionModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
+    model: VPModel = model_class(DEVICE, **model_kwargs).to(DEVICE)
     t_x = p+3 if model_class.NEEDS_COMPLETE_INPUT else 3  # model.MIN_CONTEXT_FRAMES
     t_a = p+3-1
     x = torch.randn(b, t_x, c, h, w, device=DEVICE)

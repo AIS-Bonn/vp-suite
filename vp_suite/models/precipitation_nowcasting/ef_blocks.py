@@ -9,7 +9,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 from vp_suite.utils.models import conv_output_shape, convtransp_output_shape
 
 def _make_layers(block):
@@ -114,7 +114,7 @@ class Forecaster(nn.Module):
         return input
 
 
-class Encoder_Forecaster(VideoPredictionModel):
+class Encoder_Forecaster(VPModel):
     r"""
     This is a reimplementation of the Encoder-Forecaster structure, as introduced in
     "Deep Learning for Precipitation Nowcasting: A Benchmark and A New Model" by Shi et al.

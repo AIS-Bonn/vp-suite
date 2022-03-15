@@ -4,7 +4,7 @@ This package contains model blocks that can be used by the video prediction mode
 import sys
 import inspect
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 from .conv import DoubleConv2d, DoubleConv3d, DCGANConv, DCGANConvTranspose
 from .enc import Autoencoder, Encoder, Decoder, DCGANEncoder, DCGANDecoder
@@ -17,7 +17,7 @@ from .conv_lstm_hzzone import ConvLSTM
 
 def is_model_block(obj):
     cls = obj if inspect.isclass(obj) else type(obj)
-    return issubclass(cls, ModelBlock) and not cls == ModelBlock
+    return issubclass(cls, VPModelBlock) and not cls == VPModelBlock
 
 
 MODEL_BLOCK_CLASSES = [cls for (cls_name, cls) in inspect.getmembers(sys.modules[__name__], is_model_block)]

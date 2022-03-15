@@ -11,10 +11,10 @@ import torch
 from torch import nn as nn
 import piqa
 
-from vp_suite.base.base_measure import BaseMeasure
+from vp_suite.base.base_measure import VPMeasure
 
 
-class MSE(BaseMeasure):
+class MSE(VPMeasure):
     r"""
     This class implements the pixel-wise Mean-Square Error (MSE/L2).
     """
@@ -25,7 +25,7 @@ class MSE(BaseMeasure):
         self.criterion = nn.MSELoss(reduction="none").to(device)
 
 
-class L1(BaseMeasure):
+class L1(VPMeasure):
     r"""
     This class implements the pixel-wise Mean Absolute Error (MAE/L1).
     """
@@ -36,7 +36,7 @@ class L1(BaseMeasure):
         self.criterion = nn.L1Loss(reduction="none").to(device)
 
 
-class SmoothL1(BaseMeasure):
+class SmoothL1(VPMeasure):
     r"""
     This class implements a smoothed L1 Loss, resembling the MSE/L2 loss for smaller discrepancies and
     transitioning to the MAE/L1 loss for larger discrepancies.
@@ -48,7 +48,7 @@ class SmoothL1(BaseMeasure):
         self.criterion = nn.SmoothL1Loss(reduction="none").to(device)
 
 
-class PSNR(BaseMeasure):
+class PSNR(VPMeasure):
     r"""
     This class implements the Peak Signal-to-Noise Ratio, which is related to the MSE.
     """
@@ -73,7 +73,7 @@ class PSNR(BaseMeasure):
         return -x
 
 
-class LPIPS(BaseMeasure):
+class LPIPS(VPMeasure):
     r"""
     This class implements the "Learned Perceptual Image Patch Similarity (LPIPS)"
     from Zhang et al. (https://arxiv.org/abs/1801.03924), a perceptual measure that uses a pre-trained CNN to obtain
@@ -94,7 +94,7 @@ class LPIPS(BaseMeasure):
         return self.criterion(pred, target)
 
 
-class SSIM(BaseMeasure):
+class SSIM(VPMeasure):
     r"""
     This class implements the structural similarity index (SSIM),
     as introduced in Zhou et al. (https://ieeexplore.ieee.org/document/1284395).

@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 from vp_suite.model_blocks import SpatioTemporalLSTMCell as STCell,\
     ActionConditionalSpatioTemporalLSTMCell as ACSTCell
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 import torch.nn.functional as F
 from tqdm import tqdm
 
 
-class PredRNN_V2(VideoPredictionModel):
+class PredRNN_V2(VPModel):
     r"""
     This is a reimplementation of the model "PredRNN-V2", as introduced in "PredRNN: A Recurrent Neural Network for
     Spatiotemporal Predictive Learning" by Wang et al. (https://arxiv.org/pdf/2103.09504.pdf). This implementation

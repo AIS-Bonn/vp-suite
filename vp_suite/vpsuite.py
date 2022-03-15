@@ -13,7 +13,7 @@ from tqdm import tqdm
 import vp_suite.constants as constants
 from vp_suite.utils.dataset_wrapper import DatasetWrapper
 from vp_suite.datasets import DATASET_CLASSES
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 from vp_suite.models import MODEL_CLASSES, AVAILABLE_MODELS
 from vp_suite.models.copy_last_frame import CopyLastFrame
 from vp_suite.measure import LOSS_CLASSES
@@ -33,7 +33,7 @@ class VPSuite:
     Attributes:
         device(str): A string specifying which device to work on ('cuda' for GPU usage or 'cpu' for CPU).
         datasets(List[:class:`DatasetWrapper`]): The loaded datasets.
-        models(List[:class:`VideoPredictionModel`]): The loaded/created models.
+        models(List[:class:`VPModel`]): The loaded/created models.
     """
 
     _DEFAULT_RUN_CONFIG : Path = constants.PKG_RESOURCES / 'run_config.json'
@@ -74,7 +74,7 @@ class VPSuite:
         r"""
         Empties the list of loaded models.
         """
-        self.models : List[VideoPredictionModel] = []
+        self.models : List[VPModel] = []
 
     def load_dataset(self, dataset_id: str, split: str = "train", **dataset_kwargs):
         r"""
@@ -174,12 +174,12 @@ class VPSuite:
         model = model_class(self.device, **model_kwargs).to(self.device)
         self._model_setup(model)
 
-    def _model_setup(self, model: VideoPredictionModel, loaded: bool = False):
+    def _model_setup(self, model: VPModel, loaded: bool = False):
         r"""
         Internal model setup, also appending the model to the list of loaded models.
 
         Args:
-            model (VideoPredictionModel): The video prediction model.
+            model (VPModel): The video prediction model.
             loaded (bool): Identifies whether the model has been loaded (=True) or newly created (=False).
         """
         ac_str = "(action-conditional)" if model.config["action_conditional"] else ""
@@ -262,7 +262,7 @@ class VPSuite:
 
         try:
             dataset: DatasetWrapper = self.training_sets[dataset_idx]
-            model: VideoPredictionModel = self.models[model_idx]
+            model: VPModel = self.models[model_idx]
         except IndexError:
             raise ValueError("given indices for model and/or dataset are invalid")
 

@@ -7,13 +7,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from vp_suite.base.base_model import VideoPredictionModel
+from vp_suite.base.base_model import VPModel
 from vp_suite.model_blocks import Autoencoder
 from vp_suite.model_blocks.predrnn import SpatioTemporalLSTMCell, ActionConditionalSpatioTemporalLSTMCell
 from vp_suite.model_blocks.phydnet import PhyCell_Cell, K2M
 
 
-class STPhy(VideoPredictionModel):
+class STPhy(VPModel):
     r"""
     This class implements a hybrid model that aims to unify the advantages of the
     PhyDNet (Le Guen and Thome, https://arxiv.org/abs/2003.01460, https://github.com/vincent-leguen/PhyDNet) and the

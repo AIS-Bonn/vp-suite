@@ -3,10 +3,10 @@ This module contains convolutional model blocks.
 """
 from torch import nn as nn
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
-class DoubleConv2d(ModelBlock):
+class DoubleConv2d(VPModelBlock):
     r"""
     This class implements a 2D double-conv block, as used in the popular UNet architecture
     (Ronneberger et al., arxiv.org/abs/1505.04597).
@@ -31,7 +31,7 @@ class DoubleConv2d(ModelBlock):
         return self.conv(x)
 
 
-class DoubleConv3d(ModelBlock):
+class DoubleConv3d(VPModelBlock):
     r"""
     The class implements a 3D double-conv block, an extension of the :class:`DoubleConv2d` block
     to also process the time dimension.
@@ -55,7 +55,7 @@ class DoubleConv3d(ModelBlock):
         return self.conv(x)
 
 
-class DCGANConv(ModelBlock):
+class DCGANConv(VPModelBlock):
     r"""
     The class implements a DCGAN conv layer, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """
@@ -74,7 +74,7 @@ class DCGANConv(ModelBlock):
         return self.main(x)
 
 
-class DCGANConvTranspose(ModelBlock):
+class DCGANConvTranspose(VPModelBlock):
     r"""
     The class implements a DCGAN convTranspose layer, as introduced in Radford et al. (arxiv.org/abs/1511.06434).
     """

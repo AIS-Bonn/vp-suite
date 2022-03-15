@@ -1,10 +1,10 @@
 from torch import nn
 import torch
 
-from vp_suite.base.base_model_block import ModelBlock
+from vp_suite.base.base_model_block import VPModelBlock
 
 
-class ConvLSTM(ModelBlock):
+class ConvLSTM(VPModelBlock):
     r"""
     This class implements a convolutional LSTM, as introduced in Shi et al. (https://arxiv.org/abs/1506.04214) and
     implemented in https://github.com/Hzzone/Precipitation-Nowcasting. This is the 'original' ConvLSTM.

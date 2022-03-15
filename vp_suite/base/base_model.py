@@ -8,7 +8,7 @@ from vp_suite.measure.loss_provider import PredictionLossProvider
 from vp_suite.base.base_dataset import VPData
 
 
-class VideoPredictionModel(nn.Module):
+class VPModel(nn.Module):
     r"""
     The base class for all video prediction models. Each model ought to provide two forward pass/prediction methods
     (the default :meth:`self.forward()` method and :meth:`pred_1()`, which predicts a single frame) as well as two
@@ -44,7 +44,7 @@ class VideoPredictionModel(nn.Module):
             device (str): The device identifier for the module.
             **model_kwargs (Any): Model arguments such as hyperparameters, input shapes etc.
         """
-        super(VideoPredictionModel, self).__init__()
+        super(VPModel, self).__init__()
 
         # set required parameters
         self.device = device
