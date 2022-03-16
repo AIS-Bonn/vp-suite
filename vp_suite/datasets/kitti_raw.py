@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 from vp_suite.utils.utils import set_from_kwarg
 
 
@@ -20,7 +20,7 @@ class KITTIRawDataset(VPDataset):
     NAME = "KITTI raw"
     REFERENCE = "http://www.cvlibs.net/datasets/kitti/raw_data.php"
     IS_DOWNLOADABLE = "With Registered Account"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "kitti_raw"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "kitti_raw"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest).
     ACTION_SIZE = 0
@@ -108,6 +108,6 @@ class KITTIRawDataset(VPDataset):
             print(f"Found image data in {str(d_path.resolve())} -> Won't download {cls.NAME}")
         except StopIteration:
             from vp_suite.utils.utils import run_shell_command
-            import vp_suite.constants as constants
-            prep_script = (constants.PKG_RESOURCES / 'get_dataset_kitti_raw.sh').resolve()
+            from vp_suite.defaults import SETTINGS
+            prep_script = (SETTINGS.PKG_RESOURCES / 'get_dataset_kitti_raw.sh').resolve()
             run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")

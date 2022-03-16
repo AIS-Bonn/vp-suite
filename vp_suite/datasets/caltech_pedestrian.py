@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 from vp_suite.utils.utils import set_from_kwarg, read_video
 
 
@@ -22,7 +22,7 @@ class CaltechPedestrianDataset(VPDataset):
     NAME = "Caltech Pedestrian"
     REFERENCE = "http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/"
     IS_DOWNLOADABLE = "Yes"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "caltech_pedestrian"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "caltech_pedestrian"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 568  #: Minimum number of frames across all sequences (1322 in 2nd-shortest, 2175 in longest)
     ACTION_SIZE = 0
@@ -98,8 +98,8 @@ class CaltechPedestrianDataset(VPDataset):
             print(f"Found sequence data in {str(d_path.resolve())} -> Won't download {cls.NAME}")
         except StopIteration:
             from vp_suite.utils.utils import run_shell_command
-            import vp_suite.constants as constants
-            prep_script = (constants.PKG_RESOURCES / 'get_dataset_caltech_pedestrian.sh').resolve()
+            from vp_suite.defaults import SETTINGS
+            prep_script = (SETTINGS.PKG_RESOURCES / 'get_dataset_caltech_pedestrian.sh').resolve()
             run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")
 
         # pre-count frames of all sequences if not yet done so (makes data fetching faster later on)

@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import List
 from setuptools import find_packages, setup
 
+# paths and variables
 here = Path(__file__).parent
 docs = here / "docs"
 long_description = (here / 'README.md').read_text()
+
 
 def _load_py_module(fname, pkg="vp_suite"):
     spec = spec_from_file_location(os.path.join(pkg, fname), os.path.join(str(here), pkg, fname))
@@ -14,7 +16,9 @@ def _load_py_module(fname, pkg="vp_suite"):
     spec.loader.exec_module(py)
     return py
 
+
 about = _load_py_module("__about__.py")
+
 
 def _load_requirements(path_dir: str, file_name: str = "requirements.txt", comment_char: str = "#") -> List[str]:
     """Load requirements from a file.
@@ -47,33 +51,27 @@ setup(
     author=about.__author__,
     author_email=about.__author_email__,
     url=about.__homepage__,
-    download_url="https://github.com/AIS-Bonn/vp-suite",
+    download_url=about.__source_url__,
     license=about.__license__,
-    packages=find_packages(exclude=["tests*"]),
-    package_data={'vp_suite': ['resources/*']},
-    include_package_data=True,
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    zip_safe=False,
-    keywords=["deep learning", "pytorch", "AI", "video prediction"],
-    python_requires=">=3.6",
-    setup_requires=[],
-    install_requires=_load_requirements(str(here)),
-    extras_require={
-        'dev': _load_requirements(str(here), file_name="requirements_dev.txt"),
-        'doc': _load_requirements(str(docs)),
-    },
+    keywords=about.__keywords__,
     project_urls={
         "Documentation": about.__docs_url__,
         "Source": about.__source_url__,
         "Tracker": about.__tracker_url__,
     },
-    classifiers=[
-        "Environment :: Console",
-        "Natural Language :: English",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3 :: Only",
-    ],
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    python_requires=about.__python_requires__,
+    classifiers=about.__classifiers__,
+    packages=find_packages(exclude=["tests*"]),
+    include_package_data=True,
+    package_data={'vp_suite': ['resources/*']},
+    exclude_package_data={'vp_suite': ['resources/local_config.json']},
+    zip_safe=False,
+    setup_requires=[],
+    install_requires=_load_requirements(str(here)),
+    extras_require={
+        'dev': _load_requirements(str(here), file_name="requirements_dev.txt"),
+        'doc': _load_requirements(str(docs)),
+    }
 )

@@ -52,7 +52,7 @@ class ConvLSTM(VPModelBlock):
     r"""
     This class implements a convolutional LSTM (which was introduced in Shi et al. (https://arxiv.org/abs/1506.04214)
     and originally implemented in https://github.com/Hzzone/Precipitation-Nowcasting). This highly popular version
-     (implemented in https://github.com/ndrplz/ConvLSTM_pytorch) implements slightly different dynamics.
+    (implemented in https://github.com/ndrplz/ConvLSTM_pytorch) implements slightly different dynamics.
     """
     NAME = "ConvLSTM (Palazzi, Abati)"
     CODE_REFERENCE = "https://github.com/ndrplz/ConvLSTM_pytorch"

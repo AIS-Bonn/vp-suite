@@ -125,12 +125,12 @@ The following snippet provides a full example:
 ```python
 import json
 from vp_suite import VPSuite
-from vp_suite.constants import PKG_RESOURCES
+from vp_suite.defaults import SETTINGS
 
 suite = VPSuite()
 suite.load_dataset(dataset="KTH")  # select dataset of choice
 suite.create_model(model_id="lstm")  # select model of choice
-with open(str((PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
+with open(str((SETTINGS.PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
     optuna_cfg = json.load(cfg_file)
 # optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
 suite.hyperopt(optuna_cfg, n_trials=30, epochs=10)

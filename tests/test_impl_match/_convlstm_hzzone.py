@@ -12,6 +12,7 @@ REFERENCE_GIT_URL = "https://github.com/Hzzone/Precipitation-Nowcasting.git"
 REPO_DIR = "Precipitation-Nowcasting"
 
 
+# noinspection PyUnresolvedReferences
 def test_impl():
 
     # cfg needs to be imported due to circular import in their code, however it is not loadable by default due to

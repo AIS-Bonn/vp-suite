@@ -10,7 +10,7 @@ from PIL import Image
 
 from vp_suite.utils.utils import timed_input
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 
 class MovingMNISTDataset(VPDataset):
     r"""
@@ -29,7 +29,7 @@ class MovingMNISTDataset(VPDataset):
     NAME = "Moving MNIST"
     REFERENCE = "https://arxiv.org/abs/1502.04681v3"
     IS_DOWNLOADABLE = "Yes"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "moving_mnist"
     ACTION_SIZE = 0
     DATASET_FRAME_SHAPE = (64, 64, 3)
 

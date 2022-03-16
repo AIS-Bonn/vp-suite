@@ -5,7 +5,7 @@ from torchvision.io import read_video
 from pathlib import Path
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 from vp_suite.utils.utils import set_from_kwarg, read_video
 
 
@@ -21,7 +21,7 @@ class Physics101Dataset(VPDataset):
     NAME = "Physics 101"
     REFERENCE = "http://phys101.csail.mit.edu/"
     IS_DOWNLOADABLE = "Yes"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "phys101"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "phys101"
     AVAILABLE_CAMERAS = ["Camera_1", "Camera_2", "Kinect_RGB_1"]  #: Available cameras/image sources.
     AVAILABLE_SUBSEQ = ["start", "middle", "end"]  #: Available (sub-)sequence extraction position identifiers.
     MIN_SEQ_LEN = 16

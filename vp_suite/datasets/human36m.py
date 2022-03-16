@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 from vp_suite.utils.utils import set_from_kwarg, get_frame_count, read_video
 
 
@@ -23,7 +23,7 @@ class Human36MDataset(VPDataset):
     NAME = "Human 3.6M"
     REFERENCE = "http://vision.imar.ro/human3.6m/description.php"
     IS_DOWNLOADABLE = "With Registered Account"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "human36m"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "human36m"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 994  #: Minimum number of frames across all sequences (6349 in longest).
     ACTION_SIZE = 0
@@ -98,9 +98,9 @@ class Human36MDataset(VPDataset):
         vid_filepaths: [Path] = list(d_path.rglob(f"**/*.mp4"))
         if len(vid_filepaths) == 0:  # no data available -> download data and unpack
             from vp_suite.utils.utils import run_shell_command
-            import vp_suite.constants as constants
+            from vp_suite.defaults import SETTINGS
             print(f"Downloading and extracting {cls.NAME} - Videos...")
-            prep_script = (constants.PKG_RESOURCES / 'get_dataset_human36m.sh').resolve()
+            prep_script = (SETTINGS.PKG_RESOURCES / 'get_dataset_human36m.sh').resolve()
             run_shell_command(f"{prep_script} {cls.DEFAULT_DATA_DIR}")
 
         # open all videos to get their frame counts (speeds up dataset creation later)

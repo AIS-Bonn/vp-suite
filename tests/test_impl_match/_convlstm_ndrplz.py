@@ -10,6 +10,8 @@ REPO_DIR = "ConvLSTM_pytorch"
 from vp_suite.model_blocks import ConvLSTM_ndrplz as OurConvLSTM
 from vp_suite.utils.models import state_dicts_equal
 
+
+# noinspection PyUnresolvedReferences
 def test_impl():
 
     from convlstm import ConvLSTM as TheirConvLSTM

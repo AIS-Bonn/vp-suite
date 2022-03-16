@@ -7,7 +7,7 @@ import torchfile
 from pathlib import Path
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 
 class KTHActionsDataset(VPDataset):
     r"""
@@ -27,7 +27,7 @@ class KTHActionsDataset(VPDataset):
     NAME = "KTH Actions"
     REFERENCE = "https://doi.org/10.1109/ICPR.2004.1334462"
     IS_DOWNLOADABLE = "Yes"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "kth_actions"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "kth_actions"
     CLASSES = ['boxing', 'handclapping', 'handwaving', 'walking', 'running', 'jogging']  #: The different scenarios that constitue this dataset.
     SHORT_CLASSES = ['walking', 'running', 'jogging']  #: Those scenarios where the sequence length might drop below the required frame count.
     MIN_SEQ_LEN = 30
@@ -89,7 +89,7 @@ class KTHActionsDataset(VPDataset):
     @classmethod
     def download_and_prepare_dataset(cls):
         from vp_suite.utils.utils import run_shell_command
-        import vp_suite.constants as constants
-        get_kth_command = f"{(constants.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} " \
+        from vp_suite.defaults import SETTINGS
+        get_kth_command = f"{(SETTINGS.PKG_RESOURCES / 'get_dataset_kth.sh').resolve()} " \
                           f"{str(cls.DEFAULT_DATA_DIR.resolve())}"
         run_shell_command(get_kth_command)

@@ -11,6 +11,7 @@ from vp_suite.utils.models import state_dicts_equal
 REFERENCE_GIT_URL = "https://github.com/thuml/predrnn-pytorch.git"
 REPO_DIR = "predrnn-pytorch"
 
+
 def test_impl():
 
     parser = argparse.ArgumentParser(description='PyTorch video prediction model - PredRNN')
@@ -103,6 +104,7 @@ def test_impl():
         test_predrnnv2(cur_args, i)
 
 
+# noinspection PyUnresolvedReferences
 def test_predrnnv2(args, test_id):
     from core.models.model_factory import Model
     from core.utils.preprocess import reshape_patch, reshape_patch_back

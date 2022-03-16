@@ -8,7 +8,7 @@ from tfrecord.tools.tfrecord2idx import create_index
 from tfrecord.torch.dataset import TFRecordDataset
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 
 class BAIRPushingDataset(VPDataset):
     r"""
@@ -22,7 +22,7 @@ class BAIRPushingDataset(VPDataset):
     NAME = "BAIR robot pushing"
     REFERENCE = "https://arxiv.org/abs/1710.05268"
     IS_DOWNLOADABLE = "Yes"
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "bair_robot_pushing"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "bair_robot_pushing"
     MIN_SEQ_LEN = 30
     ACTION_SIZE = 4
     DATASET_FRAME_SHAPE = (64, 64, 3)

@@ -11,6 +11,7 @@ REFERENCE_GIT_URL = OurModel.CODE_REFERENCE
 REPO_DIR = "PhyDNet"
 
 
+# noinspection PyUnresolvedReferences
 def test_impl():
 
     from models.models import ConvLSTM as TheirConvLSTM, PhyCell as TheirPhyCell, EncoderRNN as TheirEncoderRNN

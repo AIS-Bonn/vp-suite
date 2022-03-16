@@ -2,6 +2,7 @@ import random, json, os, time
 import warnings
 from typing import List, Dict, Any
 from pathlib import Path
+from copy import deepcopy
 
 import numpy as np
 import torch
@@ -10,7 +11,7 @@ from torch.utils.data import DataLoader
 import wandb
 from tqdm import tqdm
 
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS, DEFAULT_RUN_CONFIG
 from vp_suite.utils.dataset_wrapper import VPDatasetWrapper
 from vp_suite.datasets import DATASET_CLASSES
 from vp_suite.base import VPModel
@@ -35,9 +36,6 @@ class VPSuite:
         datasets(List[:class:`VPDatasetWrapper`]): The loaded datasets.
         models(List[:class:`VPModel`]): The loaded/created models.
     """
-
-    _DEFAULT_RUN_CONFIG : Path = constants.PKG_RESOURCES / 'run_config.json'
-
     def __init__(self, device: str = "cuda"):
         r"""
         Instantiates the `VPSuite`, setting device and clearing loaded models and datasets.
@@ -93,11 +91,9 @@ class VPSuite:
 
         # if seq information is specified, directly execute set_seq_len
         if any([k in dataset_kwargs.keys() for k in ["context_frames", "pred_frames", "seq_step"]]):
-            with open(str(self._DEFAULT_RUN_CONFIG.resolve()), 'r') as cfg_file:
-                run_config = json.load(cfg_file)
-            context_frames = dataset_kwargs.pop("context_frames", run_config["context_frames"])
-            pred_frames = dataset_kwargs.pop("pred_frames", run_config["pred_frames"])
-            seq_step = dataset_kwargs.pop("seq_step", run_config["seq_step"])
+            context_frames = dataset_kwargs.pop("context_frames", DEFAULT_RUN_CONFIG["context_frames"])
+            pred_frames = dataset_kwargs.pop("pred_frames", DEFAULT_RUN_CONFIG["pred_frames"])
+            seq_step = dataset_kwargs.pop("seq_step", DEFAULT_RUN_CONFIG["seq_step"])
             dataset.set_seq_len(context_frames, pred_frames, seq_step)
 
         self.datasets.append(dataset)
@@ -207,8 +203,7 @@ class VPSuite:
         elif split == "test" and len(self.test_sets) == 0:
             raise ValueError("No test sets loaded. Load a dataset in test mode "
                              "before starting training or test runs")
-        with open(str(self._DEFAULT_RUN_CONFIG.resolve()), 'r') as cfg_file:
-            run_config = json.load(cfg_file)
+        run_config = deepcopy(DEFAULT_RUN_CONFIG)
 
         # update config
         if not all([run_arg in run_config.keys() for run_arg in run_kwargs.keys()]):
@@ -308,7 +303,7 @@ class VPSuite:
             print(f"Using existing model save location ({model.model_dir})...")
             out_path = Path(model.model_dir)
         else:
-            out_dir = run_config["out_dir"] or constants.OUT_PATH / timestamp('train')  # fetch default if None
+            out_dir = run_config["out_dir"] or SETTINGS.OUT_PATH / timestamp('train')  # fetch default if None
             out_path = Path(out_dir)
             out_path.mkdir(parents=True, exist_ok=True)
             model.model_dir = str(out_path.resolve())
@@ -350,7 +345,7 @@ class VPSuite:
         if with_wandb:
             wandb_reinit = using_optuna and trial.number > 0
             wandb.init(config=config, project="vp-suite-training",
-                       dir=str(constants.WANDB_PATH.resolve()), reinit=wandb_reinit)
+                       dir=str(SETTINGS.WANDB_PATH.resolve()), reinit=wandb_reinit)
 
         # OPTIMIZER
         optimizer, optimizer_scheduler = None, None
@@ -556,7 +551,7 @@ class VPSuite:
 
         # save visualizations
         timestamp_test = timestamp('test')
-        vis_out_dir = constants.OUT_PATH / timestamp_test
+        vis_out_dir = SETTINGS.OUT_PATH / timestamp_test
         vis_out_dir.mkdir()
         if not config["no_vis"]:
             print(f"Saving visualizations for trained models...")
@@ -594,7 +589,7 @@ class VPSuite:
                     print("Logging test results to WandB for all models...")
                     wandb.init(config={"test_mode": test_mode, "model_dir": model.model_dir},
                                project="vp-suite-testing", name=f"{model.NAME} ({wandb_full_suffix})",
-                               dir=str(constants.WANDB_PATH.resolve()), reinit=(i > 0))
+                               dir=str(SETTINGS.WANDB_PATH.resolve()), reinit=(i > 0))
                     for f, mean_metric_dict in enumerate(mean_metric_dicts):
                         wandb.log({"pred_frames": f+1, **mean_metric_dict})
                     if not config["no_vis"] and model.model_dir is not None:

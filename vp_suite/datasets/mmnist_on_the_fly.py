@@ -3,7 +3,7 @@ import torch
 from torchvision.datasets import MNIST
 
 from vp_suite.base import VPDataset, VPData
-import vp_suite.constants as constants
+from vp_suite.defaults import SETTINGS
 
 
 class MovingMNISTOnTheFly(VPDataset):
@@ -21,7 +21,7 @@ class MovingMNISTOnTheFly(VPDataset):
     NAME = "Moving MNIST - On the fly"
     IS_DOWNLOADABLE = "Yes (MNIST digits)"
     ON_THE_FLY = True
-    DEFAULT_DATA_DIR = constants.DATA_PATH / "moving_mnist_on_the_fly"
+    DEFAULT_DATA_DIR = SETTINGS.DATA_PATH / "moving_mnist_on_the_fly"
     VALID_SPLITS = ["train", "val", "test"]
     MIN_SEQ_LEN = 1e8  #: Sequence length unbounded, depends on input sequence length
     ACTION_SIZE = 0

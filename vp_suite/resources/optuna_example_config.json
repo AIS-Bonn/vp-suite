@@ -11,6 +11,6 @@
     "max": 100
   },
   "model_type": {
-    "choices": ["non_conv", "lstm", "unet"]
+    "choices": ["trajgru", "predrnn-pp", "phy"]
   }
 }

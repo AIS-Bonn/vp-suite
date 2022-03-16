@@ -23,7 +23,7 @@ COLORS = {
 }  #: Pre-defined border colors for video visualizations (r, g, b).
 
 
-def get_color_array(color: str) -> [int, int, int]:
+def get_color_array(color: str):
     r"""
     Args:
         color (str): A string specifying the border color.

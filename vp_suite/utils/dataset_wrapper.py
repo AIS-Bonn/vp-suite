@@ -13,7 +13,7 @@ class VPDatasetWrapper:
         Instantiates the dataset class specified by the given dataset_class value and split identifier.
 
         Args:
-            dataset_class (str): A string identifier corresponding to the dataset class that should be instantiated.
+            dataset_class (Any): A string identifier corresponding to the dataset class that should be instantiated.
             split (str): A string specifying whether this Wrapper should wrap a training/validation or a test set.
             **dataset_kwargs (Any): Additional optional dataset configuration arguments.
         """

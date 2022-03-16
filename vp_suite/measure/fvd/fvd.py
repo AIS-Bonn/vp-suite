@@ -140,11 +140,11 @@ class FrechetVideoDistance(VPMeasure):
 def calculate_2_wasserstein_dist(pred, target):
     r"""
     Calulates the two components of the 2-Wasserstein metric:
-    The general formula is given by: d(P_target, P_pred = min_{X, Y} E[|X-Y|^2]
+    The general formula is given by: ``d(P_target, P_pred = min_{X, Y} E[|X-Y|^2]``
 
-    For multivariate gaussian distributed inputs x_target ~ MN(mu_target, cov_target)
-    and x_pred ~ MN(mu_pred, cov_pred), this reduces to:
-    d = |mu_target - mu_pred|^2 - Tr(cov_target + cov_pred - 2(cov_target * cov_pred)^(1/2))
+    For multivariate gaussian distributed inputs ``x_target ~ MN(mu_target, cov_target)``
+    and ``x_pred ~ MN(mu_pred, cov_pred)``, this reduces to:
+    ``d = |mu_target - mu_pred|^2 - Tr(cov_target + cov_pred - 2(cov_target * cov_pred)^(1/2))``
 
     Fast method implemented according to following paper: https://arxiv.org/pdf/2009.14075.pdf
 

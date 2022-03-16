@@ -1,5 +1,6 @@
 .idea
 vp-suite
+vp_suite/resources/local_config.json
 
 # ------------------------------------------------
 
