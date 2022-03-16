@@ -23,6 +23,6 @@ MODEL_CLASSES = {
     "convlstm-shi": EF_ConvLSTM,
     "trajgru": EF_TrajGRU,
     "predrnn-pp": PredRNN_V2,
-}  #: A dictionary of all models
+}  #: A dictionary of all models and the corresponding string identifiers with which they can be accessed.
 
 AVAILABLE_MODELS = MODEL_CLASSES.keys()

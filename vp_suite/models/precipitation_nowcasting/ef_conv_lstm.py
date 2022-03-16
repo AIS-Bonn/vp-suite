@@ -33,12 +33,12 @@ class EF_ConvLSTM(Encoder_Forecaster):
     dec_c = [96, 96, 96, 96, 64, 16]  #: Channels for conv and rnn; Length should be 2*num_layers
 
     # convs
-    enc_conv_names = ["conv1_leaky_1", "conv2_leaky_1", "conv3_leaky_1"]
+    enc_conv_names = ["conv1_leaky_1", "conv2_leaky_1", "conv3_leaky_1"]  #: Encoder conv block layer names (for internal initialization)
     enc_conv_k = [3, 3, 3]  #: Encoder conv block kernel sizes per layer
     enc_conv_s = [1, 2, 2]  #: Encoder conv block strides per layer
     enc_conv_p = [1, 1, 1]  #: Encoder conv block paddings per layer
 
-    dec_conv_names = ["deconv1_leaky_1", "deconv2_leaky_1", "deconv3_leaky_1"]
+    dec_conv_names = ["deconv1_leaky_1", "deconv2_leaky_1", "deconv3_leaky_1"]  #: Decoder conv block layer names (for internal initialization)
     dec_conv_k = [4, 4, 3]  #: Decoder conv block kernel sizes per layer
     dec_conv_s = [2, 2, 1]  #: Decoder conv block strides per layer
     dec_conv_p = [1, 1, 1]  #: Decoder conv block paddings per layer

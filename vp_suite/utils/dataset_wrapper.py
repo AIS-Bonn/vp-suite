@@ -42,27 +42,26 @@ class VPDatasetWrapper:
 
     def __str__(self):
         r"""
-        Returns: A string representation of the Wrapper and the wrapped dataset(s).
+        Returns a string representation of the Wrapper and the wrapped dataset(s).
         """
         return f"DatasetWrapper[{self.NAME}](datasets={self.datasets}, is_ready={self.is_ready})"
 
     def is_training_set(self):
         r"""
-        Returns: True if this wrapper wraps training/validation data, false otherwise.
-
+        Returns True if this wrapper wraps training/validation data, false otherwise.
         """
         return "train" in self.datasets.keys() and "val" in self.datasets.keys()
 
     def is_test_set(self):
         r"""
-        Returns: True if this wrapper wraps testing fata, false otherwise.
+        Returns True if this wrapper wraps testing fata, false otherwise.
         """
         return "test" in self.datasets.keys()
 
     @property
     def train_data(self):
         r"""
-        Returns: The wrapped training dataset. If not existent, raises an error.
+        Returns the wrapped training dataset. If not existent, raises an error.
         """
         train_data = self.datasets.get("train", None)
         if train_data is None:
@@ -72,7 +71,7 @@ class VPDatasetWrapper:
     @property
     def val_data(self):
         r"""
-        Returns: The wrapped validation dataset. If not existent, raises an error.
+        Returns the wrapped validation dataset. If not existent, raises an error.
         """
         val_data = self.datasets.get("val", None)
         if val_data is None:
@@ -82,7 +81,7 @@ class VPDatasetWrapper:
     @property
     def test_data(self):
         r"""
-        Returns: The wrapped test dataset. If not existent, raises an error.
+        Returns the wrapped test dataset. If not existent, raises an error.
         """
         test_data = self.datasets.get("test", None)
         if test_data is None:
@@ -92,35 +91,35 @@ class VPDatasetWrapper:
     @property
     def NAME(self):
         r"""
-        Returns: The dataset name.
+        Returns the dataset name.
         """
         return self.datasets["main"].NAME
 
     @property
     def data_dir(self):
         r"""
-        Returns: The dataset's data location
+        Returns the dataset's data location
         """
         return self.datasets["main"].data_dir
 
     @property
     def action_size(self):
         r"""
-        Returns: The dataset's action size (which is 0 for datasets that don't provide actions)
+        Returns the dataset's action size (which is 0 for datasets that don't provide actions)
         """
         return self.datasets["main"].ACTION_SIZE
 
     @property
     def img_shape(self):
         r"""
-        Returns: The shape of each frame of the sequences that will be provided by the dataset (after preprocessing)
+        Returns the shape of each frame of the sequences that will be provided by the dataset (after preprocessing)
         """
         return self.datasets["main"].img_shape
 
     @property
     def config(self):
         r"""
-        Returns: A dictionary containing the dataset's configuration parameters.
+        Returns a dictionary containing the dataset's configuration parameters.
         """
         return self.datasets["main"].config
 

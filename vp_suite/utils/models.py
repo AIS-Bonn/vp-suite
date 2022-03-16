@@ -69,6 +69,7 @@ def state_dicts_equal(model1: nn.Module, model2: nn.Module,
     r"""
     Checks whether two models are equal with respect to their state dicts.
     Modified from: https://gist.github.com/rohan-varma/a0a75e9a0fbe9ccc7420b04bff4a7212
+
     Args:
         model1 (nn.Module): Model 1.
         model2 (nn.Module): Model 2.

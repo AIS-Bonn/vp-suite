@@ -16,7 +16,7 @@ LOSS_CLASSES = {
     "ssim": SSIM,
     "psnr": PSNR,
     "fvd": FrechetVideoDistance
-}  #: TODO
+}  #: A dictionary containing all loss classes and the corresponding string key with which they can be accessed.
 AVAILABLE_LOSSES = LOSS_CLASSES.keys()
 
 # === metrics ==================================================================
@@ -29,5 +29,5 @@ METRIC_CLASSES = {
     "ssim": SSIM,
     "psnr": PSNR,
     "fvd": FrechetVideoDistance
-}  #: TODO
+}  #: A dictionary containing all metric classes and the corresponding string key with which they can be accessed.
 AVAILABLE_METRICS = METRIC_CLASSES.keys()

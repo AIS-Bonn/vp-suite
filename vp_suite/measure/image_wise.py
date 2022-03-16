@@ -3,7 +3,9 @@ This module hosts several popular image-wise measures, such as Mean-Square Error
 Structural Similarity Index (SSIM) or Learned Perceptual Image Patch Similarity (LPIPS).
 
 APPLIES TO ALL LOSSES:
+
 - expected data type: torch.Tensor (data type: torch.float)
+
 - expected shape: [b, t, c, h, w] ([b, t, 3, h, w] for LPIPS and SSIM)
 """
 
