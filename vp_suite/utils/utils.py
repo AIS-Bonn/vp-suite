@@ -2,7 +2,6 @@ import sys
 from typing import List, Union
 from datetime import datetime
 import subprocess
-import shlex
 import inspect
 from pathlib import Path
 
@@ -206,9 +205,9 @@ def get_frame_count(fp: Union[Path, str]):
     return length
 
 
-def get_public_attrs(obj, calling_method: str, non_config_vars: List[str] = None, model_mode: bool = False):
+def get_public_attrs(obj, calling_method: str = None, non_config_vars: List[str] = None, model_mode: bool = False):
     r"""
-    Similar to inspect.getmembers(), this method returns a dictionary containing all public attributes of an object.
+    Similarly to inspect.getmembers(), this method returns a dictionary containing all public attributes of an object.
 
     Args:
         obj (Any): The object to check.
@@ -221,7 +220,8 @@ def get_public_attrs(obj, calling_method: str, non_config_vars: List[str] = None
     attr_dict = dict()
     instance_names = set(dir(obj))
     instance_names = [n for n in instance_names if not n.startswith("_") and not n[0].isupper()]  # remove private fields, dunders and constants (starting with capital letter)
-    instance_names.remove(calling_method)  # remove name of calling method to avoid recursion
+    if calling_method is not None:
+        instance_names.remove(calling_method)  # remove name of calling method to avoid recursion
     for name in instance_names:
         value = getattr(obj, name)
         if inspect.isroutine(value):  # disregard routines
@@ -232,3 +232,23 @@ def get_public_attrs(obj, calling_method: str, non_config_vars: List[str] = None
     for k in (non_config_vars or []):  # remove non-config vars, if any
         attr_dict.pop(k, None)
     return attr_dict
+
+
+class TimeOutException(Exception):
+    pass
+
+
+def alarm_handler(signum, frame):
+    raise TimeOutException()
+
+
+def timed_input(description, default=None, secs=60):
+    import signal
+    signal.signal(signal.SIGALRM, alarm_handler)
+    try:
+        signal.alarm(secs)
+        value = input(f"{description} [{default}]: ") or default
+    except TimeOutException:
+        print("Time limit reached, using default value...")
+        value = default
+    return value

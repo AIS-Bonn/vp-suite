@@ -8,6 +8,7 @@ import torch
 from tqdm import tqdm
 from PIL import Image
 
+from vp_suite.utils.utils import timed_input
 from vp_suite.base import VPDataset, VPData
 import vp_suite.constants as constants
 
@@ -71,26 +72,11 @@ class MovingMNISTDataset(VPDataset):
         train_seqs = 60000
         test_seqs = 10000
 
-        class TimeOutException(Exception):
-            pass
-
-        def alarm_handler(signum, frame):
-            raise TimeOutException("Timeout in prompting for MMNIST creation config")
-
-        import signal
-        signal.signal(signal.SIGALRM, alarm_handler)
-        # prompt for dataset stats
-        try:
-            print("Generating Moving MNIST 64x64 dataset (you've got 60 seconds to answer the prompts, mwahahaha)")
-            signal.alarm(60)
-            num_frames = int(input(f"Number of frames per sequence [{num_frames}]: ") or num_frames)
-            digit_size = int(input(f"Pixel size of digit in frame [{digit_size}]: ") or digit_size)
-            digits_per_image = int(input(f"Digits per image [{digits_per_image}]: ") or digits_per_image)
-            train_seqs = int(input(f"Number of training sequences [{train_seqs}]: ") or train_seqs)
-            test_seqs = int(input(f"Number of test sequences [{test_seqs}]: ") or test_seqs)
-            signal.alarm(0)
-        except TimeOutException:
-            print("Time limit reached, using default values for the remaining config.")
+        num_frames = int(timed_input("Number of frames per sequence", default=num_frames))
+        digit_size = int(timed_input("Pixel size of digit in frame", default=digit_size))
+        digits_per_image = int(timed_input("Digits per image", default=digits_per_image))
+        train_seqs = int(timed_input("Number of training sequences", default=train_seqs))
+        test_seqs = int(timed_input("Number of test sequences", default=test_seqs))
 
         d_path = self.DEFAULT_DATA_DIR
         d_path.mkdir(parents=True, exist_ok=True)
