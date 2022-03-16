@@ -64,5 +64,5 @@ def test_impl():
         ours = ours.detach().cpu().numpy()
         assert theirs.shape == ours.shape, f"Prediction shapes are not equal. " \
                                            f"Theirs: {theirs.shape}, ours: {ours.shape}"
-        # save_diff_hist(np.abs(theirs - ours), test_id)
+        # save_arr_hist(np.abs(theirs - ours), test_id)
         assert np.allclose(theirs, ours, rtol=0, atol=1e-4), "Predictions are not equal."

@@ -80,7 +80,7 @@ def test_impl():
     if theirs.shape != ours.shape:
         raise AssertionError(f"Prediction shapes are not equal. "
                              f"Theirs: {theirs.shape}, ours: {ours.shape}")
-    # save_diff_hist(np.abs(theirs - ours), test_id)
+    # save_arr_hist(np.abs(theirs - ours), test_id)
     if not np.allclose(theirs, ours, rtol=0, atol=1e-4):
         raise AssertionError("Predictions are not equal.")
 

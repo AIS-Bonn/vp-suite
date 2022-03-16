@@ -13,39 +13,54 @@ import torch
 import torch.nn as nn
 
 
-def most(l: List[bool], factor=0.67):
-    '''
-    Like List.all(), but not 'all' of them.
-    '''
+def most(l: List[bool], factor: float = 0.67):
+    r"""
+    Args:
+        l (List[bool]): The input list to check.
+        factor (float): The fraction that needs to be surpassed.
+
+    Returns:
+        Similar to List.all(), returns True if more than the specified fraction of entries is true in given list,
+        False otherwise (e.g. for factor=0.5, returns True if at least half the entries of l are True.
+    """
     return sum(l) >= factor * len(l)
 
 
-def timestamp(program):
-    """ Obtains a timestamp of the current system time in a human-readable way """
+def timestamp(program: str):
+    """
+    Args:
+        program (str): A string identifier specifying which run is asking for the timestamp.
 
+    Returns: A timestamp of the current system time in a human-readable way, prepended by the given program string.
+    """
     timestamp = str(datetime.now()).split(".")[0].replace(" ", "_").replace(":", "-")
     return f"{program}_{timestamp}"
 
 
-def run_shell_command(command):
+def run_shell_command(command: str):
+    r"""
+    Runs the given command in the shell.
+
+    Args:
+        command (str): The given command as a single string.
+    """
     subprocess.check_call(command, shell=True)
 
 
 class TqdmUpTo(tqdm):
-    """Alternative Class-based version of the above.
+    r"""
+    A wrapper class around the tqdm progress bar that can be used for showing download progress.
     Provides `update_to(n)` which uses `tqdm.update(delta_n)`.
     Taken from https://gist.github.com/leimao/37ff6e990b3226c2c9670a2cd1e4a6f5,
     Inspired by [twine#242](https://github.com/pypa/twine/pull/242),
-    [here](https://github.com/pypa/twine/commit/42e55e06).
+    [mentioned here](https://github.com/pypa/twine/commit/42e55e06).
     """
     def update_to(self, b=1, bsize=1, tsize=None):
-        """
-        b  : int, optional
-            Number of blocks transferred so far [default: 1].
-        bsize  : int, optional
-            Size of each block (in tqdm units) [default: 1].
-        tsize  : int, optional
-            Total size (in tqdm units). If [default: None] remains unchanged.
+        r"""
+        Updates the tqdm progress indicator.
+        b (int): Number of blocks transferred so far [default: 1].
+        bsize (int): Size of each block (in tqdm units) [default: 1].
+        tsize (int): Total size (in tqdm units). If [default: None] remains unchanged.
         """
         if tsize is not None:
             self.total = tsize
@@ -53,6 +68,14 @@ class TqdmUpTo(tqdm):
 
 
 def download_from_url(url: str, dst_path : str):
+    r"""
+    Downloads the contents of specified URL to the specified destination filepath.
+    Uses :class:`TqdmUpTo` to show download progress.
+
+    Args:
+        url (str): The URL to download from.
+        dst_path (str): The path to save the downloaded data to.
+    """
     if sys.version_info[0] == 2:
         from urllib import urlretrieve
     else:
@@ -63,8 +86,13 @@ def download_from_url(url: str, dst_path : str):
         urlretrieve(url, dst_path, reporthook=t.update_to)
 
 
-def check_optuna_config(optuna_cfg : dict):
+def check_optuna_config(optuna_cfg: dict):
+    r"""
+    Checks whether the syntax of given optuna configuration dict is correct.
 
+    Args:
+        optuna_cfg (dict): The optuna configuration to be checked.
+    """
     try:
         for parameter, p_dict in optuna_cfg.items():
             if not isinstance(p_dict, dict):
@@ -83,8 +111,20 @@ def check_optuna_config(optuna_cfg : dict):
         print("invalid optuna config")
 
 
-def set_from_kwarg(obj, kwarg_dict, attr_name, default=None, required=False, choices=None, skip_unusable=False):
+def set_from_kwarg(obj, kwarg_dict: dict, attr_name: str,
+                   default=None, required=False, choices=None, skip_unusable=False):
+    r"""
+    Sets an attribute in given object by using given name, configuration dict and utility values.
 
+    Args:
+        obj (Any): The object in which the attribute should be set.
+        kwarg_dict (dict): The configuration dict where the attribute should be taken from.
+        attr_name (str): The attribute name.
+        default (Any): If the given config. dict does not contain the given attribute name as key, this default value will be used instead.
+        required (bool): If set to True, will raise an Error rather than using the default value.
+        choices (Any): If specified, checks whether the value(s) to be set is (are) one of the valid choices.
+        skip_unusable (bool): If specified, skips attributes that are not already defined in the object.
+    """
     # required parameter?
     if required and attr_name not in kwarg_dict.keys():
         raise ValueError(f"missing required parameter '{attr_name}' for object '{obj.__class__}'")
@@ -119,7 +159,17 @@ def set_from_kwarg(obj, kwarg_dict, attr_name, default=None, required=False, cho
 
 def read_video(fp: Union[Path, str], img_size: (int, int) = None,
                start_index=0, num_frames=-1):
+    r"""
+    Reads and returns the video specified by given file path as a numpy array.
 
+    Args:
+        fp (Union[Path, str]): The filepath to read the video from.
+        img_size ((int, int)): The desired frame size (height and width; frames will be reshaped to this size)
+        start_index (int): Index of first frame to read.
+        num_frames (int): Nmber of frames to read (default value -1 signifies that video is read to the end).
+
+    Returns: The read video as a numpy array of shape (frames, height, width, channels).
+    """
     if isinstance(fp, Path):
         fp = str(fp.resolve())
     cap = cv2.VideoCapture(fp)
@@ -143,6 +193,12 @@ def read_video(fp: Union[Path, str], img_size: (int, int) = None,
 
 
 def get_frame_count(fp: Union[Path, str]):
+    r"""
+    Args:
+        fp (Union[Path, str]): The filepath of the video to be checked.
+
+    Returns: The number of frames in the video at given filepath
+    """
     if isinstance(fp, Path):
         fp = str(fp.resolve())
     cap = cv2.VideoCapture(fp)
@@ -150,18 +206,17 @@ def get_frame_count(fp: Union[Path, str]):
     return length
 
 
-def get_public_attrs(obj, calling_method: str, non_config_vars: [str] = None, model_mode: bool = False):
+def get_public_attrs(obj, calling_method: str, non_config_vars: List[str] = None, model_mode: bool = False):
     r"""
-    Similar to inspect.getmembers()
+    Similar to inspect.getmembers(), this method returns a dictionary containing all public attributes of an object.
 
     Args:
-        obj ():
-        calling_method (str):
-        non_config_vars([str]):
-        model_mode(bool):
+        obj (Any): The object to check.
+        calling_method (str): The name of the calling method. If e.g. this gets called from one of the object's property fields, it has to be excluded to avoid recursion.
+        non_config_vars(List[str]): A list of the attributes that should not be included in the result.
+        model_mode(bool): If set to True, disregards any attributes that are torch.nn.Module or torch.Tensor objects.
 
-    Returns:
-
+    Returns: A dictionary containing all public attributes of an object.
     """
     attr_dict = dict()
     instance_names = set(dir(obj))

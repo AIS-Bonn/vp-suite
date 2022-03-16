@@ -174,7 +174,7 @@ def test_predrnnv2(args, test_id):
     print("check results")
     assert their_pred.shape == our_pred.shape, f"Prediction shapes are not equal. " \
                                                f"Theirs: {their_pred.shape}, ours: {our_pred.shape}"
-    # save_diff_hist(np.abs(their_pred - our_pred), test_id)
+    # save_arr_hist(np.abs(their_pred - our_pred), test_id)
     assert np.allclose(their_pred, our_pred, rtol=0, atol=1e-4), "Predictions are not equal."
 
 

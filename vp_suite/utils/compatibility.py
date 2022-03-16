@@ -1,18 +1,28 @@
 import warnings
+from typing import Union
 
 from torch import nn as nn
 from torchvision import transforms as TF
 
 from vp_suite.utils.models import ScaleToModel, ScaleToTest
+from vp_suite.base import VPModel, VPDataset
+from vp_suite.utils.dataset_wrapper import VPDatasetWrapper
 
-
-def check_model_and_data_compat(model, dataset, strict_mode=False):
-    """
+def check_model_and_data_compat(model: VPModel, dataset: Union[VPDataset, VPDatasetWrapper], strict_mode=False):
+    r"""
     Checks consistency of given model and given dataset.
     If in strict mode, discrepancies in tensor value range and img size will be bridged with adapters.
     Otherwise, discrepancies are not allowed and will lead to errors.
-    """
 
+    Args:
+        model (VPModel): The model to check against the dataset.
+        dataset (Union[VPDataset, VPDatasetWrapper]: The dataset to check against the model.
+        strict_mode (bool): If set to true, any config discrepancy will lead to an error thrown. Otherwise, the method tries to bridge smaller discrepancies by creating adapter modules.
+
+    Returns:
+        PyTorch adapter modules for pre- and postprocessing that bridge minor config discrepancies.
+        If no discrepancies were found, these modules are identity layers.
+    """
     model_config = model.config
     dataset_config = dataset.config
     model_preprocessing, model_postprocessing = [], []
@@ -52,10 +62,15 @@ def check_model_and_data_compat(model, dataset, strict_mode=False):
     return model_preprocessing, model_postprocessing
 
 
-def check_run_and_model_compat(model, run_config):
-    '''
+def check_run_and_model_compat(model: VPModel, run_config: dict):
+    r"""
     Checks consistency of the config of a loaded model with given the run configuration.
-    '''
+    If any critical inconsistency is found, this method raises an error.
+
+    Args:
+        model (VPModel): The model to be checked against the run configuration.
+        run_config (dict): The run configuration to be checked against the model.
+    """
     model_config = model.config
     model_dir_str =  f"(location: {model.model_dir})"
 

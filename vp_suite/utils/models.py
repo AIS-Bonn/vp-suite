@@ -1,28 +1,64 @@
+from typing import List, Union, Tuple
+
 import torch
 from torch import nn as nn
 
 
 class ScaleToTest(nn.Module):
-    def __init__(self, model_value_range, test_value_range):
+    r"""
+    This class acts as an adapter module that scales pixel values from the model domain to the test run domain.
+    """
+    def __init__(self, model_value_range: List[float], test_value_range: List[float]):
+        r"""
+        Initializes the scaler module by setting the model domain and test domain value range.
+
+        Args:
+            model_value_range (List[float]): The model's value range.
+            test_value_range (List[float]): The test run's value range.
+        """
         super(ScaleToTest, self).__init__()
         self.m_min, self.m_max = model_value_range
         self.t_min, self.t_max = test_value_range
 
     def forward(self, img : torch.Tensor):
-        ''' input: [model_val_min, model_val_max] '''
+        r"""
+        Scales the input image from the model domain to the test run domain.
+
+        Args:
+            img (torch.Tensor): The image to scale.
+
+        Returns: The scaled image.
+        """
         img = (img - self.m_min) / (self.m_max - self.m_min)  # [0., 1.]
         img = img * (self.t_max - self.t_min) + self.t_min  # [test_val_min, test_val_max]
         return img
 
 
 class ScaleToModel(nn.Module):
+    r"""
+    This class acts as an adapter module that scales pixel values from the test run domain to the model domain.
+    """
     def __init__(self, model_value_range, test_value_range):
+        r"""
+        Initializes the scaler module by setting the model domain and test domain value range.
+
+        Args:
+            model_value_range (List[float]): The model's value range.
+            test_value_range (List[float]): The test run's value range.
+        """
         super(ScaleToModel, self).__init__()
         self.m_min, self.m_max = model_value_range
         self.t_min, self.t_max = test_value_range
 
     def forward(self, img: torch.Tensor):
-        ''' input: [test_val_min, test_val_max] '''
+        r"""
+        Scales the input image from the test run domain to the model domain.
+
+        Args:
+            img (torch.Tensor): The image to scale.
+
+        Returns: The scaled image.
+        """
         img = (img - self.t_min) / (self.t_max - self.t_min)  # [0., 1.]
         img = img * (self.m_max - self.m_min) + self.m_min  # [model_val_min, model_val_max]
         return img
@@ -91,11 +127,19 @@ def state_dicts_equal(model1: nn.Module, model2: nn.Module,
     return True
 
 
-def conv_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
+def conv_output_shape(h_w: Union[int, Tuple[int]], kernel_size=1, stride=1, pad=0, dilation=1):
     """
     SOURCE: https://discuss.pytorch.org/t/utility-function-for-calculating-the-shape-of-a-conv-output/11173/6
-    Utility function for computing output of convolutions
-    takes a tuple of (h,w) and returns a tuple of (h,w)
+    Utility function for computing output size of convolutions given the input size and the conv layer parameters.
+
+    Args:
+        h_w (Union[int, Tuple[int]]): The input height and width, either as a single integer number or as a tuple.
+        kernel_size (int): The layer's kernel size.
+        stride (int): The layer's stride.
+        pad (int): The layer's padding.
+        dilation (int): The layer's dilation.
+
+    Returns: A tuple (height, width) with the resulting height and width after layer application.
     """
 
     if type(h_w) is not tuple:
@@ -119,10 +163,17 @@ def conv_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
 def convtransp_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
     """
     SOURCE: https://discuss.pytorch.org/t/utility-function-for-calculating-the-shape-of-a-conv-output/11173/6
-    Utility function for computing output of transposed convolutions
-    takes a tuple of (h,w) and returns a tuple of (h,w)
-    """
+    Utility function for computing output size of convTransposes given the input size and the convT layer parameters.
 
+    Args:
+        h_w (Union[int, Tuple[int]]): The input height and width, either as a single integer number or as a tuple.
+        kernel_size (int): The layer's kernel size.
+        stride (int): The layer's stride.
+        pad (int): The layer's padding.
+        dilation (int): The layer's dilation.
+
+    Returns: A tuple (height, width) with the resulting height and width after layer application.
+    """
     if type(h_w) is not tuple:
         h_w = (h_w, h_w)
 
