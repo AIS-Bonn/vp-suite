@@ -60,6 +60,20 @@ This repo aims at providing a suite that facilitates scientific work in the subf
 ### Usage
 
 <details>
+<summary><b>Changing save location</b></summary>
+
+When using this package for the first time, the save location for datasets, 
+models and logs is set to `<installation_dir>/vp-suite-data`. 
+If you'd like to change that, simply run:
+  
+```
+python vp_suite/resource/set_run_path.py
+```
+
+This script changes your save location and migrates any existing data.
+</details>
+
+<details>
 <summary><b>Training models</b></summary>
    
 ```python
@@ -149,11 +163,9 @@ In that case, consider e.g. reducing the number of training epochs._
 
 **Notes:**
 
-- When using this package, a folder `vp-suite` is created in your current working directory/current path 
-that will contain all downloaded data as well as run logs, outputs and trained models.
 - Use `VPSuite.list_available_models()` and `VPSuite.list_available_datasets()` to get an overview of which models and datasets are currently covered by the framework.
 - All training, testing and hyperparametrization calls can be heavily configured (adjusting training hyperparameters, logging behavior etc, ...).
-  For a comprehensive list of all adjustable run configuration parameters see TODO.
+  For a comprehensive list of all adjustable run configuration parameters see the documentation of the `vp_suite.defaults` package.
 
 ### Customization
 
