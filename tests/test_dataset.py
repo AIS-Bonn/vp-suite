@@ -1,7 +1,12 @@
 import pytest
+
 from vp_suite.datasets import DATASET_CLASSES
 from vp_suite.utils.dataset_wrapper import VPDatasetWrapper
+from vp_suite.utils.utils import PytestExpectedException
+from helpers.test_helpers import skip_on
 
+
+@skip_on(PytestExpectedException)
 @pytest.mark.parametrize('dataset_str', DATASET_CLASSES.keys(), ids=[v.NAME for v in DATASET_CLASSES.values()])
 def test_dataset(dataset_str):
 

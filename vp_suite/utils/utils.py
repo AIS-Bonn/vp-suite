@@ -251,4 +251,9 @@ def timed_input(description, default=None, secs=60):
     except TimeOutException:
         print("Time limit reached, using default value...")
         value = default
+    signal.alarm(0)
     return value
+
+
+class PytestExpectedException(Exception):
+    pass

@@ -12,7 +12,7 @@ from torch._utils import _accumulate
 from torch.utils.data import Subset
 from torch.utils.data.dataset import Dataset
 
-from vp_suite.utils.utils import set_from_kwarg, get_public_attrs
+from vp_suite.utils.utils import set_from_kwarg, get_public_attrs, PytestExpectedException
 
 
 CROPS = [TF.CenterCrop, TF.RandomCrop]
@@ -95,7 +95,8 @@ class VPDataset(Dataset):
         if self.data_dir is None:
             if not self.default_available(self.split, **dataset_kwargs):
                 if "pytest" in sys.modules:  # don't download datasets if running this code from the test suite
-                    raise RuntimeError(f"Default for Dataset '{self.NAME}' is unavailable and pytest won't download it")
+                    raise PytestExpectedException(f"Default for Dataset '{self.NAME}' is unavailable "
+                                                  f"and pytest won't download it")
                 else:
                     print(f"downloading/preparing dataset '{self.NAME}' "
                           f"and saving it to '{self.DEFAULT_DATA_DIR}'...")
