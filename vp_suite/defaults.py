@@ -12,21 +12,22 @@ class _PackageSettings:
     r"""
     This class contains package constants.
     """
-    PKG_ROOT_PATH = Path(__file__).parent  #: The root path of the vp_suite package (not the installable vp-suite package, but subfolder that actually contains the code).
-    PKG_RESOURCES = PKG_ROOT_PATH / "resources"  #: The resources path of the vp_suite package.
 
-    _INSTALL_CONFIG_FP = str((PKG_RESOURCES / "local_config.json").resolve())  #: Default file location for the local install config.
-    _RUN_PATH = Path("vp-suite")  #: This is the default run path, which will be used if no other run path is initially specified.
+    PKG_ROOT_PATH = Path(__file__).parent.parent  # The root path of the vp-suite repository.
+    PKG_SRC_PATH = Path(__file__).parent  #: The path of the vp_suite package (not the installable vp-suite package, but the subfolder that actually contains the code).
+    PKG_RESOURCES = PKG_SRC_PATH / "resources"  #: The resources path of the vp_suite package.
+    LOCAL_CONFIG_FP: str = str((PKG_RESOURCES / "local_config.json").resolve())  #: Default file location for the local install config.
+    DEFAULT_RUN_PATH = PKG_ROOT_PATH / "vp-suite-data"  #: The fallback run path.
     RUN_PATH = None  #: This path is the base path for all artifacts that are saved during vp-suite usage (i.e. models, datasets and logs).
-    try:  # obtain the RUN_PATH from the package installation config file (generated on package install)
-        with open(_INSTALL_CONFIG_FP, "r") as _install_config_file:
+
+    # obtain the RUN_PATH from the package installation config file
+    try:
+        with open(LOCAL_CONFIG_FP, "r") as _install_config_file:
             RUN_PATH = Path(json.load(_install_config_file)["run_path"])
     except FileNotFoundError as e:
-        _run_path = timed_input("No save location specified yet. Where shall we save models, data and logs?",
-                                str(_RUN_PATH.resolve()), secs=60)
-        with open(_INSTALL_CONFIG_FP, "w") as _install_config_file:
-            json.dump({"run_path": _run_path}, _install_config_file)
-        RUN_PATH = Path(_run_path)
+        RUN_PATH = DEFAULT_RUN_PATH
+        with open(LOCAL_CONFIG_FP, "w") as _install_config_file:
+            json.dump({"run_path": str(RUN_PATH.resolve())}, _install_config_file)
 
     OUT_PATH = RUN_PATH / "output"  #: The path where trained models and corresponding visualizations will be saved.
     DATA_PATH = RUN_PATH / "data"  #: The path where downloaded data and datasets will be stored.
