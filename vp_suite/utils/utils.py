@@ -235,14 +235,30 @@ def get_public_attrs(obj, calling_method: str = None, non_config_vars: List[str]
 
 
 class TimeOutException(Exception):
+    r"""
+    A custom Exception type thrown when signals time out (e.g. for timed input prompts).
+    """
     pass
 
 
 def alarm_handler(signum, frame):
+    r"""
+    A simple alarm handler that raises a :class:`TimeoutException`.
+    """
     raise TimeOutException()
 
 
-def timed_input(description, default=None, secs=60):
+def timed_input(description: str, default=None, secs: int = 60):
+    r"""
+    A wrapper around the default `input()` statement, imposing a time limit and providing default values if
+    the input is empty.
+    Args:
+        description (str): A description text that will be displayed with the input prompt.
+        default (Any): The default value to assign to the variable if the the input is empty.
+        secs (int): Time limit in seconds.
+
+    Returns: The input value (or the default value if input is empty).
+    """
     import signal
     signal.signal(signal.SIGALRM, alarm_handler)
     try:
@@ -256,4 +272,7 @@ def timed_input(description, default=None, secs=60):
 
 
 class PytestExpectedException(Exception):
+    r"""
+    A custom exception type that, when raised during pytest execution, causes pytest to skip the current test.
+    """
     pass
