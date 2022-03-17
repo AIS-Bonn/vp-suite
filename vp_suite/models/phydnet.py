@@ -129,8 +129,8 @@ class PhyDNet(VPModel):
             for b in range(0, self.phycell.cell_list[0].input_dim):
                 filters = self.phycell.cell_list[0].F.conv1.weight[:, b]
                 moment = k2m(filters.double()).float()
-                moment_loss += torch.mean(self.moment_loss_scale * (moment - self.constraints) ** 2)
-            model_losses = {"moment regularization loss": moment_loss}
+                moment_loss += torch.mean((moment - self.constraints) ** 2)
+            model_losses = {"moment regularization loss": self.moment_loss_scale * moment_loss}
         else:
             model_losses = None
 

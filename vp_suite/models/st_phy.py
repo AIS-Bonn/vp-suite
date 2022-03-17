@@ -171,9 +171,10 @@ class STPhy(VPModel):
                 filters = self.phycell_list[0].F.conv1.weight[:, b]
                 moment = k2m(filters.double()).float()
                 moment_loss += torch.mean(self.moment_loss_scale * (moment - self.constraints) ** 2)
+            decoupling_loss = torch.mean(torch.stack(decouple_loss, dim=0))
             model_losses = {
-                "moment regularization loss": moment_loss,
-                "memory decoupling loss": torch.mean(torch.stack(decouple_loss, dim=0)),
+                "moment regularization loss": self.moment_loss_scale * moment_loss,
+                "memory decoupling loss": self.decoupling_loss_scale * decoupling_loss,
             }
         else:
             model_losses = None
