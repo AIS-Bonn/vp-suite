@@ -238,7 +238,7 @@ Other kinds of contributions are also very welcome - just check the open issues 
 
 When submitting a merge request, please make sure all tests run through (execute from root folder):
 ```
-python -m pytest --runslow --cov=vp_suite
+python -m pytest --runslow --cov=vp_suite -rs
 ```
 _Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
 You will need to have `vp-suite` installed in development move, though ([see here](#installation))._
