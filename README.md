@@ -252,6 +252,18 @@ and execute the following:
 cd docs/
 bash assemble_docs.sh
 ```
+   
+### Citing
+   
+Please consider citing if you find our findings or our repository helpful.
+```
+@article{karapetyan_VideoPrediction_2022,
+       title = {Video Prediction at Multiple Scales with Hierarchical Recurrent Networks},
+       author = {Karapetyan, Ani and Villar-Corrales, Angel and Boltres, Andreas and Behnke, Sven},
+       journal={arXiv preprint arXiv:2203.09303},
+       year={2022}
+} 
+```
 
 ### Acknowledgements
 
