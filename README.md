@@ -67,7 +67,7 @@ models and logs is set to `<installation_dir>/vp-suite-data`.
 If you'd like to change that, simply run:
   
 ```
-python vp_suite/resource/set_run_path.py
+python vp_suite/resources/set_run_path.py
 ```
 
 This script changes your save location and migrates any existing data.
