@@ -1,9 +1,33 @@
-authors:
-  - affiliation: "Institute for Autonomous Intelligent Systems (AIS), University of Bonn"
-    family-names: Boltres
-    given-names: Andreas
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
 license: MIT
-message: If you use this software, please cite it using these metadata. 
-repository-code: "https://github.com/AIS-Bonn/vp-suite/"
-title: "vp-suite"
+title: >-
+  Video Prediction at Multiple Scales with
+  Hierarchical Recurrent Networks
+message: >-
+  Please consider citing if you find our findings or
+  our repository helpful. 
+type: software
+authors:
+  - given-names: Ani
+    family-names: Karapetyan
+    affiliation: >-
+      Institute for Autonomous Intelligent Systems
+      (AIS), University of Bonn
+  - given-names: Angel
+    family-names: Villar-Corrales
+    affiliation: >-
+      Institute for Autonomous Intelligent Systems
+      (AIS), University of Bonn
+  - family-names: Boltres
+    given-names: Andreas
+    affiliation: >-
+      Institute for Autonomous Intelligent Systems
+      (AIS), University of Bonn
+  - family-names: Behnke
+    given-names: Sven
+    affiliation: >-
+      Institute for Autonomous Intelligent Systems
+      (AIS), University of Bonn
