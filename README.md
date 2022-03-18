@@ -165,7 +165,7 @@ In that case, consider e.g. reducing the number of training epochs._
 
 - Use `VPSuite.list_available_models()` and `VPSuite.list_available_datasets()` to get an overview of which models and datasets are currently covered by the framework.
 - All training, testing and hyperparametrization calls can be heavily configured (adjusting training hyperparameters, logging behavior etc, ...).
-  For a comprehensive list of all adjustable run configuration parameters see the documentation of the `vp_suite.defaults` package.
+  For a comprehensive list of all adjustable run configuration parameters see the [documentation](https://ais-bonn.github.io/vp-suite/vp_suite.defaults.html) of the `vp_suite.defaults` package.
 
 ### Customization
 
@@ -208,7 +208,7 @@ This package is designed with quick extensibility in mind. See the sections belo
 </details>
 
 <details>
-<summary><b>New measures (losses and/or metrics)</b></summary>
+<summary><b>New Measures (losses and/or metrics)</b></summary>
 
 1. Create a new file `<your name>.py` in the folder `vp_suite/measure`, containing your loss or metric.
 2. Make `vp_suite.base.base_measure.BaseMeasure` its superclass and override/implement all needed implementations and constants.
@@ -241,7 +241,7 @@ When submitting a merge request, please make sure all tests run through (execute
 python -m pytest --runslow --cov=vp_suite -rs
 ```
 _Note: this is the easiest way to run all tests [without import hassles](https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest).
-You will need to have `vp-suite` installed in development move, though ([see here](#installation))._
+You will need to have `vp-suite` installed in development mode, though ([see here](#installation))._
 
 #### API Documentation
 
