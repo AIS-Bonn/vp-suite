@@ -1,0 +1,7 @@
+vp\_suite.datasets.kth
+=============================
+
+.. automodule:: vp_suite.datasets.kth
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+vp\_suite.model\_blocks.conv\_lstm\_ndrplz
+=================================================
+
+.. automodule:: vp_suite.model_blocks.conv_lstm_ndrplz
+   :members:
+   :undoc-members:
+   :show-inheritance:

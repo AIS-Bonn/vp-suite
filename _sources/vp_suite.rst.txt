@@ -1,0 +1,29 @@
+vp\_suite
+=================
+
+.. automodule:: vp_suite
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.base
+   vp_suite.datasets
+   vp_suite.measure
+   vp_suite.model_blocks
+   vp_suite.models
+   vp_suite.utils
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.defaults
+   vp_suite.vpsuite

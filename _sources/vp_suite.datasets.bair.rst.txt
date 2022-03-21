@@ -1,0 +1,7 @@
+vp\_suite.datasets.bair
+==============================
+
+.. automodule:: vp_suite.datasets.bair
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Available Models" href="available_models.html" />
+    <link rel="prev" title="Welcome to vp-suite’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#contributing">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#unit-testing">Unit Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-documentation">API Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="vp_suite.html">vp_suite</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Introduction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/readme.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <a class="reference external image-reference" href="https://pypi.org/project/vp-suite/"><img alt="PyPi" src="https://img.shields.io/pypi/v/vp-suite?color=blue&amp;style=for-the-badge" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/vp-suite"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/vp-suite?style=for-the-badge&amp;color=blue" /></a>
+<a class="reference external image-reference" href="https://github.com/AIS-Bonn/vp-suite#license"><img alt="License Badge" src="https://img.shields.io/github/license/AIS-Bonn/vp-suite?color=brightgreen&amp;style=for-the-badge" /></a>
+<a class="reference external image-reference" href="https://ais-bonn.github.io/vp-suite/"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/AIS-Bonn/vp-suite/docs_pages_workflow?label=Docs&amp;style=for-the-badge" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/vp-suite"><img alt="PyTorch - Version" src="https://img.shields.io/badge/PYTORCH-1.10+-red?style=for-the-badge&amp;logo=pytorch" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/project/vp-suite"><img alt="Python - Version" src="https://img.shields.io/badge/PYTHON-3.6+-red?style=for-the-badge&amp;logo=python&amp;logoColor=white" /></a>
+<section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
+<p><em>Video prediction (‘VP’) is the task of predicting future frames given some context frames.</em></p>
+<p>Like with most Computer Vision sub-domains, scientific contributions in this field exhibit a high variance in the following aspects:</p>
+<ul class="simple">
+<li><p><strong>Training protocol</strong> (dataset usage, when to backprop, value ranges etc.)</p></li>
+<li><p><strong>Technical details of model implementation</strong> (deep learning framework, package dependencies etc.)</p></li>
+<li><p><strong>Benchmark selection and execution</strong> (this includes the choice of dataset, number of context/predicted frames, skipping frames in the observed sequences etc.)</p></li>
+<li><p><strong>Evaluation protocol</strong> (metrics chosen, variations in implementation/reduction modes, different ways of creating visualizations etc.)</p></li>
+</ul>
+<p>Furthermore, while many contributors nowadays do share their code, seemingly minor missing parts such as dataloaders etc. make it much harder to assess, compare and improve existing models.</p>
+<p>This repo aims at providing a suite that facilitates scientific work in the subfield, providing standardized yet customizable solutions for the aspects mentioned above. This way, validating existing VP models and creating new ones hopefully becomes much less tedious.</p>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
+<p><strong>Requires ``pip`` and ``python &gt;= 3.6`` (code is tested with version ``3.8``).</strong></p>
+<details>
+<summary><b>From PyPi</b></summary>
+
+   ```
+   pip install vp-suite
+   ```
+</details>
+<details>
+<summary><b>From source</b></summary>
+
+   ```
+   pip install git+https://github.com/Flunzmas/vp-suite.git
+   ```
+</details>
+<details>
+<summary><b>If you want to contribute</b></summary>
+
+   ```
+   git clone https://github.com/Flunzmas/vp-suite.git
+   cd vp-suite
+   pip install -e .[dev]
+   ```
+</details>
+<details>
+<summary><b>If you want to build docs</b></summary>
+
+   ```
+   git clone https://github.com/Flunzmas/vp-suite.git
+   cd vp-suite
+   pip install -e .[doc]
+   ```
+</details></section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h1>
+<details>
+<summary><b>Changing save location</b></summary>
+
+When using this package for the first time, the save location for datasets,
+models and logs is set to `<installation_dir>/vp-suite-data`.
+If you'd like to change that, simply run:
+
+```
+python vp_suite/resources/set_run_path.py
+```
+
+This script changes your save location and migrates any existing data.
+</details><details>
+<summary><b>Training models</b></summary>
+
+```python
+from vp_suite import VPSuite
+
+# 1. Set up the VP Suite.
+suite = VPSuite()
+
+# 2. Load one of the provided datasets.
+#    They will be downloaded automatically if no downloaded data is found.
+suite.load_dataset("MM")  # load moving MNIST dataset from default location
+
+# 3. Create a video prediction model.
+suite.create_model('convlstm-shi')  # create a ConvLSTM-Based Prediction Model.
+
+# 4. Run the training loop, optionally providing custom configuration.
+suite.train(lr=2e-4, epochs=100)
+```
+
+This code snippet will train the model, log training progress to your [Weights & Biases](https://wandb.ai) account,
+save model checkpoints on improvement and generate and save prediction visualizations.
+</details><details>
+<summary><b>Evaluating models</b></summary>
+
+```python
+from vp_suite import VPSuite
+
+# 1. Set up the VP Suite.
+suite = VPSuite()
+
+# 2. Load one of the provided datasets in test mode.
+#    They will be downloaded automatically if no downloaded data is found.
+suite.load_dataset("MM", split="test")  # load moving MNIST dataset from default location
+
+# 3. Get the filepaths to the models you'd like to test and load the models
+model_dirs = ["out/model_foo/", "out/model_bar/"]
+for model_dir in model_dirs:
+    suite.load_model(model_dir, ckpt_name="best_model.pth")
+
+# 4. Test the loaded models on the loaded test sets.
+suite.test(context_frames=5, pred_frames=10)
+```
+
+This code will evaluate the loaded models on the loaded dataset (its test portion, if avaliable),
+creating detailed summaries of prediction performance across a customizable set of metrics.
+The results as well as prediction visualizations are saved and logged to [Weights & Biases](https://wandb.ai).
+
+_Note 1: If the specified evaluation protocol or the loaded dataset is incompatible with one of the models,
+this will raise an error with an explanation._
+
+_Note 2: By default, a [CopyLastFrame](https://github.com/AIS-Bonn/vp-suite/blob/main/vp_suite/models/model_copy_last_frame.py)
+baseline is also loaded and tested with the other models._
+</details><details>
+<summary><b>Hyperparameter Optimization</b></summary>
+
+This package uses [optuna](https://github.com/optuna/optuna) to provide hyperparameter optimization functionalities.
+The following snippet provides a full example:
+
+```python
+import json
+from vp_suite import VPSuite
+from vp_suite.defaults import SETTINGS
+
+suite = VPSuite()
+suite.load_dataset(dataset="KTH")  # select dataset of choice
+suite.create_model(model_id="lstm")  # select model of choice
+with open(str((SETTINGS.PKG_RESOURCES / "optuna_example_config.json").resolve()), 'r') as cfg_file:
+    optuna_cfg = json.load(cfg_file)
+# optuna_cfg specifies the parameters' search intervals and scales; modify as you wish.
+suite.hyperopt(optuna_cfg, n_trials=30, epochs=10)
+```
+This code e.g. will run 30 training loops (called _trials_ by optuna), producing a trained model for each hyperparameter configuration and writing the hyperparameter configuration of the best performing run to the console.
+
+_Note 1: For hyperopt, visualization, logging and model checkpointing is minimized to reduce IO strain._
+
+_Note 2: Despite optuna's trial pruning capabilities, running a high number of trials might still take a lot of time.
+In that case, consider e.g. reducing the number of training epochs._
+
+ Use `no_wandb=True`/`no_vis=True`
+ if you want to log outputs to the console instead/not generate and save visualizations.
+
+</details><p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">VPSuite.list_available_models()</span></code> and <code class="docutils literal notranslate"><span class="pre">VPSuite.list_available_datasets()</span></code> to get an overview of which models and datasets are currently covered by the framework.</p></li>
+<li><p>All training, testing and hyperparametrization calls can be heavily configured (adjusting training hyperparameters, logging behavior etc, …).
+For a comprehensive list of all adjustable run configuration parameters see the <a class="reference external" href="https://ais-bonn.github.io/vp-suite/vp_suite.defaults.html">documentation</a> of the <code class="docutils literal notranslate"><span class="pre">vp_suite.defaults</span></code> package.</p></li>
+</ul>
+</section>
+<section id="customization">
+<h1>Customization<a class="headerlink" href="#customization" title="Permalink to this headline"></a></h1>
+<p>This package is designed with quick extensibility in mind. See the sections below for how to add new components
+(models, model blocks, datasets or measures).</p>
+<details>
+<summary><b>New Models</b></summary>
+
+1. Create a file `<your name>.py` in the folder `vp_suite/models`.
+2. Create a class that derives from `vp_suite.base.base_model.VideoPredictionModel` and override/specify new constants you need.
+3. Write your model code or import existing code so that the superclass interface is still served.
+   If desired, you can implement a custom training/evaluation loop iteration `train_iter()`/`eval_iter()`
+   that gets called instead of the default training/evaluation loop iteration.
+4. Register your model in the `MODEL_CLASSES` dictionary of `vp_suite/models/__init__.py`, giving it a key that can be used by the suite.
+   By now, you should be able to create an instance of your model with `VPSuite.create_model()` and train it on a dataset with `VPSuite.train()`.
+
+</details><details>
+<summary><b>New Model Blocks</b></summary>
+
+1. Create a file `<your name>.py` in the folder `vp_suite/model_blocks`.
+2. Create a class that derives from `vp_suite.base.base_model_block.ModelBlock` and override/specify new constants you need.
+3. Write your model block code or import existing code so that the superclass interface is still served.
+4. If desired, add a local import of your model block to `vp_suite/model_blocks/__init__.py` (this registers the model block package-wide).
+
+</details><details>
+<summary><b>New Datasets</b></summary>
+
+1. Create a file `<your name>.py` in the folder `vp_suite/datasets`.
+2. Create a class that derives from `vp_suite.base.base_dataset.BaseVPDataset` and override/specify new constants you need.
+3. Write your dataset code or import existing code so that the superclass interface is served.
+   If it's a public dataset, consider implementing methods to automatically download it.
+4. Register your dataset in the `DATASET_CLASSES` dict of `vp_suite/dataset/__init__.py`, giving it a key that can be used by the suite.
+   By now, you should be able to load your dataset with `VPSuite.load_dataset()` and train models on it with `VPSuite.train()`.
+
+</details><details>
+<summary><b>New Measures (losses and/or metrics)</b></summary>
+
+1. Create a new file `<your name>.py` in the folder `vp_suite/measure`, containing your loss or metric.
+2. Make `vp_suite.base.base_measure.BaseMeasure` its superclass and override/implement all needed implementations and constants.
+3. Register the measure in the `METRIC_CLASSES` dict of `vp_suite/measure/__init__.py` and, if it can also be used as a loss, in the `LOSS_CLASSES` dict.
+
+</details><p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>If you omit the docstring for a particular attribute/method/field, the docstring of the base class is used for documentation.</p></li>
+<li><p>If implementing components that originate from publications/public repositories, please override the corresponding constants to specify the source!
+Additionally, if you want to write automated tests checking implementation equality,
+have a look at how <code class="docutils literal notranslate"><span class="pre">tests/test_impl_match.py</span></code> fetches the tests of <code class="docutils literal notranslate"><span class="pre">tests/test_impl_match/</span></code> and executes these tests.</p></li>
+<li><p>Basic unit tests for models, datasets and measures are executed on all registered models -
+you don’t need to write such basic tests for your custom components!
+Same applies for documentation: The tables that list available components are filled automatically.</p></li>
+</ul>
+</section>
+<section id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h1>
+<p>This project is always open to extension! It grows especially powerful with more models and datasets, so if you’ve made your code work on custom models/datasets/metrics/etc., feel free to submit a merge request!</p>
+<p>Other kinds of contributions are also very welcome - just check the open issues on the
+<a class="reference external" href="https://github.com/AIS-Bonn/vp-suite/issues">tracker</a> or open up a new issue there.</p>
+<section id="unit-testing">
+<h2>Unit Testing<a class="headerlink" href="#unit-testing" title="Permalink to this headline"></a></h2>
+<p>When submitting a merge request, please make sure all tests run through (execute from root folder):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">pytest</span> <span class="o">--</span><span class="n">runslow</span> <span class="o">--</span><span class="n">cov</span><span class="o">=</span><span class="n">vp_suite</span> <span class="o">-</span><span class="n">rs</span>
+</pre></div>
+</div>
+<p><em>Note: this is the easiest way to run all tests `without import hassles &lt;https://docs.pytest.org/en/latest/explanation/pythonpath.html#invoking-pytest-versus-python-m-pytest&gt;`_.
+You will need to have ``vp-suite`` installed in development mode, though (`see here &lt;#installation&gt;`_).</em></p>
+</section>
+<section id="api-documentation">
+<h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline"></a></h2>
+<p>The official API documentation is updated automatically upon push to the main branch.
+If you want to build the documentation locally, make sure you’ve installed the package <a class="reference external" href="#installation">accordingly</a>
+and execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">docs</span><span class="o">/</span>
+<span class="n">bash</span> <span class="n">assemble_docs</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="citing">
+<h1>Citing<a class="headerlink" href="#citing" title="Permalink to this headline"></a></h1>
+<p>Please consider citing if you find our findings or our repository helpful.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@article</span><span class="p">{</span><span class="n">karapetyan_VideoPrediction_2022</span><span class="p">,</span>
+       <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="n">Video</span> <span class="n">Prediction</span> <span class="n">at</span> <span class="n">Multiple</span> <span class="n">Scales</span> <span class="k">with</span> <span class="n">Hierarchical</span> <span class="n">Recurrent</span> <span class="n">Networks</span><span class="p">},</span>
+       <span class="n">author</span> <span class="o">=</span> <span class="p">{</span><span class="n">Karapetyan</span><span class="p">,</span> <span class="n">Ani</span> <span class="ow">and</span> <span class="n">Villar</span><span class="o">-</span><span class="n">Corrales</span><span class="p">,</span> <span class="n">Angel</span> <span class="ow">and</span> <span class="n">Boltres</span><span class="p">,</span> <span class="n">Andreas</span> <span class="ow">and</span> <span class="n">Behnke</span><span class="p">,</span> <span class="n">Sven</span><span class="p">},</span>
+       <span class="n">journal</span><span class="o">=</span><span class="p">{</span><span class="n">arXiv</span> <span class="n">preprint</span> <span class="n">arXiv</span><span class="p">:</span><span class="mf">2203.09303</span><span class="p">},</span>
+       <span class="n">year</span><span class="o">=</span><span class="p">{</span><span class="mi">2022</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="acknowledgements">
+<h1>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline"></a></h1>
+<ul class="simple">
+<li><p>Project structure is inspired by <a class="reference external" href="https://github.com/qubvel/segmentation_models.pytorch">segmentation_models.pytorch</a>.</p></li>
+<li><p>Sphinx-autodoc templates are inspired by the <a class="reference external" href="https://github.com/mabuchilab/QNET">QNET</a> repository.</p></li>
+</ul>
+<p>All other sources are acknowledged in the documentation of the respective point of usage (to the best of our knowledge).</p>
+</section>
+<section id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h1>
+<p>This project comes with an <a class="reference external" href="https://github.com/AIS-Bonn/vp-suite/blob/main/LICENSE">MIT License</a>, except for the following components:</p>
+<ul class="simple">
+<li><p>Module <code class="docutils literal notranslate"><span class="pre">vp_suite.measure.fvd.pytorch_i3d</span></code> (Apache 2.0 License, taken and modified from <a class="reference external" href="https://github.com/piergiaj/pytorch-i3d">here</a>)</p></li>
+</ul>
+</section>
+<section id="disclaimer">
+<h1>Disclaimer<a class="headerlink" href="#disclaimer" title="Permalink to this headline"></a></h1>
+<p>I do not host or distribute any dataset. For all provided dataset functionality, I trust you have the permission to download and use the respective data.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to vp-suite’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="available_models.html" class="btn btn-neutral float-right" title="Available Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

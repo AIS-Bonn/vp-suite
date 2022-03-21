@@ -1,0 +1,7 @@
+vp\_suite.model\_blocks.conv\_lstm\_hzzone
+=================================================
+
+.. automodule:: vp_suite.model_blocks.conv_lstm_hzzone
+   :members:
+   :undoc-members:
+   :show-inheritance:

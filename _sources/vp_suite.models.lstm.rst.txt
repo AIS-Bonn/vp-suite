@@ -1,0 +1,7 @@
+vp\_suite.models.lstm
+============================
+
+.. automodule:: vp_suite.models.lstm
+   :members:
+   :undoc-members:
+   :show-inheritance:

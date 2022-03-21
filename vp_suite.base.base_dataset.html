@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.base.base_dataset &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.base.base_measure" href="vp_suite.base.base_measure.html" />
+    <link rel="prev" title="vp_suite.base" href="vp_suite.base.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.base.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.base.html">vp_suite.base</a> &raquo;</li>
+        
+      <li>vp_suite.base.base_dataset</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.base.base_dataset.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.base.base_dataset">
+<span id="vp-suite-base-base-dataset"></span><h1>vp_suite.base.base_dataset<a class="headerlink" href="#module-vp_suite.base.base_dataset" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VPData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPData" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+<p>This template class defines the return type for all datasets.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPData.actions">
+<span class="sig-name descname"><span class="pre">actions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.Tensor</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPData.actions" title="Permalink to this definition"></a></dt>
+<dd><p>torch tensors of shape [t, a].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Actions per frame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPData.frames">
+<span class="sig-name descname"><span class="pre">frames</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.Tensor</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPData.frames" title="Permalink to this definition"></a></dt>
+<dd><p>torch tensors of shape [t, c, h, w].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Video frames</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPData.origin">
+<span class="sig-name descname"><span class="pre">origin</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPData.origin" title="Permalink to this definition"></a></dt>
+<dd><p>A string specifying the source of the data.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VPDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.Dataset</span></code></p>
+<p>The base class for all video prediction dataset loaders.
+Data points are provided in the shape of <a class="reference internal" href="#vp_suite.base.base_dataset.VPData" title="vp_suite.base.base_dataset.VPData"><code class="xref py py-class docutils literal notranslate"><span class="pre">VPData</span></code></a> dicts.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>VPDataset objects are not usable directly after creation since the sequence length is unspecified.
+In order to fully prepare the dataset, <code class="xref py py-meth docutils literal notranslate"><span class="pre">self.set_seq_len()</span></code> has to be called with the desired amount
+of frames and the seq_step. Afterwards, the VPDataset object. is ready to be queried for data.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.ACTION_SIZE">
+<span class="sig-name descname"><span class="pre">ACTION_SIZE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.ACTION_SIZE" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the action vector per frame (If the dataset provides no actions, this value is 0).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.DATASET_FRAME_SHAPE">
+<span class="sig-name descname"><span class="pre">DATASET_FRAME_SHAPE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;)</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.DATASET_FRAME_SHAPE" title="Permalink to this definition"></a></dt>
+<dd><p>Shape of a single frame in the dataset (height, width, channels).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.DEFAULT_DATA_DIR">
+<span class="sig-name descname"><span class="pre">DEFAULT_DATA_DIR</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.10)"><span class="pre">pathlib.Path</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.DEFAULT_DATA_DIR" title="Permalink to this definition"></a></dt>
+<dd><p>The default save location of the dataset files.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.IS_DOWNLOADABLE">
+<span class="sig-name descname"><span class="pre">IS_DOWNLOADABLE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.IS_DOWNLOADABLE" title="Permalink to this definition"></a></dt>
+<dd><p>A string identifying whether the dataset can be (freely) downloaded.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.MIN_SEQ_LEN">
+<span class="sig-name descname"><span class="pre">MIN_SEQ_LEN</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.MIN_SEQ_LEN" title="Permalink to this definition"></a></dt>
+<dd><p>The minimum sequence length provided by the dataset.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The dataset’s name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.NON_CONFIG_VARS">
+<span class="sig-name descname"><span class="pre">NON_CONFIG_VARS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['functions',</span> <span class="pre">'ready_for_usage',</span> <span class="pre">'total_frames',</span> <span class="pre">'seq_len',</span> <span class="pre">'frame_offsets',</span> <span class="pre">'data_dir']</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.NON_CONFIG_VARS" title="Permalink to this definition"></a></dt>
+<dd><p>Variables that do not get included in the dict returned by <code class="xref py py-meth docutils literal notranslate"><span class="pre">self.config()</span></code> (Constants are not included either).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.ON_THE_FLY">
+<span class="sig-name descname"><span class="pre">ON_THE_FLY</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.ON_THE_FLY" title="Permalink to this definition"></a></dt>
+<dd><p>If true, accessing the dataset means data is generated on the fly rather than fetched from storage.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.REFERENCE">
+<span class="sig-name descname"><span class="pre">REFERENCE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The reference (publication) where the original dataset is introduced.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.VALID_SPLITS">
+<span class="sig-name descname"><span class="pre">VALID_SPLITS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['train',</span> <span class="pre">'test']</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.VALID_SPLITS" title="Permalink to this definition"></a></dt>
+<dd><p>The valid arguments for specifying splits.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes the dataset loader by determining its split and extracting and processing
+all dataset attributes from the parameters given in <cite>dataset_kwargs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The dataset’s split identifier (i.e. whether it’s a training/validation/test dataset)</p></li>
+<li><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – Optional dataset arguments for image transformation, value_range, splitting etc.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.config" title="Permalink to this definition"></a></dt>
+<dd><p>A dictionary containing the complete dataset configuration, including common attributes
+as well as dataset-specific attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.data_dir">
+<span class="sig-name descname"><span class="pre">data_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.data_dir" title="Permalink to this definition"></a></dt>
+<dd><p>The specified path to the folder containing the dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.default_available">
+<span class="sig-name descname"><span class="pre">default_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.default_available" title="Permalink to this definition"></a></dt>
+<dd><p>Tries to load a dataset and a datapoint using the default <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.data_dir</span></code> value.
+If this succeeds, then we can safely use the default data dir,
+otherwise a new dataset has to be downloaded and prepared.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The dataset’s split identifier (i.e. whether it’s a training/validation/test dataset).</p></li>
+<li><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – Optional dataset arguments for image transformation, value_range, splitting etc.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: True if we could load the dataset using default values, False otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.download_and_prepare_dataset">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">download_and_prepare_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.download_and_prepare_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Downloads the specific dataset, prepares it for the video prediction task (if needed)
+and stores it in a default location in the ‘data/’ folder.
+Implemented by the derived dataset classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.get_test">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.get_test" title="Permalink to this definition"></a></dt>
+<dd><p>A wrapper method that creates a test dataset from the given dataset class.
+Like when initializing such datasets directly,
+optional dataset arguments can be specified with <cite>**dataset_kwargs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – optional dataset arguments for image transformation, value_range, splitting etc.</p>
+</dd>
+</dl>
+<p>Returns: The created test dataset of the same class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.get_train_val">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_train_val</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.get_train_val" title="Permalink to this definition"></a></dt>
+<dd><p>A wrapper method that creates a training and a validation dataset from the given dataset class.
+Like when initializing such datasets directly,
+optional dataset arguments can be specified with <cite>**dataset_kwargs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – Optional dataset arguments for image transformation, value_range, splitting etc.</p>
+</dd>
+</dl>
+<p>Returns: The created training and validation dataset of the same class.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.img_shape">
+<span class="sig-name descname"><span class="pre">img_shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;)</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.img_shape" title="Permalink to this definition"></a></dt>
+<dd><p>Shape of a single frame as returned by <cite>__getitem()__</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.postprocess">
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a normalized tensor of an image to a denormalized numpy array.
+Output: np.uint8, shape: […, h, w, c], range: [0, 255]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>torch.Tensor</em>) – Input tensor of shape […, c, h, w] and (approx.) range [min_val, max_val].</p>
+</dd>
+</dl>
+<p>Returns: A post-processed (quantized) sequence array ready for display.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>Preprocesses the input sequence to make it usable by the video prediction models.
+Makes use of the transformations defined in <code class="xref py py-meth docutils literal notranslate"><span class="pre">self.__init__()</span></code>.
+Workflow is as follows:</p>
+<ol class="arabic simple">
+<li><p>Convert to torch tensor of type torch.float.</p></li>
+<li><p>Permute axes to obtain the following shape: [frames/time (t), channels (c), height (h), width (w)].</p></li>
+<li><p>Scale values to the interval defined by <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.value_range_min</span></code> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.value_range_max</span></code>.</p></li>
+<li><p>Crop the image (if applicable).</p></li>
+<li><p>Resize the image (if applicable).</p></li>
+<li><p>Perform further data augmentation operations (if applicable).</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Union</em><em>[</em><em>np.ndarray</em><em>, </em><em>torch.Tensor</em><em>]</em>) – The input sequence.</p></li>
+<li><p><strong>transform</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – Whether to crop/resize/augment the sequence using the dataset’s transformations.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The preprocessed sequence tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.reset_rng">
+<span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.reset_rng" title="Permalink to this definition"></a></dt>
+<dd><p>Optional logic for resetting the RNG of a dataset.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.seq_step">
+<span class="sig-name descname"><span class="pre">seq_step</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.seq_step" title="Permalink to this definition"></a></dt>
+<dd><p>With a step N, every Nth frame is included in the returned sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.set_seq_len">
+<span class="sig-name descname"><span class="pre">set_seq_len</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_step</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.set_seq_len" title="Permalink to this definition"></a></dt>
+<dd><p>Set the sequence length for the upcoming run. Assumes that the given parameters
+lead to a sequence length that does not exceed the minimum sequence length
+specified in <code class="xref py py-attr docutils literal notranslate"><span class="pre">self.MIN_SEQ_LEN</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of input/context frames.</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames to be predicted.</p></li>
+<li><p><strong>seq_step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Sequence step (for step N, assemble the sequence by taking every Nth frame).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.split">
+<span class="sig-name descname"><span class="pre">split</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.split" title="Permalink to this definition"></a></dt>
+<dd><p>The dataset’s split identifier (i.e. whether it’s a training/validation/test dataset).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.train_to_val_ratio">
+<span class="sig-name descname"><span class="pre">train_to_val_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.8</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.train_to_val_ratio" title="Permalink to this definition"></a></dt>
+<dd><p>The ratio of files that will be training data (rest will be validation data). For bigger datasets, this ratio can be set closer to 1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.train_val_seed">
+<span class="sig-name descname"><span class="pre">train_val_seed</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1234</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.train_val_seed" title="Permalink to this definition"></a></dt>
+<dd><p>Random seed used to separate training and validation data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.nn.modules.module.Module</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.transform" title="Permalink to this definition"></a></dt>
+<dd><p>This module gets called in the preprocessing step and consists of pre-specified cropping, resizing and augmentation layers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.value_range_max">
+<span class="sig-name descname"><span class="pre">value_range_max</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.value_range_max" title="Permalink to this definition"></a></dt>
+<dd><p>The upper end of the value range for the returned data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPDataset.value_range_min">
+<span class="sig-name descname"><span class="pre">value_range_min</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPDataset.value_range_min" title="Permalink to this definition"></a></dt>
+<dd><p>The lower end of the value range for the returned data.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPSubset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VPSubset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_dataset.VPSubset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.Subset</span></code></p>
+<p>A minimal wrapper around <code class="xref py py-class docutils literal notranslate"><span class="pre">Subset</span></code> that allows to directly access the underlying dataset’s attributes.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPSubset.dataset">
+<span class="sig-name descname"><span class="pre">dataset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.utils.data.dataset.Dataset</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.utils.data.dataset.T_co</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPSubset.dataset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_dataset.VPSubset.indices">
+<span class="sig-name descname"><span class="pre">indices</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#vp_suite.base.base_dataset.VPSubset.indices" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.base.html" class="btn btn-neutral float-left" title="vp_suite.base" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.base.base_measure.html" class="btn btn-neutral float-right" title="vp_suite.base.base_measure" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+vp\_suite.measure
+=========================
+
+.. automodule:: vp_suite.measure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.measure.fvd
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.measure.image_wise
+   vp_suite.measure.loss_provider
+   vp_suite.measure.metric_provider

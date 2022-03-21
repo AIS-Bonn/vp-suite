@@ -1,0 +1,28 @@
+vp\_suite.models
+========================
+
+.. automodule:: vp_suite.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.models.precipitation_nowcasting
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.models.copy_last_frame
+   vp_suite.models.lstm
+   vp_suite.models.phydnet
+   vp_suite.models.predrnn_v2
+   vp_suite.models.st_phy
+   vp_suite.models.unet3d

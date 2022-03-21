@@ -1,0 +1,7 @@
+vp\_suite.model\_blocks.phydnet
+======================================
+
+.. automodule:: vp_suite.model_blocks.phydnet
+   :members:
+   :undoc-members:
+   :show-inheritance:

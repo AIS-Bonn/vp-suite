@@ -1,0 +1,7 @@
+vp\_suite.datasets.caltech\_pedestrian
+=============================================
+
+.. automodule:: vp_suite.datasets.caltech_pedestrian
+   :members:
+   :undoc-members:
+   :show-inheritance:

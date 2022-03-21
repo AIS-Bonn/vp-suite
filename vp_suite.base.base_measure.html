@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.base.base_measure &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.base.base_model" href="vp_suite.base.base_model.html" />
+    <link rel="prev" title="vp_suite.base.base_dataset" href="vp_suite.base.base_dataset.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.base.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.base.html">vp_suite.base</a> &raquo;</li>
+        
+      <li>vp_suite.base.base_measure</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.base.base_measure.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.base.base_measure">
+<span id="vp-suite-base-base-measure"></span><h1>vp_suite.base.base_measure<a class="headerlink" href="#module-vp_suite.base.base_measure" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VPMeasure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>The base class for all measures (nn Modules taking as input a ground truth sequence and a predicted sequence and
+providing a numerical assessment of the prediction quality). Measures can be losses and/or metrics, depending on
+their registration status in the base package’s <cite>__init__.py</cite> file.
+All implemented losses and metrics should subclass this class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.device">
+<span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.device" title="Permalink to this definition"></a></dt>
+<dd><p>A string specifying whether to use the GPU for calculations (<cite>cuda</cite>) or the CPU (<cite>cpu</cite>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All measures that should be usable as losses should return values where lower means better.
+If for the specific measure higher means better, the actual value should be inverted in the forward method and
+inverted again in the <code class="xref py py-meth docutils literal notranslate"><span class="pre">display()</span></code> method (which prepares the value for display to humans).</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.BIGGER_IS_BETTER">
+<span class="sig-name descname"><span class="pre">BIGGER_IS_BETTER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.BIGGER_IS_BETTER" title="Permalink to this definition"></a></dt>
+<dd><p>Specifies whether bigger values are better.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">NotImplemented</span></em><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The clear-text name of the measure.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.OPT_VALUE">
+<span class="sig-name descname"><span class="pre">OPT_VALUE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.OPT_VALUE" title="Permalink to this definition"></a></dt>
+<dd><p>Specifies the best value attainable (e.g. when input tensors are equal).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.REFERENCE">
+<span class="sig-name descname"><span class="pre">REFERENCE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The reference publication where this measure is originally introduced (represented as string)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Instantiates the measure class by setting the device.
+Additionally, for the derived measure classes,
+instantiates the criterion that is used to calculate the measure value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying whether to use the GPU for calculations (<cite>cuda</cite>) or the CPU (<cite>cpu</cite>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.forward" title="Permalink to this definition"></a></dt>
+<dd><p>The module’s forward pass takes the predicted frame sequence and the ground truth,
+compares them based on the deriving measure’s criterion and logic and outputs a numerical assessment of the
+prediction quality.</p>
+<p>The base measure’s forward method can be used by deriving classes and simply applies the criterion to the
+input tensors, sums up over all entries of an image and finally averages over frames and then batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.Tensor</em>) – The predicted frame sequence as a 5D tensor (batch, frames, c, h, w).</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – The ground truth frame sequence as a 5D tensor (batch, frames, c, h, w)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The calculated numerical quality assessment.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.reshape_clamp">
+<span class="sig-name descname"><span class="pre">reshape_clamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.reshape_clamp" title="Permalink to this definition"></a></dt>
+<dd><p>Reshapes and clamps the input tensors, returning a 4D tensor where batch and time dimension are combined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.Tensor</em>) – The predicted frame sequence as a 5D tensor (batch, frames, c, h, w).</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – The ground truth frame sequence as a 5D tensor (batch, frames, c, h, w)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: the reshaped and clamped pred and target tensors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.base.base_measure.VPMeasure.to_display">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.base.base_measure.VPMeasure.to_display" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a measurement value from the lower-is-better representation returned by the <a class="reference internal" href="#vp_suite.base.base_measure.VPMeasure.forward" title="vp_suite.base.base_measure.VPMeasure.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> method
+to the actual representation of the measure (e.g. SSIM having its best value at 1.0). If the measure did not
+get inverted in the <a class="reference internal" href="#vp_suite.base.base_measure.VPMeasure.forward" title="vp_suite.base.base_measure.VPMeasure.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a>, this method just returns the input value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – The value to be converted.</p>
+</dd>
+</dl>
+<p>Returns: The converted value.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.base.base_dataset.html" class="btn btn-neutral float-left" title="vp_suite.base.base_dataset" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.base.base_model.html" class="btn btn-neutral float-right" title="vp_suite.base.base_model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

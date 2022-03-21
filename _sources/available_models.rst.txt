@@ -1,0 +1,15 @@
+Available Models
+================
+
+========================  ==================  ================================  ==================================================  ====================
+Model Name                Model Identifier    Paper Reference                   Code Reference                                      Matches Reference?
+========================  ==================  ================================  ==================================================  ====================
+CopyLastFrame             ``copy``
+NonConvLSTM               ``lstm``                                                                                                  Not Yet
+UNet-3D                   ``unet-3d``
+PhyDNet                   ``phy``             https://arxiv.org/abs/2003.01460  https://github.com/vincent-leguen/PhyDNet           Not Yet
+ST-Phy                    ``st-phy``
+EF-ConvLSTM (Shi et al.)  ``convlstm-shi``    https://arxiv.org/abs/1506.04214  https://github.com/Hzzone/Precipitation-Nowcasting  Yes
+EF-TrajGRU (Shi et al.)   ``trajgru``         https://arxiv.org/abs/1706.03458  https://github.com/Hzzone/Precipitation-Nowcasting  Yes
+PredRNN++                 ``predrnn-pp``      https://arxiv.org/abs/2103.09504  https://github.com/thuml/predrnn-pytorch            Yes
+========================  ==================  ================================  ==================================================  ====================

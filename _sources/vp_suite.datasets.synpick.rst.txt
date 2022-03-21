@@ -1,0 +1,7 @@
+vp\_suite.datasets.synpick
+=================================
+
+.. automodule:: vp_suite.datasets.synpick
+   :members:
+   :undoc-members:
+   :show-inheritance:

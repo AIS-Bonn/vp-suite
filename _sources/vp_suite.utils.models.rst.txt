@@ -1,0 +1,7 @@
+vp\_suite.utils.models
+=============================
+
+.. automodule:: vp_suite.utils.models
+   :members:
+   :undoc-members:
+   :show-inheritance:

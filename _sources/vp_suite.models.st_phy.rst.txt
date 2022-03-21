@@ -1,0 +1,7 @@
+vp\_suite.models.st\_phy
+===============================
+
+.. automodule:: vp_suite.models.st_phy
+   :members:
+   :undoc-members:
+   :show-inheritance:

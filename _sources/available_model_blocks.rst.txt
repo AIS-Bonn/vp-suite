@@ -1,0 +1,23 @@
+Available Model Blocks
+======================
+
+==============================================  ================================  ==================================================  ====================
+Model Block Name                                Paper Reference                   Code Reference                                      Matches Reference?
+==============================================  ================================  ==================================================  ====================
+Spatio-Temporal LSTM Cell (Action-Conditional)  https://arxiv.org/abs/2103.09504  https://github.com/thuml/predrnn-pytorch            Yes
+Autoencoder
+ConvLSTM (Shi et al.)                           https://arxiv.org/abs/1506.04214  https://github.com/Hzzone/Precipitation-Nowcasting  Yes
+ConvLSTM (Palazzi, Abati)                                                         https://github.com/ndrplz/ConvLSTM_pytorch          Yes (Code Reference)
+DCGAN - Conv                                    arxiv.org/abs/1511.06434
+DCGAN - ConvTranspose                           arxiv.org/abs/1511.06434
+DCGAN Decoder                                   arxiv.org/abs/1511.06434
+DCGAN Encoder                                   arxiv.org/abs/1511.06434
+Decoder
+DoubleConv2d                                    arxiv.org/abs/1505.04597
+DoubleConv3d
+Encoder
+PhyCell                                         https://arxiv.org/abs/2003.01460  https://github.com/vincent-leguen/PhyDNet           Not Yet
+PhyCell - Cell                                  https://arxiv.org/abs/2003.01460  https://github.com/vincent-leguen/PhyDNet           Not Yet
+Spatio-Temporal LSTM Cell                       https://arxiv.org/abs/2103.09504  https://github.com/thuml/predrnn-pytorch            Yes
+TrajGRU                                         https://arxiv.org/abs/1706.03458  https://github.com/Hzzone/Precipitation-Nowcasting  Yes
+==============================================  ================================  ==================================================  ====================

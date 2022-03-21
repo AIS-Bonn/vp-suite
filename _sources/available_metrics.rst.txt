@@ -1,0 +1,14 @@
+Available Metrics
+=================
+
+=================================================  ===================  ============================================
+Metric Name                                        Metric Identifier    Reference
+=================================================  ===================  ============================================
+Mean Squared Error (MSE) / L2 Loss                 ``mse``
+Mean Absolute Error (MAE) / L1 Loss                ``l1``
+Smooth L1 Loss                                     ``smooth_l1``
+Learned Perceptual Image Patch Similarity (LPIPS)  ``lpips``            https://arxiv.org/abs/1801.03924
+Structural Similarity (SSIM)                       ``ssim``             https://ieeexplore.ieee.org/document/1284395
+Peak Signal to Noise Ratio (PSNR)                  ``psnr``
+Fréchet Video Distance (FVD)                       ``fvd``              https://arxiv.org/abs/1812.01717
+=================================================  ===================  ============================================

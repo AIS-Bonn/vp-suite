@@ -1,0 +1,7 @@
+vp\_suite.datasets.mmnist\_on\_the\_fly
+==============================================
+
+.. automodule:: vp_suite.datasets.mmnist_on_the_fly
+   :members:
+   :undoc-members:
+   :show-inheritance:

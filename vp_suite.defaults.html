@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.defaults &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.vpsuite" href="vp_suite.vpsuite.html" />
+    <link rel="prev" title="vp_suite.utils.visualization" href="vp_suite.utils.visualization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">vp_suite.defaults</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.vpsuite.html">vp_suite.vpsuite</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+      <li>vp_suite.defaults</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.defaults.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.defaults">
+<span id="vp-suite-defaults"></span><h1>vp_suite.defaults<a class="headerlink" href="#module-vp_suite.defaults" title="Permalink to this headline"></a></h1>
+<p>This module contains the Settings class, which contains constants;
+and pre-set program configurations, such as default run config parameters.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="vp_suite.defaults.DEFAULT_RUN_CONFIG">
+<span class="sig-name descname"><span class="pre">DEFAULT_RUN_CONFIG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'batch_size':</span> <span class="pre">32,</span> <span class="pre">'context_frames':</span> <span class="pre">10,</span> <span class="pre">'epochs':</span> <span class="pre">1000000,</span> <span class="pre">'losses_and_scales':</span> <span class="pre">{'mse':</span> <span class="pre">1.0},</span> <span class="pre">'lr':</span> <span class="pre">0.0001,</span> <span class="pre">'max_training_hours':</span> <span class="pre">48,</span> <span class="pre">'metrics':</span> <span class="pre">['mse',</span> <span class="pre">'lpips',</span> <span class="pre">'psnr',</span> <span class="pre">'ssim'],</span> <span class="pre">'n_vis':</span> <span class="pre">5,</span> <span class="pre">'no_train':</span> <span class="pre">False,</span> <span class="pre">'no_val':</span> <span class="pre">False,</span> <span class="pre">'no_vis':</span> <span class="pre">False,</span> <span class="pre">'no_wandb':</span> <span class="pre">False,</span> <span class="pre">'out_dir':</span> <span class="pre">None,</span> <span class="pre">'pred_frames':</span> <span class="pre">10,</span> <span class="pre">'seed':</span> <span class="pre">42,</span> <span class="pre">'seq_step':</span> <span class="pre">1,</span> <span class="pre">'use_actions':</span> <span class="pre">False,</span> <span class="pre">'val_rec_criterion':</span> <span class="pre">'mse',</span> <span class="pre">'vis_compare':</span> <span class="pre">False,</span> <span class="pre">'vis_context_frame_idx':</span> <span class="pre">None,</span> <span class="pre">'vis_every':</span> <span class="pre">10,</span> <span class="pre">'vis_mode':</span> <span class="pre">'gif'}</span></em><a class="headerlink" href="#vp_suite.defaults.DEFAULT_RUN_CONFIG" title="Permalink to this definition"></a></dt>
+<dd><p>A dictionary containing the default run configuration specified in the <a class="reference internal" href="#vp_suite.defaults.DefaultRunConfig" title="vp_suite.defaults.DefaultRunConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultRunConfig</span></code></a> class.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DefaultRunConfig</span></span><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class holds the default run configuration parameters, specifying behaviour
+during training and testing. All parameters can be overridden by supplementing
+keyword args in the corresponding training/testing call.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.batch_size">
+<span class="sig-name descname"><span class="pre">batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.batch_size" title="Permalink to this definition"></a></dt>
+<dd><p>The batch size used for training.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.context_frames">
+<span class="sig-name descname"><span class="pre">context_frames</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.context_frames" title="Permalink to this definition"></a></dt>
+<dd><p>The number of context frames given to the prediction models. Also used in determining the needed sequence length for dataset usage.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.epochs">
+<span class="sig-name descname"><span class="pre">epochs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000000</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.epochs" title="Permalink to this definition"></a></dt>
+<dd><p>Number of epochs the model is trained before finalizing the training procedure. By default, this is set to a large number to let the training run terminate by time-outing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.losses_and_scales">
+<span class="sig-name descname"><span class="pre">losses_and_scales</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'mse':</span> <span class="pre">1.0}</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.losses_and_scales" title="Permalink to this definition"></a></dt>
+<dd><p>A dictionary where the keys denote all losses that should be calculated and logged during training, and their corresponding values denote the factor with which to multiply and add these losses to the overall loss used for backpropagation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.lr">
+<span class="sig-name descname"><span class="pre">lr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0001</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.lr" title="Permalink to this definition"></a></dt>
+<dd><p>The learning rate for the models.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.max_training_hours">
+<span class="sig-name descname"><span class="pre">max_training_hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">48</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.max_training_hours" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum number of training hours before finalizing the training procedure. When the training time is exceeded, the current training iteration is continued but becomes the last training iteration.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['mse',</span> <span class="pre">'lpips',</span> <span class="pre">'psnr',</span> <span class="pre">'ssim']</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.metrics" title="Permalink to this definition"></a></dt>
+<dd><p>A list of the metrics used for testing. If instead of a list, “all” is specified, all mavailable metrics are calculated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.n_vis">
+<span class="sig-name descname"><span class="pre">n_vis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.n_vis" title="Permalink to this definition"></a></dt>
+<dd><p>Number of visualizations generated each time the model is used for visualization.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.no_train">
+<span class="sig-name descname"><span class="pre">no_train</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.no_train" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, the training loop is skipped.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.no_val">
+<span class="sig-name descname"><span class="pre">no_val</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.no_val" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, the validation loop is skipped during the training procedure. Instead the best model is saved after every epoch.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.no_vis">
+<span class="sig-name descname"><span class="pre">no_vis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.no_vis" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, no visualizations are generated during training/testing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.no_wandb">
+<span class="sig-name descname"><span class="pre">no_wandb</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.no_wandb" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, don’t log the run data to Weights and Biases.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.out_dir">
+<span class="sig-name descname"><span class="pre">out_dir</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.out_dir" title="Permalink to this definition"></a></dt>
+<dd><p>A file path for the output directory of the model. If none is specified, creates a suitable directory at runtime.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.pred_frames">
+<span class="sig-name descname"><span class="pre">pred_frames</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.pred_frames" title="Permalink to this definition"></a></dt>
+<dd><p>The number of frames the prediction model shall predict. Also used in determining the needed sequence length for dataset usage.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.seed">
+<span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">42</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.seed" title="Permalink to this definition"></a></dt>
+<dd><p>The seed for all random number generators (python, numpy, pytorch) used throughout training/testing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.seq_step">
+<span class="sig-name descname"><span class="pre">seq_step</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.seq_step" title="Permalink to this definition"></a></dt>
+<dd><p>Sequences taken from the dataset use every Nth frame, where N is this value (Default value is 1, meaning that every frame is taken for the sequence).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.use_actions">
+<span class="sig-name descname"><span class="pre">use_actions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.use_actions" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, and the model supports actions, and the dataset contains actions, these actions will be used by the model for prediction.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.val_rec_criterion">
+<span class="sig-name descname"><span class="pre">val_rec_criterion</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mse'</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.val_rec_criterion" title="Permalink to this definition"></a></dt>
+<dd><p>The measure that is used to determine the model quality during validation. Every time the resulting measurement is improved, the current model snapshot is saved as the current ‘best model’.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.vis_compare">
+<span class="sig-name descname"><span class="pre">vis_compare</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.vis_compare" title="Permalink to this definition"></a></dt>
+<dd><p>If set to True, during testing, also generate visualization figures where the predicted frames of all tested models are laid out side-by-side.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.vis_context_frame_idx">
+<span class="sig-name descname"><span class="pre">vis_context_frame_idx</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.vis_context_frame_idx" title="Permalink to this definition"></a></dt>
+<dd><p>If not None, during testing, this parameter specifies which context frame to include in the visualization figure that lays out the predictions of all models.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.vis_every">
+<span class="sig-name descname"><span class="pre">vis_every</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.vis_every" title="Permalink to this definition"></a></dt>
+<dd><p>After this many training epochs, model predictions on randomly sampled validation sequences are visualized and saved (if <cite>no_vis</cite> is not set to False).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.defaults.DefaultRunConfig.vis_mode">
+<span class="sig-name descname"><span class="pre">vis_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gif'</span></em><a class="headerlink" href="#vp_suite.defaults.DefaultRunConfig.vis_mode" title="Permalink to this definition"></a></dt>
+<dd><p>Specifies how to save the generated visualization videos.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="vp_suite.defaults.SETTINGS">
+<span class="sig-name descname"><span class="pre">SETTINGS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;vp_suite.defaults._PackageSettings</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#vp_suite.defaults.SETTINGS" title="Permalink to this definition"></a></dt>
+<dd><p>A settings instance that can be imported by other modules. It contains program-internal settings such as save paths (for the default values please see the source code).</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.utils.visualization.html" class="btn btn-neutral float-left" title="vp_suite.utils.visualization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.vpsuite.html" class="btn btn-neutral float-right" title="vp_suite.vpsuite" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

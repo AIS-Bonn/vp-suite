@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.utils.utils &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.utils.visualization" href="vp_suite.utils.visualization.html" />
+    <link rel="prev" title="vp_suite.utils.models" href="vp_suite.utils.models.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.utils.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.utils.html">vp_suite.utils</a> &raquo;</li>
+        
+      <li>vp_suite.utils.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.utils.utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.utils.utils">
+<span id="vp-suite-utils-utils"></span><h1>vp_suite.utils.utils<a class="headerlink" href="#module-vp_suite.utils.utils" title="Permalink to this headline"></a></h1>
+<dl class="py exception">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.PytestExpectedException">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PytestExpectedException</span></span><a class="headerlink" href="#vp_suite.utils.utils.PytestExpectedException" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>A custom exception type that, when raised during pytest execution, causes pytest to skip the current test.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.TimeOutException">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TimeOutException</span></span><a class="headerlink" href="#vp_suite.utils.utils.TimeOutException" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>A custom Exception type thrown when signals time out (e.g. for timed input prompts).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.TqdmUpTo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TqdmUpTo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.TqdmUpTo" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tqdm.std.tqdm</span></code></p>
+<p>A wrapper class around the tqdm progress bar that can be used for showing download progress.
+Provides <cite>update_to(n)</cite> which uses <cite>tqdm.update(delta_n)</cite>.
+Taken from <a class="reference external" href="https://gist.github.com/leimao/37ff6e990b3226c2c9670a2cd1e4a6f5">https://gist.github.com/leimao/37ff6e990b3226c2c9670a2cd1e4a6f5</a>,
+Inspired by [twine#242](<a class="reference external" href="https://github.com/pypa/twine/pull/242">https://github.com/pypa/twine/pull/242</a>),
+[mentioned here](<a class="reference external" href="https://github.com/pypa/twine/commit/42e55e06">https://github.com/pypa/twine/commit/42e55e06</a>).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.TqdmUpTo.update_to">
+<span class="sig-name descname"><span class="pre">update_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.TqdmUpTo.update_to" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the tqdm progress indicator.
+b (int): Number of blocks transferred so far [default: 1].
+bsize (int): Size of each block (in tqdm units) [default: 1].
+tsize (int): Total size (in tqdm units). If [default: None] remains unchanged.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.alarm_handler">
+<span class="sig-name descname"><span class="pre">alarm_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.alarm_handler" title="Permalink to this definition"></a></dt>
+<dd><p>A simple alarm handler that raises a <code class="xref py py-class docutils literal notranslate"><span class="pre">TimeoutException</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.check_optuna_config">
+<span class="sig-name descname"><span class="pre">check_optuna_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optuna_cfg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.check_optuna_config" title="Permalink to this definition"></a></dt>
+<dd><p>Checks whether the syntax of given optuna configuration dict is correct.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>optuna_cfg</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – The optuna configuration to be checked.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.download_from_url">
+<span class="sig-name descname"><span class="pre">download_from_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.download_from_url" title="Permalink to this definition"></a></dt>
+<dd><p>Downloads the contents of specified URL to the specified destination filepath.
+Uses <a class="reference internal" href="#vp_suite.utils.utils.TqdmUpTo" title="vp_suite.utils.utils.TqdmUpTo"><code class="xref py py-class docutils literal notranslate"><span class="pre">TqdmUpTo</span></code></a> to show download progress.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The URL to download from.</p></li>
+<li><p><strong>dst_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The path to save the downloaded data to.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.get_frame_count">
+<span class="sig-name descname"><span class="pre">get_frame_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.get_frame_count" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fp</strong> (<em>Union</em><em>[</em><em>Path</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em>) – The filepath of the video to be checked.</p>
+</dd>
+</dl>
+<p>Returns: The number of frames in the video at given filepath</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.get_public_attrs">
+<span class="sig-name descname"><span class="pre">get_public_attrs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calling_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_config_vars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.get_public_attrs" title="Permalink to this definition"></a></dt>
+<dd><p>Similarly to inspect.getmembers(), this method returns a dictionary containing all public attributes of an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> (<em>Any</em>) – The object to check.</p></li>
+<li><p><strong>calling_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The name of the calling method. If e.g. this gets called from one of the object’s property fields, it has to be excluded to avoid recursion.</p></li>
+<li><p><strong>non_config_vars</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em>) – A list of the attributes that should not be included in the result.</p></li>
+<li><p><strong>model_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If set to True, disregards any attributes that are torch.nn.Module or torch.Tensor objects.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: A dictionary containing all public attributes of an object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.most">
+<span class="sig-name descname"><span class="pre">most</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.67</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.most" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a><em>]</em>) – The input list to check.</p></li>
+<li><p><strong>factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – The fraction that needs to be surpassed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Similar to List.all(), returns True if more than the specified fraction of entries is true in given list,
+False otherwise (e.g. for factor=0.5, returns True if at least half the entries of l are True.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.read_video">
+<span class="sig-name descname"><span class="pre">read_video</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_frames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.read_video" title="Permalink to this definition"></a></dt>
+<dd><p>Reads and returns the video specified by given file path as a numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fp</strong> (<em>Union</em><em>[</em><em>Path</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>]</em>) – The filepath to read the video from.</p></li>
+<li><p><strong>img_size</strong> (<em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>)</em>) – The desired frame size (height and width; frames will be reshaped to this size)</p></li>
+<li><p><strong>start_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Index of first frame to read.</p></li>
+<li><p><strong>num_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Nmber of frames to read (default value -1 signifies that video is read to the end).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The read video as a numpy array of shape (frames, height, width, channels).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.run_shell_command">
+<span class="sig-name descname"><span class="pre">run_shell_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.run_shell_command" title="Permalink to this definition"></a></dt>
+<dd><p>Runs the given command in the shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>command</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The given command as a single string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.set_from_kwarg">
+<span class="sig-name descname"><span class="pre">set_from_kwarg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwarg_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">choices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_unusable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.set_from_kwarg" title="Permalink to this definition"></a></dt>
+<dd><p>Sets an attribute in given object by using given name, configuration dict and utility values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> (<em>Any</em>) – The object in which the attribute should be set.</p></li>
+<li><p><strong>kwarg_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – The configuration dict where the attribute should be taken from.</p></li>
+<li><p><strong>attr_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The attribute name.</p></li>
+<li><p><strong>default</strong> (<em>Any</em>) – If the given config. dict does not contain the given attribute name as key, this default value will be used instead.</p></li>
+<li><p><strong>required</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If set to True, will raise an Error rather than using the default value.</p></li>
+<li><p><strong>choices</strong> (<em>Any</em>) – If specified, checks whether the value(s) to be set is (are) one of the valid choices.</p></li>
+<li><p><strong>skip_unusable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – If specified, skips attributes that are not already defined in the object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.timed_input">
+<span class="sig-name descname"><span class="pre">timed_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.timed_input" title="Permalink to this definition"></a></dt>
+<dd><p>A wrapper around the default <cite>input()</cite> statement, imposing a time limit and providing default values if
+the input is empty.
+:type description: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>
+:param description: A description text that will be displayed with the input prompt.
+:type description: str
+:param default: The default value to assign to the variable if the the input is empty.
+:type default: Any
+:type secs: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>
+:param secs: Time limit in seconds.
+:type secs: int</p>
+<p>Returns: The input value (or the default value if input is empty).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.utils.timestamp">
+<span class="sig-name descname"><span class="pre">timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">program</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.utils.timestamp" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>program</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string identifier specifying which run is asking for the timestamp.</p>
+</dd>
+</dl>
+<p>Returns: A timestamp of the current system time in a human-readable way, prepended by the given program string.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.utils.models.html" class="btn btn-neutral float-left" title="vp_suite.utils.models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.utils.visualization.html" class="btn btn-neutral float-right" title="vp_suite.utils.visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

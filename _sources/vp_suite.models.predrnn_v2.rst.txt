@@ -1,0 +1,7 @@
+vp\_suite.models.predrnn\_v2
+===================================
+
+.. automodule:: vp_suite.models.predrnn_v2
+   :members:
+   :undoc-members:
+   :show-inheritance:

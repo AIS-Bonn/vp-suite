@@ -1,0 +1,7 @@
+vp\_suite.datasets.kitti\_raw
+====================================
+
+.. automodule:: vp_suite.datasets.kitti_raw
+   :members:
+   :undoc-members:
+   :show-inheritance:

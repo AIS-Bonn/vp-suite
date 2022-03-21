@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.utils.dataset_wrapper &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.utils.models" href="vp_suite.utils.models.html" />
+    <link rel="prev" title="vp_suite.utils.compatibility" href="vp_suite.utils.compatibility.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.utils.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.utils.html">vp_suite.utils</a> &raquo;</li>
+        
+      <li>vp_suite.utils.dataset_wrapper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.utils.dataset_wrapper.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.utils.dataset_wrapper">
+<span id="vp-suite-utils-dataset-wrapper"></span><h1>vp_suite.utils.dataset_wrapper<a class="headerlink" href="#module-vp_suite.utils.dataset_wrapper" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VPDatasetWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_class</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A class that wraps VPDataset instances to handle training and testing data in the same way.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.ALLOWED_SPLITS">
+<span class="sig-name descname"><span class="pre">ALLOWED_SPLITS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['train',</span> <span class="pre">'test']</span></em><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.ALLOWED_SPLITS" title="Permalink to this definition"></a></dt>
+<dd><p>On creation, the wrapper must be initialized with one of these split values.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.NAME">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NAME</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the dataset name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_class</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Instantiates the dataset class specified by the given dataset_class value and split identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_class</strong> (<em>Any</em>) – A string identifier corresponding to the dataset class that should be instantiated.</p></li>
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying whether this Wrapper should wrap a training/validation or a test set.</p></li>
+<li><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – Additional optional dataset configuration arguments.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.action_size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">action_size</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.action_size" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the dataset’s action size (which is 0 for datasets that don’t provide actions)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.config" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a dictionary containing the dataset’s configuration parameters.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.data_dir">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data_dir</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.data_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the dataset’s data location</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.img_shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">img_shape</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.img_shape" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the shape of each frame of the sequences that will be provided by the dataset (after preprocessing)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.is_test_set">
+<span class="sig-name descname"><span class="pre">is_test_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.is_test_set" title="Permalink to this definition"></a></dt>
+<dd><p>Returns True if this wrapper wraps testing fata, false otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.is_training_set">
+<span class="sig-name descname"><span class="pre">is_training_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.is_training_set" title="Permalink to this definition"></a></dt>
+<dd><p>Returns True if this wrapper wraps training/validation data, false otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.reset_rng">
+<span class="sig-name descname"><span class="pre">reset_rng</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.reset_rng" title="Permalink to this definition"></a></dt>
+<dd><p>Resets the RNG for all wrapped datasets.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.set_seq_len">
+<span class="sig-name descname"><span class="pre">set_seq_len</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_step</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.set_seq_len" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the desired sequence length for all wrapped datasets by calculating the needed sequence length from the
+provided sequence parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of context/input frames (these will be provided as input to the VPModel)</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames the VPModel has to predict, given the context frames.</p></li>
+<li><p><strong>seq_step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Sequence step (assembling the sequence from every Nth frame or the original video)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.test_data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_data</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.test_data" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the wrapped test dataset. If not existent, raises an error.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.train_data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_data</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.train_data" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the wrapped training dataset. If not existent, raises an error.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="vp_suite.utils.dataset_wrapper.VPDatasetWrapper.val_data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">val_data</span></span><a class="headerlink" href="#vp_suite.utils.dataset_wrapper.VPDatasetWrapper.val_data" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the wrapped validation dataset. If not existent, raises an error.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.utils.compatibility.html" class="btn btn-neutral float-left" title="vp_suite.utils.compatibility" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.utils.models.html" class="btn btn-neutral float-right" title="vp_suite.utils.models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

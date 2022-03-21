@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.measure.fvd.fvd &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.measure.image_wise" href="vp_suite.measure.image_wise.html" />
+    <link rel="prev" title="vp_suite.measure.fvd" href="vp_suite.measure.fvd.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.measure.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="vp_suite.measure.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.measure.html">vp_suite.measure</a> &raquo;</li>
+        
+          <li><a href="vp_suite.measure.fvd.html">vp_suite.measure.fvd</a> &raquo;</li>
+        
+      <li>vp_suite.measure.fvd.fvd</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.measure.fvd.fvd.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.measure.fvd.fvd">
+<span id="vp-suite-measure-fvd-fvd"></span><h1>vp_suite.measure.fvd.fvd<a class="headerlink" href="#module-vp_suite.measure.fvd.fvd" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FrechetVideoDistance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_channels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="vp_suite.base.base_measure.html#vp_suite.base.base_measure.VPMeasure" title="vp_suite.base.base_measure.VPMeasure"><code class="xref py py-class docutils literal notranslate"><span class="pre">vp_suite.base.base_measure.VPMeasure</span></code></a></p>
+<p>This measure calculates the Frechet Video Distance, as introduced in Unterthiner et al.
+(<a class="reference external" href="https://arxiv.org/abs/1812.01717">https://arxiv.org/abs/1812.01717</a>). The Frechet Distance is a similarity measure between two curves,
+and the Frechet Video Distance transfers this idea to assess the perceptual quality of generated videos with
+respect to a ground truth sequence by comparing video features obtained by passing the videos to an InceptionI3D
+Network.</p>
+<p>Code is inspired by: <a class="reference external" href="https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py">https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/gan/python/eval/python/classifier_metrics_impl.py</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Frechet Video Distance calculation code is differentiable, meaning that this version of FVD can also be
+used as a loss!</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Fréchet</span> <span class="pre">Video</span> <span class="pre">Distance</span> <span class="pre">(FVD)'</span></em><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The clear-text name of the measure.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.REFERENCE">
+<span class="sig-name descname"><span class="pre">REFERENCE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://arxiv.org/abs/1812.01717'</span></em><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The reference publication where this measure is originally introduced (represented as string)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_channels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Instantiates the FVD by setting the device and initializing the InceptionI3D module, which is used to
+extract the features that shall be compared.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying whether to use the GPU for calculations (<cite>cuda</cite>) or the CPU (<cite>cpu</cite>).</p></li>
+<li><p><strong>in_channels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of input channels (Supported: 2 or 3)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.calculate_n_chunks">
+<span class="sig-name descname"><span class="pre">calculate_n_chunks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_frames</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.calculate_n_chunks" title="Permalink to this definition"></a></dt>
+<dd><p>If given input length is too large, this function returns the number of chunks.
+Each chunk is then used for a separate fvd calculation, and their results are combined afterwards.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>num_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The number of context frames (aka the input length).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The number of chunks the input sequence needs to be split into,
+as well as a boolean value indicating whether the last chunk has to be neglected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.forward" title="Permalink to this definition"></a></dt>
+<dd><p>The module’s forward pass takes the predicted frame sequence and the ground truth,
+compares them based on the deriving measure’s criterion and logic and outputs a numerical assessment of the
+prediction quality.</p>
+<p>The base measure’s forward method can be used by deriving classes and simply applies the criterion to the
+input tensors, sums up over all entries of an image and finally averages over frames and then batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.Tensor</em>) – The predicted frame sequence as a 5D tensor (batch, frames, c, h, w).</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – The ground truth frame sequence as a 5D tensor (batch, frames, c, h, w)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The calculated numerical quality assessment.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.get_distance">
+<span class="sig-name descname"><span class="pre">get_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.get_distance" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the Frechet Video Distance between the provided chunked prediction and the ground truth tensors,
+by first extracting perceptual features from the InceptionI3D Network before calculating the
+2-Wasserstein-Distance on these features. The video frames have been previously resized to meet the height and
+width constraints of the I3D Network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.Tensor</em>) – The chunked predicted frame sequence as a 5D tensor (batch, c, chunk_l, h, w).</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – The chunked ground truth frame sequence as a 5D tensor (batch, c, chunk_l, h, w).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The calculated 2-Wasserstein metric as a scalar tensor.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.FrechetVideoDistance.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#vp_suite.measure.fvd.fvd.FrechetVideoDistance.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.measure.fvd.fvd.calculate_2_wasserstein_dist">
+<span class="sig-name descname"><span class="pre">calculate_2_wasserstein_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.measure.fvd.fvd.calculate_2_wasserstein_dist" title="Permalink to this definition"></a></dt>
+<dd><p>Calulates the two components of the 2-Wasserstein metric:
+The general formula is given by: <code class="docutils literal notranslate"><span class="pre">d(P_target,</span> <span class="pre">P_pred</span> <span class="pre">=</span> <span class="pre">min_{X,</span> <span class="pre">Y}</span> <span class="pre">E[|X-Y|^2]</span></code></p>
+<p>For multivariate gaussian distributed inputs <code class="docutils literal notranslate"><span class="pre">x_target</span> <span class="pre">~</span> <span class="pre">MN(mu_target,</span> <span class="pre">cov_target)</span></code>
+and <code class="docutils literal notranslate"><span class="pre">x_pred</span> <span class="pre">~</span> <span class="pre">MN(mu_pred,</span> <span class="pre">cov_pred)</span></code>, this reduces to:
+<code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">=</span> <span class="pre">|mu_target</span> <span class="pre">-</span> <span class="pre">mu_pred|^2</span> <span class="pre">-</span> <span class="pre">Tr(cov_target</span> <span class="pre">+</span> <span class="pre">cov_pred</span> <span class="pre">-</span> <span class="pre">2(cov_target</span> <span class="pre">*</span> <span class="pre">cov_pred)^(1/2))</span></code></p>
+<p>Fast method implemented according to following paper: <a class="reference external" href="https://arxiv.org/pdf/2009.14075.pdf">https://arxiv.org/pdf/2009.14075.pdf</a></p>
+<p>Input shape: [b = batch_size, n = num_features]
+Output shape: scalar</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.Tensor</em>) – The logits of the chunked prediction extracted by the InceptionI3D network (batch, n_feat).</p></li>
+<li><p><strong>target</strong> (<em>torch.Tensor</em>) – The logits of the chunked ground truth extracted by the I3D network (batch, n_feat).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The calculated 2-Wasserstein metric as a scalar tensor.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.measure.fvd.html" class="btn btn-neutral float-left" title="vp_suite.measure.fvd" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.measure.image_wise.html" class="btn btn-neutral float-right" title="vp_suite.measure.image_wise" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

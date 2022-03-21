@@ -1,0 +1,21 @@
+vp\_suite.model\_blocks
+===============================
+
+.. automodule:: vp_suite.model_blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.model_blocks.conv
+   vp_suite.model_blocks.conv_lstm_hzzone
+   vp_suite.model_blocks.conv_lstm_ndrplz
+   vp_suite.model_blocks.enc
+   vp_suite.model_blocks.phydnet
+   vp_suite.model_blocks.predrnn
+   vp_suite.model_blocks.traj_gru

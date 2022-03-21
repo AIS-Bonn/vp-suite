@@ -1,0 +1,7 @@
+vp\_suite.models.precipitation\_nowcasting.ef\_conv\_lstm
+================================================================
+
+.. automodule:: vp_suite.models.precipitation_nowcasting.ef_conv_lstm
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+vp\_suite.vpsuite
+========================
+
+.. automodule:: vp_suite.vpsuite
+   :members:
+   :undoc-members:
+   :show-inheritance:

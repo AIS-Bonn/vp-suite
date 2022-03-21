@@ -1,0 +1,7 @@
+vp\_suite.models.precipitation\_nowcasting.ef\_traj\_gru
+===============================================================
+
+.. automodule:: vp_suite.models.precipitation_nowcasting.ef_traj_gru
+   :members:
+   :undoc-members:
+   :show-inheritance:

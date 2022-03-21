@@ -1,0 +1,7 @@
+vp\_suite.base.base\_measure
+===================================
+
+.. automodule:: vp_suite.base.base_measure
+   :members:
+   :undoc-members:
+   :show-inheritance:

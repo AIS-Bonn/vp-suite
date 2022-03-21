@@ -1,0 +1,7 @@
+vp\_suite.datasets.human36m
+==================================
+
+.. automodule:: vp_suite.datasets.human36m
+   :members:
+   :undoc-members:
+   :show-inheritance:

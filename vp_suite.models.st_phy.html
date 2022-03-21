@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.models.st_phy &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.models.unet3d" href="vp_suite.models.unet3d.html" />
+    <link rel="prev" title="vp_suite.models.predrnn_v2" href="vp_suite.models.predrnn_v2.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="vp_suite.models.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.models.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.models.html">vp_suite.models</a> &raquo;</li>
+        
+      <li>vp_suite.models.st_phy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.models.st_phy.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.models.st_phy">
+<span id="vp-suite-models-st-phy"></span><h1>vp_suite.models.st_phy<a class="headerlink" href="#module-vp_suite.models.st_phy" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">STPhy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.st_phy.STPhy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="vp_suite.base.base_model.html#vp_suite.base.base_model.VPModel" title="vp_suite.base.base_model.VPModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">vp_suite.base.base_model.VPModel</span></code></a></p>
+<p>This class implements a hybrid model that aims to unify the advantages of the
+PhyDNet (Le Guen and Thome, <a class="reference external" href="https://arxiv.org/abs/2003.01460">https://arxiv.org/abs/2003.01460</a>, <a class="reference external" href="https://github.com/vincent-leguen/PhyDNet">https://github.com/vincent-leguen/PhyDNet</a>) and the
+PredRNN++ (Wang et al., <a class="reference external" href="https://arxiv.org/abs/2103.09504">https://arxiv.org/abs/2103.09504</a>, <a class="reference external" href="https://github.com/thuml/predrnn-pytorch">https://github.com/thuml/predrnn-pytorch</a>) models.
+More specifically, it replaces PhyDNet’s regular ConvLSTM cells with the ST Cells from PredRNN++
+and integrates PhyDNet’s teacher forcing and PredRNN++’s scheduled sampling techniques into training.
+(TODO adjust model to cohere to this description)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.CAN_HANDLE_ACTIONS">
+<span class="sig-name descname"><span class="pre">CAN_HANDLE_ACTIONS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.CAN_HANDLE_ACTIONS" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the model can handle actions or not.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ST-Phy'</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The model’s name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes the model by first setting all model hyperparameters, attributes and the like.
+Then, the model-specific init will actually create the model from the given hyperparameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The device identifier for the module.</p></li>
+<li><p><strong>**model_kwargs</strong> (<em>Any</em>) – Model arguments such as hyperparameters, input shapes etc.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.decoupling_loss_scale">
+<span class="sig-name descname"><span class="pre">decoupling_loss_scale</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100.0</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.decoupling_loss_scale" title="Permalink to this definition"></a></dt>
+<dd><p>The scaling factor for the decoupling loss</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Given an input sequence of t frames, predicts <cite>pred_frames</cite> (<cite>p</cite>) frames into the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>torch.Tensor</em>) – A batch of <cite>b</cite> sequences of <cite>t</cite> input frames as a tensor of shape [b, t, c, h, w].</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The number of frames to predict into the future.</p></li>
+<li><p><strong>(</strong><strong>)</strong> (<em>**kwargs</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: A batch of sequences of <cite>p</cite> predicted frames as a tensor of shape [b, p, c, h, w].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.inflated_action_dim">
+<span class="sig-name descname"><span class="pre">inflated_action_dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.inflated_action_dim" title="Permalink to this definition"></a></dt>
+<dd><p>Dimensionality of the ‘inflated actions’ (actions that have been transformed to tensors)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.moment_loss_scale">
+<span class="sig-name descname"><span class="pre">moment_loss_scale</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.moment_loss_scale" title="Permalink to this definition"></a></dt>
+<dd><p>Scaling factor for the moment loss (for PDE-Constrained prediction by the PhyCells)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.num_layers">
+<span class="sig-name descname"><span class="pre">num_layers</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.num_layers" title="Permalink to this definition"></a></dt>
+<dd><p>Number of layers (1 PhyCell and 1 ST cell per layer)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.phycell_channels">
+<span class="sig-name descname"><span class="pre">phycell_channels</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">49</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.phycell_channels" title="Permalink to this definition"></a></dt>
+<dd><p>Channel dimensionality for the PhyCells</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.phycell_kernel_size">
+<span class="sig-name descname"><span class="pre">phycell_kernel_size</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(7,</span> <span class="pre">7)</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.phycell_kernel_size" title="Permalink to this definition"></a></dt>
+<dd><p>PhyCell kernel size</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.pred_1">
+<span class="sig-name descname"><span class="pre">pred_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.pred_1" title="Permalink to this definition"></a></dt>
+<dd><p>Given an input sequence of t frames, predicts one single frame into the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>torch.Tensor</em>) – A batch of <cite>b</cite> sequences of <cite>t</cite> input frames as a tensor of shape [b, t, c, h, w].</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Optional input parameters such as actions.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: A single frame as a tensor of shape [b, c, h, w].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.st_cell_channels">
+<span class="sig-name descname"><span class="pre">st_cell_channels</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">64</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.st_cell_channels" title="Permalink to this definition"></a></dt>
+<dd><p>Hidden layer dimensionality for the ST cell layers</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.teacher_forcing_decay">
+<span class="sig-name descname"><span class="pre">teacher_forcing_decay</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.003</span></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.teacher_forcing_decay" title="Permalink to this definition"></a></dt>
+<dd><p>Per-Episode decrease of the teacher forcing ratio (Starts out at 1.0)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.train_iter">
+<span class="sig-name descname"><span class="pre">train_iter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_provider</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.train_iter" title="Permalink to this definition"></a></dt>
+<dd><p>ST-Phy’s training iteration utilizes a scheduled teacher forcing ratio.
+Otherwise, the iteration logic is the same as in the default <a class="reference internal" href="#vp_suite.models.st_phy.STPhy.train_iter" title="vp_suite.models.st_phy.STPhy.train_iter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">train_iter()</span></code></a> function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – The configuration dict of the current training run (combines model, dataset and run config)</p></li>
+<li><p><strong>data_loader</strong> (<em>DataLoader</em>) – Training data is sampled from this loader.</p></li>
+<li><p><strong>optimizer</strong> (<em>Optimizer</em>) – The optimizer to use for weight update calculations.</p></li>
+<li><p><strong>loss_provider</strong> (<a class="reference internal" href="vp_suite.measure.loss_provider.html#vp_suite.measure.loss_provider.PredictionLossProvider" title="vp_suite.measure.loss_provider.PredictionLossProvider"><em>PredictionLossProvider</em></a>) – An instance of the <code class="xref py py-class docutils literal notranslate"><span class="pre">LossProvider</span></code> class for flexible loss calculation.</p></li>
+<li><p><strong>epoch</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The current epoch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.st_phy.STPhy.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#vp_suite.models.st_phy.STPhy.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.models.predrnn_v2.html" class="btn btn-neutral float-left" title="vp_suite.models.predrnn_v2" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.models.unet3d.html" class="btn btn-neutral float-right" title="vp_suite.models.unet3d" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

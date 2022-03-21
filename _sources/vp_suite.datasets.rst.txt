@@ -1,0 +1,23 @@
+vp\_suite.datasets
+==========================
+
+.. automodule:: vp_suite.datasets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   vp_suite.datasets.bair
+   vp_suite.datasets.caltech_pedestrian
+   vp_suite.datasets.human36m
+   vp_suite.datasets.kitti_raw
+   vp_suite.datasets.kth
+   vp_suite.datasets.mmnist
+   vp_suite.datasets.mmnist_on_the_fly
+   vp_suite.datasets.physics101
+   vp_suite.datasets.synpick

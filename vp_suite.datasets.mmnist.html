@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.datasets.mmnist &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.datasets.mmnist_on_the_fly" href="vp_suite.datasets.mmnist_on_the_fly.html" />
+    <link rel="prev" title="vp_suite.datasets.kth" href="vp_suite.datasets.kth.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.datasets.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.datasets.html">vp_suite.datasets</a> &raquo;</li>
+        
+      <li>vp_suite.datasets.mmnist</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.datasets.mmnist.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.datasets.mmnist">
+<span id="vp-suite-datasets-mmnist"></span><h1>vp_suite.datasets.mmnist<a class="headerlink" href="#module-vp_suite.datasets.mmnist" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MovingMNISTDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="vp_suite.base.base_dataset.html#vp_suite.base.base_dataset.VPDataset" title="vp_suite.base.base_dataset.VPDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">vp_suite.base.base_dataset.VPDataset</span></code></a></p>
+<p>Dataset class for the dataset “Moving MNIST”, as firstly encountered in
+“Unsupervised Learning of Video Representations using LSTMs” by Srivastava et al.
+(<a class="reference external" href="https://arxiv.org/pdf/1502.04681v3.pdf">https://arxiv.org/pdf/1502.04681v3.pdf</a>).</p>
+<p>Each sequence depicts two digits from the MNIST dataset moving linearly in front of a black background,
+occasionally bouncing off the wall and overlapping each other.</p>
+<p>For downloading and preparing the dataset, scripts have been developed by Tencia Lee,
+ported to python 3 by Praateek Mahajan (<a class="reference external" href="https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe">https://gist.github.com/praateekmahajan/b42ef0d295f528c986e2b3a0b31ec1fe</a>)
+and further modified here.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.ACTION_SIZE">
+<span class="sig-name descname"><span class="pre">ACTION_SIZE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.ACTION_SIZE" title="Permalink to this definition"></a></dt>
+<dd><p>The size of the action vector per frame (If the dataset provides no actions, this value is 0).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.DATASET_FRAME_SHAPE">
+<span class="sig-name descname"><span class="pre">DATASET_FRAME_SHAPE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'int'&gt;)</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(64,</span> <span class="pre">64,</span> <span class="pre">3)</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.DATASET_FRAME_SHAPE" title="Permalink to this definition"></a></dt>
+<dd><p>Shape of a single frame in the dataset (height, width, channels).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.DEFAULT_DATA_DIR">
+<span class="sig-name descname"><span class="pre">DEFAULT_DATA_DIR</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.10)"><span class="pre">pathlib.Path</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/home/runner/work/vp-suite/vp-suite/vp-suite-data/data/moving_mnist')</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.DEFAULT_DATA_DIR" title="Permalink to this definition"></a></dt>
+<dd><p>The default save location of the dataset files.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.IS_DOWNLOADABLE">
+<span class="sig-name descname"><span class="pre">IS_DOWNLOADABLE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Yes'</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.IS_DOWNLOADABLE" title="Permalink to this definition"></a></dt>
+<dd><p>A string identifying whether the dataset can be (freely) downloaded.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Moving</span> <span class="pre">MNIST'</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The dataset’s name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.REFERENCE">
+<span class="sig-name descname"><span class="pre">REFERENCE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://arxiv.org/abs/1502.04681v3'</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The reference (publication) where the original dataset is introduced.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataset_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes the dataset loader by determining its split and extracting and processing
+all dataset attributes from the parameters given in <cite>dataset_kwargs</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The dataset’s split identifier (i.e. whether it’s a training/validation/test dataset)</p></li>
+<li><p><strong>**dataset_kwargs</strong> (<em>Any</em>) – Optional dataset arguments for image transformation, value_range, splitting etc.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.download_and_prepare_dataset">
+<span class="sig-name descname"><span class="pre">download_and_prepare_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.download_and_prepare_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Downloads the specific dataset, prepares it for the video prediction task (if needed)
+and stores it in a default location in the ‘data/’ folder.
+Implemented by the derived dataset classes.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.MovingMNISTDataset.train_to_val_ratio">
+<span class="sig-name descname"><span class="pre">train_to_val_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.96</span></em><a class="headerlink" href="#vp_suite.datasets.mmnist.MovingMNISTDataset.train_to_val_ratio" title="Permalink to this definition"></a></dt>
+<dd><p>The ratio of files that will be training data (rest will be validation data). For bigger datasets, this ratio can be set closer to 1.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.arr_from_img">
+<span class="sig-name descname"><span class="pre">arr_from_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.arr_from_img" title="Permalink to this definition"></a></dt>
+<dd><p>Convert image to array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong><strong>(</strong><strong>)</strong> – Image.</p></li>
+<li><p><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Mean to subtract.</p></li>
+<li><p><strong>std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Standard Deviation to subtract.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Image in np.float32 format, in width height channel format. With values in range 0,1
+Shift means subtract by certain value. Could be used for mean subtraction.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.generate_moving_mnist">
+<span class="sig-name descname"><span class="pre">generate_moving_mnist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_images</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">digit_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">digits_per_image</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.generate_moving_mnist" title="Permalink to this definition"></a></dt>
+<dd><p>Generate sequences of moving MNIST digits by moving them around between frames.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – Used to decide if downloading/generating training set or test set.</p></li>
+<li><p><strong>shape</strong> (<em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>)</em>) – Shape we want for our moving images (new_width and new_height).</p></li>
+<li><p><strong>num_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames in a particular movement/animation/gif.</p></li>
+<li><p><strong>num_images</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of movement/animations/gif to generate.</p></li>
+<li><p><strong>digit_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Real size of the images (eg: MNIST is 28x28).</p></li>
+<li><p><strong>digits_per_image</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Digits per movement/animation/gif.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dataset of np.uint8 type with dimensions num_frames * num_images x 1 x new_width x new_height</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.img_from_arr">
+<span class="sig-name descname"><span class="pre">img_from_arr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.img_from_arr" title="Permalink to this definition"></a></dt>
+<dd><p>Convert array to image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>np.ndarray</em>) – Dataset of shape N x C x W x H.</p></li>
+<li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Index of image we want to fetch.</p></li>
+<li><p><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Mean to add.</p></li>
+<li><p><strong>std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><em>float</em></a>) – Standard Deviation to add.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Image with dimensions H x W x C or H x W if it’s a single channel image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.load_dataset">
+<span class="sig-name descname"><span class="pre">load_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">digit_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.load_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Loads MNIST from the web on demand.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_path</strong> (<em>Path</em>) – The path where the downloaded digits should be stored.</p></li>
+<li><p><strong>training</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><em>bool</em></a>) – Whether to use the training images (True) or the test images (False).</p></li>
+<li><p><strong>digit_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Size of the digit in pixels (height and width are the same)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The loaded MNIST images.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.datasets.mmnist.save_generated_mmnist">
+<span class="sig-name descname"><span class="pre">save_generated_mmnist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seqs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.datasets.mmnist.save_generated_mmnist" title="Permalink to this definition"></a></dt>
+<dd><p>Save generated data per-sequence to specified out path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>np.ndarray</em>) – The generated data to save.</p></li>
+<li><p><strong>seqs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The number of generated sequences.</p></li>
+<li><p><strong>frame_size</strong> (<em>(</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>)</em>) – The frame size.</p></li>
+<li><p><strong>out_path</strong> (<em>Path</em>) – The path where the data should be saved.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.datasets.kth.html" class="btn btn-neutral float-left" title="vp_suite.datasets.kth" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.datasets.mmnist_on_the_fly.html" class="btn btn-neutral float-right" title="vp_suite.datasets.mmnist_on_the_fly" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

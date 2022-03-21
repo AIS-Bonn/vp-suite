@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.utils.visualization &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.defaults" href="vp_suite.defaults.html" />
+    <link rel="prev" title="vp_suite.utils.utils" href="vp_suite.utils.utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.utils.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.utils.html">vp_suite.utils</a> &raquo;</li>
+        
+      <li>vp_suite.utils.visualization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.utils.visualization.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.utils.visualization">
+<span id="vp-suite-utils-visualization"></span><h1>vp_suite.utils.visualization<a class="headerlink" href="#module-vp_suite.utils.visualization" title="Permalink to this headline"></a></h1>
+<dl class="py data">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.COLORS">
+<span class="sig-name descname"><span class="pre">COLORS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'black':</span> <span class="pre">[0,</span> <span class="pre">0,</span> <span class="pre">0],</span> <span class="pre">'green':</span> <span class="pre">[0,</span> <span class="pre">200,</span> <span class="pre">0],</span> <span class="pre">'red':</span> <span class="pre">[150,</span> <span class="pre">0,</span> <span class="pre">0],</span> <span class="pre">'white':</span> <span class="pre">[255,</span> <span class="pre">255,</span> <span class="pre">255],</span> <span class="pre">'yellow':</span> <span class="pre">[100,</span> <span class="pre">100,</span> <span class="pre">0]}</span></em><a class="headerlink" href="#vp_suite.utils.visualization.COLORS" title="Permalink to this definition"></a></dt>
+<dd><p>Pre-defined border colors for video visualizations (r, g, b).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.add_border_around_vid">
+<span class="sig-name descname"><span class="pre">add_border_around_vid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_and_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.add_border_around_vid" title="Permalink to this definition"></a></dt>
+<dd><p>Adds a colored border around given video array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vid</strong> (<em>np.ndarray</em>) – The video as a numpy array of concatenated image frames.</p></li>
+<li><p><strong>c_and_l</strong> (<em>List</em><em>[</em><em>Tuple</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>]</em><em>]</em>) – A list of tuples that each specify the color and frame count of a colored segment. This permits e.g. to add borders of different colors for different frame segments.</p></li>
+<li><p><strong>b_width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Border width in pixels.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The video with a colored border added.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.add_borders">
+<span class="sig-name descname"><span class="pre">add_borders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trajs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.add_borders" title="Permalink to this definition"></a></dt>
+<dd><p>Adds borders around the provided videos that reflect given (= green border) and predicted (= red border) frames.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trajs</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a><em>, </em><em>np.ndarray</em>) – A dictionary where the keys hint at which video (ground truth or prediction) is the value.</p></li>
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – The number of context frames provided (used for coloring).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The input dict where the videos have been extended by the border.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.get_color_array">
+<span class="sig-name descname"><span class="pre">get_color_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.get_color_array" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying the border color.</p>
+</dd>
+</dl>
+<p>Returns: A list consisting of r, g and b values for the desired color, taken from the COLORS dict.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.get_vis_from_model">
+<span class="sig-name descname"><span class="pre">get_vis_from_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_unpack_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.get_vis_from_model" title="Permalink to this definition"></a></dt>
+<dd><p>Given a data point with a sequence, uses given prediction model to obtain a prediction and postprocesses input
+sequence and prediction to obtain visualizable representations of the sequences.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="vp_suite.base.base_dataset.html#vp_suite.base.base_dataset.VPDataset" title="vp_suite.base.base_dataset.VPDataset"><em>VPDataset</em></a>) – The dataset the data is taken from (needed for postprocessing of the input and predicted sequences)</p></li>
+<li><p><strong>data</strong> (<a class="reference internal" href="vp_suite.base.base_dataset.html#vp_suite.base.base_dataset.VPData" title="vp_suite.base.base_dataset.VPData"><em>VPData</em></a>) – The data point containing the input sequence.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="vp_suite.base.base_model.html#vp_suite.base.base_model.VPModel" title="vp_suite.base.base_model.VPModel"><em>VPModel</em></a>) – The prediction model.</p></li>
+<li><p><strong>data_unpack_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><em>dict</em></a>) – Configuration needed for unpacking the sequence from the data point</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames to predict.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: The postprocessed input sequence and prediction.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.save_arr_hist">
+<span class="sig-name descname"><span class="pre">save_arr_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">diff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.save_arr_hist" title="Permalink to this definition"></a></dt>
+<dd><p>Given a numpy array contianing values, creates and saves a histogram figure that shows the distribution of values
+within the array, as well as min, max and average.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>diff</strong> (<em>np.ndarray</em>) – Input array containing the values to visualize.</p></li>
+<li><p><strong>diff_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – An id used in the save name.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.save_frame_compare_img">
+<span class="sig-name descname"><span class="pre">save_frame_compare_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truth_vis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preds_vis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_context_frame_idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.save_frame_compare_img" title="Permalink to this definition"></a></dt>
+<dd><p>Given a ground truth frame sequence as well as prediction sequences, creates and saves
+a large image file that displays the ground truth sequence in the first row and the predictions each in a row below
+(for them, only the predicted frames are put into the graphic).
+Specified by vis_context_frame_idx, only the selected input frames are put onto the visualization image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>out_filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Output filename.</p></li>
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of input/context frames.</p></li>
+<li><p><strong>ground_truth_vis</strong> (<em>np.ndarray</em>) – The ground truth frame sequence.</p></li>
+<li><p><strong>preds_vis</strong> (<em>List</em><em>[</em><em>np.ndarray</em>) – The predicted frame sequences.</p></li>
+<li><p><strong>vis_context_frame_idx</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>]</em>) – A list of indices for the context frames. For the ground truth row, only these context frames will be displayed to unlutter the visualization.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.save_vid_vis">
+<span class="sig-name descname"><span class="pre">save_vid_vis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_fp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gif'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">trajs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.save_vid_vis" title="Permalink to this definition"></a></dt>
+<dd><p>Assembles a video file that displays all given visualizations side-by-side, with a border around each
+visualization that denotes whether an input or a predicted frame is displayed. Depending on the specified save mode,
+the resulting visualization file may differ.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>out_fp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – Where to save the visualization.</p></li>
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of context frames (needed to add suitable borders around the videos)</p></li>
+<li><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying the save mode: mp4 (uses openCV) vs. gif (uses matplotlib, adds titles to the video visualizations)</p></li>
+<li><p><strong>**trajs</strong> (<em>Any</em>) – Any number of videos (keyword becomes video vis title in the coloring/visualization process)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.visualize_sequences">
+<span class="sig-name descname"><span class="pre">visualize_sequences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_context_frame_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_vid_mode</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.visualize_sequences" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts certain data points from given dataset, uses each given model to obtain predictions for these sequences
+and saves visualizations of these grond truth/predicted sequences. Also creates a large graphic comparing the
+visualizations of different models against the ground truth sequence using <a class="reference internal" href="#vp_suite.utils.visualization.save_frame_compare_img" title="vp_suite.utils.visualization.save_frame_compare_img"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_frame_compare_img()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="vp_suite.base.base_dataset.html#vp_suite.base.base_dataset.VPDataset" title="vp_suite.base.base_dataset.VPDataset"><em>VPDataset</em></a>) – The dataset the data is taken from.</p></li>
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of input/context frames.</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames to predict.</p></li>
+<li><p><strong>models</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="vp_suite.base.base_model.html#vp_suite.base.base_model.VPModel" title="vp_suite.base.base_model.VPModel"><em>VPModel</em></a><em>]</em>) – The prediction models.</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The device that should be used for visualization creation (GPU vs. CPU).</p></li>
+<li><p><strong>out_path</strong> (<em>Path</em>) – A path object containing the directory where the visualizations should be saved.</p></li>
+<li><p><strong>vis_idx</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>]</em>) – An iterable of dataset indices which should be used to obtain the data points that should be used for vis.</p></li>
+<li><p><strong>vis_context_frame_idx</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>]</em>) – A list of indices for the context frames. For the ground truth row, only these context frames will be displayed to unlutter the visualization.</p></li>
+<li><p><strong>vis_vid_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying the save mode: mp4 (uses openCV) vs. gif (uses matplotlib, adds titles to the video visualizations)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vp_suite.utils.visualization.visualize_vid">
+<span class="sig-name descname"><span class="pre">visualize_vid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_frames</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vis_mode</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.utils.visualization.visualize_vid" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts certain data points from given dataset, uses given model to obtain predictions for these sequences and
+saves visualizations of these grond truth/predicted sequences.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="vp_suite.base.base_dataset.html#vp_suite.base.base_dataset.VPDataset" title="vp_suite.base.base_dataset.VPDataset"><em>VPDataset</em></a>) – The dataset the data is taken from.</p></li>
+<li><p><strong>context_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of input/context frames.</p></li>
+<li><p><strong>pred_frames</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a>) – Number of frames to predict.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="vp_suite.base.base_model.html#vp_suite.base.base_model.VPModel" title="vp_suite.base.base_model.VPModel"><em>VPModel</em></a>) – The prediction model.</p></li>
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The device that should be used for visualization creation (GPU vs. CPU).</p></li>
+<li><p><strong>out_path</strong> (<em>Path</em>) – A path object containing the directory where the visualizations should be saved.</p></li>
+<li><p><strong>vis_idx</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><em>int</em></a><em>]</em>) – An iterable of dataset indices which should be used to obtain the data points that should be used for vis.</p></li>
+<li><p><strong>vis_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – A string specifying the save mode: mp4 (uses openCV) vs. gif (uses matplotlib, adds titles to the video visualizations)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.utils.utils.html" class="btn btn-neutral float-left" title="vp_suite.utils.utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.defaults.html" class="btn btn-neutral float-right" title="vp_suite.defaults" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

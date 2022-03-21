@@ -1,0 +1,16 @@
+Available Datasets
+==================
+
+=========================  ====================  ================================================================  =======================
+Dataset Name               Dataset Identifier    Reference                                                         Downloadable?
+=========================  ====================  ================================================================  =======================
+Moving MNIST               ``MM``                https://arxiv.org/abs/1502.04681v3                                Yes
+Moving MNIST - On the fly  ``MMF``                                                                                 Yes (MNIST digits)
+BAIR robot pushing         ``BAIR``              https://arxiv.org/abs/1710.05268                                  Yes
+KTH Actions                ``KTH``               https://doi.org/10.1109/ICPR.2004.1334462                         Yes
+SynPick - Moving           ``SPM``               https://arxiv.org/abs/2107.04852                                  Not Yet
+Physics 101                ``P101``              http://phys101.csail.mit.edu/                                     Yes
+Human 3.6M                 ``H36M``              http://vision.imar.ro/human3.6m/description.php                   With Registered Account
+KITTI raw                  ``KITTI``             http://www.cvlibs.net/datasets/kitti/raw_data.php                 With Registered Account
+Caltech Pedestrian         ``CP``                http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/  Yes
+=========================  ====================  ================================================================  =======================

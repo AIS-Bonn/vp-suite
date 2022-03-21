@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vp_suite.models.precipitation_nowcasting.ef_traj_gru &mdash; vp-suite 0.0.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vp_suite.models.copy_last_frame" href="vp_suite.models.copy_last_frame.html" />
+    <link rel="prev" title="vp_suite.models.precipitation_nowcasting.ef_conv_lstm" href="vp_suite.models.precipitation_nowcasting.ef_conv_lstm.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> vp-suite
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">README</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#customization">Customization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#contributing">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#citing">Citing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#acknowledgements">Acknowledgements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#license">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#disclaimer">Disclaimer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Feature Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="available_models.html">Available Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_model_blocks.html">Available Model Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_datasets.html">Available Datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_losses.html">Available Losses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available_metrics.html">Available Metrics</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="vp_suite.html">vp_suite</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="vp_suite.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.base.html">vp_suite.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.datasets.html">vp_suite.datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.measure.html">vp_suite.measure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.model_blocks.html">vp_suite.model_blocks</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="vp_suite.models.html">vp_suite.models</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="vp_suite.models.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="vp_suite.models.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vp_suite.utils.html">vp_suite.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="vp_suite.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vp-suite</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="vp_suite.html">vp_suite</a> &raquo;</li>
+        
+          <li><a href="vp_suite.models.html">vp_suite.models</a> &raquo;</li>
+        
+          <li><a href="vp_suite.models.precipitation_nowcasting.html">vp_suite.models.precipitation_nowcasting</a> &raquo;</li>
+        
+      <li>vp_suite.models.precipitation_nowcasting.ef_traj_gru</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/vp_suite.models.precipitation_nowcasting.ef_traj_gru.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-vp_suite.models.precipitation_nowcasting.ef_traj_gru">
+<span id="vp-suite-models-precipitation-nowcasting-ef-traj-gru"></span><h1>vp_suite.models.precipitation_nowcasting.ef_traj_gru<a class="headerlink" href="#module-vp_suite.models.precipitation_nowcasting.ef_traj_gru" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">EF_TrajGRU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="vp_suite.models.precipitation_nowcasting.ef_blocks.html#vp_suite.models.precipitation_nowcasting.ef_blocks.Encoder_Forecaster" title="vp_suite.models.precipitation_nowcasting.ef_blocks.Encoder_Forecaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">vp_suite.models.precipitation_nowcasting.ef_blocks.Encoder_Forecaster</span></code></a></p>
+<p>This is a reimplementation of the Encoder-Forecaster model based on TrajGRUs, as introduced in
+“Deep Learning for Precipitation Nowcasting: A Benchmark and A New Model” by Shi et al.
+(<a class="reference external" href="https://arxiv.org/abs/1706.03458">https://arxiv.org/abs/1706.03458</a>). This implementation is based on the PyTorch implementation on
+<a class="reference external" href="https://github.com/Hzzone/Precipitation-Nowcasting">https://github.com/Hzzone/Precipitation-Nowcasting</a> .</p>
+<p>The Encoder-Forecaster Network stacks multiple convolutional/up-/downsampling and recurrent layers
+that operate on different spatial scales.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default hyperparameter configuration is intended for input frames of size (64, 64).
+For considerably larger or smaller image sizes, you might want to adjust the architecture.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.CODE_REFERENCE">
+<span class="sig-name descname"><span class="pre">CODE_REFERENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://github.com/Hzzone/Precipitation-Nowcasting'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.CODE_REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The code location of the reference implementation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.MATCHES_REFERENCE">
+<span class="sig-name descname"><span class="pre">MATCHES_REFERENCE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Yes'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.MATCHES_REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>A comment indicating whether the implementation in this package matches the reference.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.NAME">
+<span class="sig-name descname"><span class="pre">NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EF-TrajGRU</span> <span class="pre">(Shi</span> <span class="pre">et</span> <span class="pre">al.)'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.NAME" title="Permalink to this definition"></a></dt>
+<dd><p>The model’s name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.PAPER_REFERENCE">
+<span class="sig-name descname"><span class="pre">PAPER_REFERENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://arxiv.org/abs/1706.03458'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.PAPER_REFERENCE" title="Permalink to this definition"></a></dt>
+<dd><p>The paper where this model was introduced first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">model_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes the model by first setting all model hyperparameters, attributes and the like.
+Then, the model-specific init will actually create the model from the given hyperparameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The device identifier for the module.</p></li>
+<li><p><strong>**model_kwargs</strong> (<em>Any</em>) – Model arguments such as hyperparameters, input shapes etc.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.activation">
+<span class="sig-name descname"><span class="pre">activation</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;vp_suite.model_blocks.traj_gru.Activation</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.activation" title="Permalink to this definition"></a></dt>
+<dd><p>Activation layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_c">
+<span class="sig-name descname"><span class="pre">dec_c</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[96,</span> <span class="pre">96,</span> <span class="pre">96,</span> <span class="pre">96,</span> <span class="pre">64,</span> <span class="pre">16]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_c" title="Permalink to this definition"></a></dt>
+<dd><p>Channels for conv and rnn; Length should be 2*num_layers</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_k">
+<span class="sig-name descname"><span class="pre">dec_conv_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[4,</span> <span class="pre">4,</span> <span class="pre">3]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_k" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder conv block kernel sizes per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_names">
+<span class="sig-name descname"><span class="pre">dec_conv_names</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['deconv1_leaky_1',</span> <span class="pre">'deconv2_leaky_1',</span> <span class="pre">'deconv3_leaky_1']</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_names" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder conv block layer names (for internal initialization)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_p">
+<span class="sig-name descname"><span class="pre">dec_conv_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_p" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder conv block paddings per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_s">
+<span class="sig-name descname"><span class="pre">dec_conv_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[2,</span> <span class="pre">2,</span> <span class="pre">1]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_conv_s" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder conv block strides per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_L">
+<span class="sig-name descname"><span class="pre">dec_rnn_L</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[13,</span> <span class="pre">13,</span> <span class="pre">13]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_L" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block L parameter</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_h2h_d">
+<span class="sig-name descname"><span class="pre">dec_rnn_h2h_d</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_h2h_d" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block h2h dilation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_h2h_k">
+<span class="sig-name descname"><span class="pre">dec_rnn_h2h_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(3,</span> <span class="pre">3),</span> <span class="pre">(5,</span> <span class="pre">5),</span> <span class="pre">(5,</span> <span class="pre">5)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_h2h_k" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block h2h kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_k">
+<span class="sig-name descname"><span class="pre">dec_rnn_i2h_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(3,</span> <span class="pre">3),</span> <span class="pre">(3,</span> <span class="pre">3),</span> <span class="pre">(3,</span> <span class="pre">3)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_k" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block i2h kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_p">
+<span class="sig-name descname"><span class="pre">dec_rnn_i2h_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_p" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block i2h padding</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_s">
+<span class="sig-name descname"><span class="pre">dec_rnn_i2h_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_i2h_s" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block i2h stride</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_z">
+<span class="sig-name descname"><span class="pre">dec_rnn_z</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.dec_rnn_z" title="Permalink to this definition"></a></dt>
+<dd><p>Decoder recurrent block zoneout</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_c">
+<span class="sig-name descname"><span class="pre">enc_c</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[16,</span> <span class="pre">64,</span> <span class="pre">64,</span> <span class="pre">96,</span> <span class="pre">96,</span> <span class="pre">96]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_c" title="Permalink to this definition"></a></dt>
+<dd><p>Channels for conv and rnn; Length should be 2*num_layers</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_k">
+<span class="sig-name descname"><span class="pre">enc_conv_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[3,</span> <span class="pre">3,</span> <span class="pre">3]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_k" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder conv block kernel sizes per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_names">
+<span class="sig-name descname"><span class="pre">enc_conv_names</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['conv1_leaky_1',</span> <span class="pre">'conv2_leaky_1',</span> <span class="pre">'conv3_leaky_1']</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_names" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder conv block layer names (for internal initialization)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_p">
+<span class="sig-name descname"><span class="pre">enc_conv_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_p" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder conv block paddings per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_s">
+<span class="sig-name descname"><span class="pre">enc_conv_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">2]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_conv_s" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder conv block strides per layer</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_L">
+<span class="sig-name descname"><span class="pre">enc_rnn_L</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[13,</span> <span class="pre">13,</span> <span class="pre">13]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_L" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block L parameter</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_h2h_d">
+<span class="sig-name descname"><span class="pre">enc_rnn_h2h_d</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_h2h_d" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block h2h dilation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_h2h_k">
+<span class="sig-name descname"><span class="pre">enc_rnn_h2h_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(5,</span> <span class="pre">5),</span> <span class="pre">(5,</span> <span class="pre">5),</span> <span class="pre">(3,</span> <span class="pre">3)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_h2h_k" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block h2h kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_k">
+<span class="sig-name descname"><span class="pre">enc_rnn_i2h_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(3,</span> <span class="pre">3),</span> <span class="pre">(3,</span> <span class="pre">3),</span> <span class="pre">(3,</span> <span class="pre">3)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_k" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block i2h kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_p">
+<span class="sig-name descname"><span class="pre">enc_rnn_i2h_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_p" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block i2h padding</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_s">
+<span class="sig-name descname"><span class="pre">enc_rnn_i2h_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">(1,</span> <span class="pre">1)]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_i2h_s" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block i2h stride</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_z">
+<span class="sig-name descname"><span class="pre">enc_rnn_z</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.enc_rnn_z" title="Permalink to this definition"></a></dt>
+<dd><p>Encoder recurrent block zoneout</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_c">
+<span class="sig-name descname"><span class="pre">final_conv_1_c</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_c" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 1 out channels</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_k">
+<span class="sig-name descname"><span class="pre">final_conv_1_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_k" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 1 kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_name">
+<span class="sig-name descname"><span class="pre">final_conv_1_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'identity'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_name" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 1 name</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_p">
+<span class="sig-name descname"><span class="pre">final_conv_1_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_p" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 1 padding</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_s">
+<span class="sig-name descname"><span class="pre">final_conv_1_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_1_s" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 1 stride</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_k">
+<span class="sig-name descname"><span class="pre">final_conv_2_k</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_k" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 2 kernel size</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_name">
+<span class="sig-name descname"><span class="pre">final_conv_2_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'conv3_3'</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_name" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 2 name</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_p">
+<span class="sig-name descname"><span class="pre">final_conv_2_p</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_p" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 2 padding</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_s">
+<span class="sig-name descname"><span class="pre">final_conv_2_s</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.final_conv_2_s" title="Permalink to this definition"></a></dt>
+<dd><p>Final conv block 2 stride</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.num_layers">
+<span class="sig-name descname"><span class="pre">num_layers</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#vp_suite.models.precipitation_nowcasting.ef_traj_gru.EF_TrajGRU.num_layers" title="Permalink to this definition"></a></dt>
+<dd><p>Number of recurrent cell layers</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vp_suite.models.precipitation_nowcasting.ef_conv_lstm.html" class="btn btn-neutral float-left" title="vp_suite.models.precipitation_nowcasting.ef_conv_lstm" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vp_suite.models.copy_last_frame.html" class="btn btn-neutral float-right" title="vp_suite.models.copy_last_frame" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021-2022, Andreas Boltres.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

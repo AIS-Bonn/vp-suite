@@ -1,0 +1,7 @@
+vp\_suite.model\_blocks.traj\_gru
+========================================
+
+.. automodule:: vp_suite.model_blocks.traj_gru
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+vp\_suite.base.base\_model\_block
+========================================
+
+.. automodule:: vp_suite.base.base_model_block
+   :members:
+   :undoc-members:
+   :show-inheritance:
