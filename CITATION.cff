@@ -8,11 +8,6 @@ message: >-
   Please consider citing if you find our findings or
   our repository helpful.
 authors:
-    - given-names: Ani
-      family-names: Karapetyan
-      affiliation: >-
-        Institute for Autonomous Intelligent Systems
-        (AIS), University of Bonn
     - family-names: Boltres
       given-names: Andreas
       affiliation: >-
