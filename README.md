@@ -57,6 +57,9 @@ This repo aims at providing a suite that facilitates scientific work in the subf
    ```
 </details>
 
+_Note: If using `zsh` while installing the package with extras, 
+be sure to quote the arguments like i.e. like this: `pip install -e '.[dev]'`._
+
 ### Usage
 
 <details>
